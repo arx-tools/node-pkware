@@ -1,5 +1,5 @@
-import implode from './src/implode.mjs'
-import explode from './src/explode.mjs'
+import implode from './implode.mjs'
+import explode from './explode.mjs'
 
 // aliases
 const compress = implode

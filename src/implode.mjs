@@ -656,4 +656,4 @@ unsigned int implode(
 }
 */
 
-export default implode = () => {}
+export default () => {}

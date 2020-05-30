@@ -2,9 +2,9 @@
   "name": "node-pkware",
   "version": "0.0.1",
   "description": "The nodejs implementation of StormLib's pkware compressor/de-compressor",
-  "main": "index.mjs",
+  "main": "src/index.mjs",
   "scripts": {
-    "start": "node --experimental-modules --no-warnings index.mjs"
+    "test": "node --experimental-modules --no-warnings test/index.mjs"
   },
   "repository": {
     "type": "git",

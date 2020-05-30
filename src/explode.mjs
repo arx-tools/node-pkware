@@ -500,4 +500,4 @@ unsigned int explode(
 }
 */
 
-export default explode = () => {}
+export default () => {}
