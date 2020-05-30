@@ -1,31 +1,21 @@
+const PKDCL_OK         = 0
+const PKDCL_STREAM_END = 1  // All data from the input stream is read
+const PKDCL_NEED_DICT  = 2  // Need more data (dictionary)
+const PKDCL_CONTINUE   = 10 // Internal flag, not returned to user
+const PKDCL_GET_INPUT  = 11 // Internal flag, not returned to user
+
+const DistBits = [
+  0x02, 0x04, 0x04, 0x05, 0x05, 0x05, 0x05, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06,
+  0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07,
+  0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07,
+  0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08
+]
+
 /*
-#include <assert.h>
-#include <string.h>
-
-#include "pklib.h"
-
-#define PKDCL_OK                    0       
-#define PKDCL_STREAM_END            1   // All data from the input stream is read
-#define PKDCL_NEED_DICT             2   // Need more data (dictionary)
-#define PKDCL_CONTINUE             10   // Internal flag, not returned to user
-#define PKDCL_GET_INPUT            11   // Internal flag, not returned to user
-
-char CopyrightPkware[] = "PKWARE Data Compression Library for Win32\r\n"
-                         "Copyright 1989-1995 PKWARE Inc.  All Rights Reserved\r\n"
-                         "Patent No. 5,051,745\r\n"
-                         "PKWARE Data Compression Library Reg. U.S. Pat. and Tm. Off.\r\n"
-                         "Version 1.11\r\n";
-
 //-----------------------------------------------------------------------------
 // Tables
 
-unsigned char DistBits[0x40] = 
-{
-    0x02, 0x04, 0x04, 0x05, 0x05, 0x05, 0x05, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06,
-    0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07,
-    0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07,
-    0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08
-};
+unsigned char ;
 
 unsigned char DistCode[0x40] = 
 {
@@ -458,7 +448,7 @@ static unsigned int Expand(TDcmpStruct * pWork)
 //-----------------------------------------------------------------------------
 // Main exploding function.
 
-unsigned int PKEXPORT explode(
+unsigned int explode(
         unsigned int (*read_buf)(char *buf, unsigned  int *size, void *param),
         void         (*write_buf)(char *buf, unsigned  int *size, void *param),
         char         *work_buf,
@@ -509,3 +499,5 @@ unsigned int PKEXPORT explode(
     return CMP_ABORT;
 }
 */
+
+export default explode = () => {}

@@ -1,18 +1,6 @@
+const MAX_REP_LENGTH = 0x204 // The longest allowed repetition
+
 /*
-#include <assert.h>
-#include <string.h>
-
-#include "pklib.h"
-
-#if ((1200 < _MSC_VER) && (_MSC_VER < 1400))
-#pragma optimize("", off)               // Fucking Microsoft VS.NET 2003 compiler !!! (_MSC_VER=1310)
-#endif
-
-//-----------------------------------------------------------------------------
-// Defines
-
-#define MAX_REP_LENGTH 0x204            // The longest allowed repetition
-
 //-----------------------------------------------------------------------------
 // Macros
 
@@ -578,7 +566,7 @@ __Exit:
 //-----------------------------------------------------------------------------
 // Main imploding function
 
-unsigned int PKEXPORT implode(
+unsigned int implode(
     unsigned int (*read_buf)(char *buf, unsigned int *size, void *param),
     void         (*write_buf)(char *buf, unsigned int *size, void *param),
     char         *work_buf,
@@ -667,3 +655,5 @@ unsigned int PKEXPORT implode(
     return CMP_NO_ERROR;
 }
 */
+
+export default implode = () => {}

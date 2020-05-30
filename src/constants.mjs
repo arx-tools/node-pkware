@@ -63,8 +63,6 @@ Compression structure
 }
 */
 
-console.log(distance)
-
 export const getTCmpStruct = buffer => {
   const reader = new DataView(buffer)
 
