@@ -1,0 +1,23 @@
+{
+  "name": "node-pkware",
+  "version": "0.0.1",
+  "description": "The nodejs implementation of StormLib's pkware compressor/de-compressor",
+  "main": "index.mjs",
+  "scripts": {
+    "start": "node --experimental-modules --no-warnings index.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/meszaros-lajos-gyorgy/node-pkware.git"
+  },
+  "bugs": {
+    "url": "https://github.com/meszaros-lajos-gyorgy/node-pkware/issues"
+  },
+  "homepage": "https://github.com/meszaros-lajos-gyorgy/node-pkware#readme",
+  "author": "Lajos Meszaros <m_lajos@hotmail.com>",
+  "license": "GPL-3.0-or-later",
+  "dependencies": {
+    "ramda": "^0.27.0",
+    "through2": "^3.0.1"
+  }
+}
