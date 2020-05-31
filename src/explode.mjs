@@ -22,19 +22,27 @@ import {
   ChCodeAsc
 } from './common.mjs'
 
-const GenDecodeTabs = (positions, start_indexes, length_bits, elements) => {
-  for(let i = 0; i < elements; i++) {
-    let length = 1 << length_bits[i]
+/*
+static void GenDecodeTabs(
+  unsigned char * positions,          // [out] Table of positions
+  unsigned char * start_indexes,      // [in] Table of start indexes
+  unsigned char * length_bits,        // [in] Table of lengths. Each length is stored as number of bits
+  size_t elements)                    // [in] Number of elements in start_indexes and length_bits
+{
+  unsigned int index;
+  unsigned int length;
+  size_t i;
 
-    for (let index = start_indexes[i]; index < 0x100; index += length) {
-      positions[index] = i
-    }
+  for(i = 0; i < elements; i++)
+  {
+      length = 1 << length_bits[i];   // Get the length in bytes
+
+      for(index = start_indexes[i]; index < 0x100; index += length)
+      {
+          positions[index] = (unsigned char)i;
+      }
   }
 }
-
-/*
-//-----------------------------------------------------------------------------
-// Local functions
 
 static void GenAscTabs(TDcmpStruct * pWork)
 {
@@ -129,7 +137,7 @@ static int WasteBits(TDcmpStruct * pWork, unsigned int nBits)
     pWork->bit_buff >>= pWork->extra_bits;
     if(pWork->in_pos == pWork->in_bytes)
     {
-        pWork->in_pos = length(pWork->in_buff);
+        pWork->in_pos = sizeof(pWork->in_buff);
         if((pWork->in_bytes = pWork->read_buf((char *)pWork->in_buff, &pWork->in_pos, pWork->param)) == 0)
             return PKDCL_STREAM_END;
         pWork->in_pos = 0;
@@ -198,7 +206,7 @@ static unsigned int DecodeLit(TDcmpStruct * pWork)
         return 0x306;
 
     // If the binary compression type, read 8 bits and return them as one byte.
-    if(pWork->ctype == BINARY_COMPRESSION)
+    if(pWork->ctype == CMP_BINARY)
     {
         unsigned int uncompressed_byte = pWork->bit_buff & 0xFF;
 
@@ -357,17 +365,16 @@ static unsigned int Expand(TDcmpStruct * pWork)
 
 const explode = (read_buf, write_buf) => {
   const pWork = {
-    offs0000:     0,
     ctype:        0,
     outputPos:    0,
     dsize_bits:   0,
     dsize_mask:   0,
     bit_buff:     0,
     extra_bits:   0,
-    in_pos:       0,
+    in_pos:       800,
     in_bytes:     0,
-    read_buf:     '?',
-    write_buf:    '?',
+    read_buf:     read_buf,
+    write_buf:    write_buf,
     out_buff:     repeat(0, 0x2204),
     in_buff:      repeat(0, 0x800),
     DistPosCodes: repeat(0, 0x100),
@@ -383,47 +390,43 @@ const explode = (read_buf, write_buf) => {
     LenBase:      repeat(0, 0x10)
   }
 
+  /*
   // Initialize work struct and load compressed data
   // Note: The caller must zero the "work_buff" before passing it to explode
-  pWork.read_buf = read_buf
-  pWork.write_buf = write_buf
-  pWork.in_pos = length(pWork.in_buff)
-  pWork.in_bytes = pWork.read_buf(pWork.in_buff, pWork.in_pos)
-  if (pWork.in_bytes <= 4) {
-    return CMP_BAD_DATA
-  }
+  pWork->in_bytes   = pWork->read_buf((char *)pWork->in_buff, &pWork->in_pos, pWork->param);
+  if(pWork->in_bytes <= 4)
+      return CMP_BAD_DATA;
 
-  pWork.ctype = pWork.in_buff[0]
-  pWork.dsize_bits = pWork.in_buff[1]
-  pWork.bit_buff = pWork.in_buff[2]
-  pWork.extra_bits = 0
-  pWork.in_pos = 3
+  pWork->ctype      = pWork->in_buff[0]; // Get the compression type (CMP_BINARY or CMP_ASCII)
+  pWork->dsize_bits = pWork->in_buff[1]; // Get the dictionary size
+  pWork->bit_buff   = pWork->in_buff[2]; // Initialize 16-bit bit buffer
+  pWork->extra_bits = 0;                 // Extra (over 8) bits
+  pWork->in_pos     = 3;                 // Position in input buffer
 
   // Test for the valid dictionary size
-  if(4 > pWork.dsize_bits || pWork.dsize_bits > 6) {
-    return CMP_INVALID_DICTSIZE
+  if(4 > pWork->dsize_bits || pWork->dsize_bits > 6) 
+      return CMP_INVALID_DICTSIZE;
+
+  pWork->dsize_mask = 0xFFFF >> (0x10 - pWork->dsize_bits); // Shifted by 'sar' instruction
+
+  if(pWork->ctype != CMP_BINARY)
+  {
+      if(pWork->ctype != CMP_ASCII)
+          return CMP_INVALID_MODE;
+
+      memcpy(pWork->ChBitsAsc, ChBitsAsc, sizeof(pWork->ChBitsAsc));
+      GenAscTabs(pWork);
   }
 
-  pWork.dsize_mask = 0xFFFF >> (0x10 - pWork.dsize_bits)
-
-  if (pWork.ctype != BINARY_COMPRESSION) {
-    if (pWork.ctype != ASCII_COMPRESSION) {
-      return CMP_INVALID_MODE
-    }
-
-    pWork.ChBitsAsc = clone(ChBitsAsc)
-    GenAscTabs(pWork)
-  }
-
-  pWork.LenBits = clone(LenBits)
-  GenDecodeTabs(pWork.LengthCodes, LenCode, pWork.LenBits, length(pWork.LenBits))
-  pWork.ExLenBits = clone(ExLenBits)
-  pWork.LenBase = clone(LenBase)
-  pWork.DistBits = clone(DistBits)
-  GenDecodeTabs(pWork.DistPosCodes, DistCode, pWork.DistBits, length(pWork.DistBits))
-  if (Expand(pWork) != 0x306) {
-    return CMP_NO_ERROR
-  }
+  memcpy(pWork->LenBits, LenBits, sizeof(pWork->LenBits));
+  GenDecodeTabs(pWork->LengthCodes, LenCode, pWork->LenBits, sizeof(pWork->LenBits));
+  memcpy(pWork->ExLenBits, ExLenBits, sizeof(pWork->ExLenBits));
+  memcpy(pWork->LenBase, LenBase, sizeof(pWork->LenBase));
+  memcpy(pWork->DistBits, DistBits, sizeof(pWork->DistBits));
+  GenDecodeTabs(pWork->DistPosCodes, DistCode, pWork->DistBits, sizeof(pWork->DistBits));
+  if(Expand(pWork) != 0x306)
+      return CMP_NO_ERROR;
+  */
 
   return CMP_ABORT
 }

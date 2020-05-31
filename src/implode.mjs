@@ -16,10 +16,6 @@ import {
   ExLenBits
 } from './common.mjs'
 
-// Calculating hash of the current byte pair.
-// Note that most exact byte pair hash would be buffer[0] + buffer[1] << 0x08,
-// but even this way gives nice indication of equal byte pairs, with significantly
-// smaller size of the array that holds numbers of those hashes
 const BYTE_PAIR_HASH = buffer => ((buffer[0] * 4) + (buffer[1] * 5))
 
 /*
@@ -602,6 +598,77 @@ const implode = (read_buf, write_buf, type, dsize) => {
     phash_offs:         repeat(0, 0x2204)
   }
 
+  /*
+  unsigned int nChCode;
+    unsigned int nCount;
+    unsigned int i;
+    int nCount2;
+
+    // Test dictionary size
+    switch(*dsize)
+    {
+        case CMP_IMPLODE_DICT_SIZE3:    // 0x1000 bytes
+            pWork->dsize_bits++;
+            pWork->dsize_mask |= 0x20;
+            // No break here !!!
+
+        case CMP_IMPLODE_DICT_SIZE2:    // 0x800 bytes
+            pWork->dsize_bits++;
+            pWork->dsize_mask |= 0x10;
+            // No break here !!!
+
+        case CMP_IMPLODE_DICT_SIZE1:    // 0x400
+            break;
+
+        default:
+            return CMP_INVALID_DICTSIZE;
+    }
+
+    // Test the compression type
+    switch(*type)
+    {
+        case CMP_BINARY: // We will compress data with binary compression type
+            for(nChCode = 0, nCount = 0; nCount < 0x100; nCount++)
+            {
+                pWork->nChBits[nCount]  = 9;
+                pWork->nChCodes[nCount] = (unsigned short)nChCode;
+                nChCode = (nChCode & 0x0000FFFF) + 2;
+            }
+            break;
+
+
+        case CMP_ASCII: // We will compress data with ASCII compression type
+            for(nCount = 0; nCount < 0x100; nCount++)
+            {
+                pWork->nChBits[nCount]  = (unsigned char )(ChBitsAsc[nCount] + 1);
+                pWork->nChCodes[nCount] = (unsigned short)(ChCodeAsc[nCount] * 2);
+            }
+            break;
+
+        default:
+            return CMP_INVALID_MODE;
+    }
+
+    for(i = 0; i < 0x10; i++)
+    {
+        if(1 << ExLenBits[i])
+        {
+            for(nCount2 = 0; nCount2 < (1 << ExLenBits[i]); nCount2++)
+            {
+                pWork->nChBits[nCount]  = (unsigned char)(ExLenBits[i] + LenBits[i] + 1);
+                pWork->nChCodes[nCount] = (unsigned short)((nCount2 << (LenBits[i] + 1)) | ((LenCode[i] & 0xFFFF00FF) * 2) | 1);
+                nCount++;
+            }
+        }
+    }
+
+    // Copy the distance codes and distance bits and perform the compression
+    memcpy(&pWork->dist_codes, DistCode, sizeof(DistCode));
+    memcpy(&pWork->dist_bits, DistBits, sizeof(DistBits));
+    WriteCmpData(pWork);
+  */
+
+  /*
   // Test dictionary size
   switch (dsize) {
     case CMP_IMPLODE_DICT_SIZE3: // 0x1000 bytes
@@ -653,6 +720,7 @@ const implode = (read_buf, write_buf, type, dsize) => {
   pWork.dist_codes = clone(DistCode)
   pWork.dist_bits = clone(DistBits)
   WriteCmpData(pWork)
+  */
 
   return CMP_NO_ERROR
 }
