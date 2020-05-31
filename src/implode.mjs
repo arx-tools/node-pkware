@@ -1,15 +1,75 @@
+import { cType } from './constants.mjs'
+
 const MAX_REP_LENGTH = 0x204 // The longest allowed repetition
 
 /*
-//-----------------------------------------------------------------------------
-// Macros
+Compression structure
+{
+  unsigned int   distance;                // 0000: Backward distance of the currently found repetition, decreased by 1
+  unsigned int   out_bytes;               // 0004: # bytes available in out_buff            
+  unsigned int   out_bits;                // 0008: # of bits available in the last out byte
+  unsigned int   dsize_bits;              // 000C: Number of bits needed for dictionary size. 4 = 0x400, 5 = 0x800, 6 = 0x1000
+  unsigned int   dsize_mask;              // 0010: Bit mask for dictionary. 0x0F = 0x400, 0x1F = 0x800, 0x3F = 0x1000
+  unsigned int   ctype;                   // 0014: Compression type (CMP_ASCII or CMP_BINARY)
+  unsigned int   dsize_bytes;             // 0018: Dictionary size in bytes
+  unsigned char  dist_bits[0x40];         // 001C: Distance bits
+  unsigned char  dist_codes[0x40];        // 005C: Distance codes
+  unsigned char  nChBits[0x306];          // 009C: Table of literal bit lengths to be put to the output stream
+  unsigned short nChCodes[0x306];         // 03A2: Table of literal codes to be put to the output stream
+  unsigned short offs09AE;                // 09AE: 
+
+  void         * param;                   // 09B0: User parameter
+  unsigned int (*read_buf)(char *buf, unsigned int *size, void *param);  // 9B4
+  void         (*write_buf)(char *buf, unsigned int *size, void *param); // 9B8
+
+  unsigned short offs09BC[0x204];         // 09BC:
+  unsigned long  offs0DC4;                // 0DC4: 
+  unsigned short phash_to_index[0x900];   // 0DC8: Array of indexes (one for each PAIR_HASH) to the "pair_hash_offsets" table
+  unsigned short phash_to_index_end;      // 1FC8: End marker for "phash_to_index" table
+  char           out_buff[0x802];         // 1FCA: Compressed data
+  unsigned char  work_buff[0x2204];       // 27CC: Work buffer
+                                          //  + DICT_OFFSET  => Dictionary
+                                          //  + UNCMP_OFFSET => Uncompressed data
+  unsigned short phash_offs[0x2204];      // 49D0: Table of offsets for each PAIR_HASH
+}
+*/
+
+const getTCmpStruct = buffer => {
+  const reader = new DataView(buffer)
+
+  return {
+    distance:           reader[cType.unsigned.int](0x0000),
+    out_bytes:          reader[cType.unsigned.int](0x0004),
+    out_bits:           reader[cType.unsigned.int](0x0008),
+    dsize_bits:         reader[cType.unsigned.int](0x000c),
+    dsize_mask:         reader[cType.unsigned.int](0x0010),
+    ctype:              reader[cType.unsigned.int](0x0014),
+    dsize_bytes:        reader[cType.unsigned.int](0x0018),
+    dist_bits:          times(idx => reader[cType.unsigned.char](0x001c + idx), 0x40),
+    dist_codes:         times(idx => reader[cType.unsigned.char](0x005c + idx), 0x40),
+    nChBits:            times(idx => reader[cType.unsigned.char](0x009c + idx), 0x306),
+    nChCodes:           times(idx => reader[cType.unsigned.short](0x03a2 + idx), 0x306),
+    offs09AE:           reader[cType.unsigned.short](0x09ae),
+    param:              '?',
+    read_buf:           '?',
+    write_buf:          '?',
+    offs09BC:           times(idx => reader[cType.unsigned.short](0x09bc + idx), 0x204),
+    offs0DC4:           reader[cType.unsigned.long](0x0dc4),
+    phash_to_index:     times(idx => reader[cType.unsigned.short](0x0dc8 + idx), 0x900),
+    phash_to_index_end: reader[cType.unsigned.short](0x1fc8),
+    out_buff:           times(idx => reader[cType.signed.char](0x1fca + idx), 0x802),
+    work_buff:          times(idx => reader[cType.unsigned.char](0x27cc + idx), 0x2204),
+    phash_offs:         times(idx => reader[cType.unsigned.short](0x49d0 + idx), 0x2204)
+  }
+}
 
 // Macro for calculating hash of the current byte pair.
 // Note that most exact byte pair hash would be buffer[0] + buffer[1] << 0x08,
 // but even this way gives nice indication of equal byte pairs, with significantly
 // smaller size of the array that holds numbers of those hashes
-#define BYTE_PAIR_HASH(buffer)   ((buffer[0] * 4) + (buffer[1] * 5))
+const BYTE_PAIR_HASH = buffer => ((buffer[0] * 4) + (buffer[1] * 5))
 
+/*
 //-----------------------------------------------------------------------------
 // Local functions
 
