@@ -1,4 +1,12 @@
-import { cType } from './constants.mjs'
+import {
+  BINARY_COMPRESSION,
+  ASCII_COMPRESSION,
+  CMP_NO_ERROR,
+  CMP_INVALID_DICTSIZE,
+  CMP_INVALID_MODE,
+  CMP_BAD_DATA,
+  CMP_ABORT
+} from './constants.mjs'
 
 const PKDCL_OK         = 0
 const PKDCL_STREAM_END = 1  // All data from the input stream is read
@@ -90,73 +98,6 @@ const ChCodeAsc = [
   0x0600, 0x1A00, 0x0E40, 0x0640, 0x0A40, 0x0A00, 0x1200, 0x0200,
   0x1C00, 0x0C00, 0x1400, 0x0400, 0x1800, 0x0800, 0x1000, 0x0000  
 ]
-
-/*
-// Decompression structure
-{
-    unsigned long offs0000;                 // 0000
-    unsigned long ctype;                    // 0004: Compression type (CMP_BINARY or CMP_ASCII)
-    unsigned long outputPos;                // 0008: Position in output buffer
-    unsigned long dsize_bits;               // 000C: Dict size (4, 5, 6 for 0x400, 0x800, 0x1000)
-    unsigned long dsize_mask;               // 0010: Dict size bitmask (0x0F, 0x1F, 0x3F for 0x400, 0x800, 0x1000)
-    unsigned long bit_buff;                 // 0014: 16-bit buffer for processing input data
-    unsigned long extra_bits;               // 0018: Number of extra (above 8) bits in bit buffer
-    unsigned int  in_pos;                   // 001C: Position in in_buff
-    unsigned long in_bytes;                 // 0020: Number of bytes in input buffer
-    void        * param;                    // 0024: Custom parameter
-    unsigned int (*read_buf)(char *buf, unsigned int *size, void *param); // Pointer to function that reads data from the input stream
-    void         (*write_buf)(char *buf, unsigned int *size, void *param);// Pointer to function that writes data to the output stream
-
-    unsigned char out_buff[0x2204];         // 0030: Output circle buffer.
-                                            //       0x0000 - 0x0FFF: Previous uncompressed data, kept for repetitions
-                                            //       0x1000 - 0x1FFF: Currently decompressed data
-                                            //       0x2000 - 0x2203: Reserve space for the longest possible repetition
-    unsigned char in_buff[0x800];           // 2234: Buffer for data to be decompressed
-    unsigned char DistPosCodes[0x100];      // 2A34: Table of distance position codes
-    unsigned char LengthCodes[0x100];       // 2B34: Table of length codes
-    unsigned char offs2C34[0x100];          // 2C34: Buffer for 
-    unsigned char offs2D34[0x100];          // 2D34: Buffer for 
-    unsigned char offs2E34[0x80];           // 2E34: Buffer for 
-    unsigned char offs2EB4[0x100];          // 2EB4: Buffer for 
-    unsigned char ChBitsAsc[0x100];         // 2FB4: Buffer for 
-    unsigned char DistBits[0x40];           // 30B4: Numbers of bytes to skip copied block length
-    unsigned char LenBits[0x10];            // 30F4: Numbers of bits for skip copied block length
-    unsigned char ExLenBits[0x10];          // 3104: Number of valid bits for copied block
-    unsigned short LenBase[0x10];           // 3114: Buffer for 
-}
-*/
-
-const getTDcmpStruct = buffer => {
-  const reader = new DataView(buffer)
-
-  return {
-    offs0000:     reader[cType.unsigned.long](0x0000),
-    ctype:        reader[cType.unsigned.long](0x0004),
-    outputPos:    reader[cType.unsigned.long](0x0008),
-    dsize_bits:   reader[cType.unsigned.long](0x000c),
-    dsize_mask:   reader[cType.unsigned.long](0x0010),
-    bit_buff:     reader[cType.unsigned.long](0x0014),
-    extra_bits:   reader[cType.unsigned.long](0x0018),
-    in_pos:       reader[cType.unsigned.int](0x001c),
-    in_bytes:     reader[cType.unsigned.long](0x0020),
-    param:        '?',
-    read_buf:     '?',
-    write_buf:    '?',
-    out_buff:     times(idx => reader[cType.unsigned.char + idx](0x0030 + idx), 0x2204),
-    in_buff:      times(idx => reader[cType.unsigned.char + idx](0x2234 + idx), 0x800),
-    DistPosCodes: times(idx => reader[cType.unsigned.char + idx](0x2a34), 0x100),
-    LengthCodes:  times(idx => reader[cType.unsigned.char + idx](0x2b34), 0x100),
-    offs2C34:     times(idx => reader[cType.unsigned.char + idx](0x2c34), 0x100),
-    offs2D34:     times(idx => reader[cType.unsigned.char + idx](0x2d34), 0x100),
-    offs2E34:     times(idx => reader[cType.unsigned.char + idx](0x2e34), 0x80),
-    offs2EB4:     times(idx => reader[cType.unsigned.char + idx](0x2eb4), 0x100),
-    ChBitsAsc:    times(idx => reader[cType.unsigned.char + idx](0x2fb4), 0x100),
-    DistBits:     times(idx => reader[cType.unsigned.char + idx](0x30b4), 0x40),
-    LenBits:      times(idx => reader[cType.unsigned.char + idx](0x30f4), 0x10),
-    ExLenBits:    times(idx => reader[cType.unsigned.char + idx](0x3104), 0x10),
-    LenBase:      times(idx => reader[cType.unsigned.short](0x3114 + idx), 0x10)
-  }
-}
 
 /*
 //-----------------------------------------------------------------------------
@@ -345,7 +286,7 @@ static unsigned int DecodeLit(TDcmpStruct * pWork)
         return 0x306;
 
     // If the binary compression type, read 8 bits and return them as one byte.
-    if(pWork->ctype == CMP_BINARY)
+    if(pWork->ctype == BINARY_COMPRESSION)
     {
         unsigned int uncompressed_byte = pWork->bit_buff & 0xFF;
 
@@ -508,7 +449,6 @@ static unsigned int Expand(TDcmpStruct * pWork)
 unsigned int explode(
         unsigned int (*read_buf)(char *buf, unsigned  int *size, void *param),
         void         (*write_buf)(char *buf, unsigned  int *size, void *param),
-        char         *work_buf,
         void         *param)
 {
     TDcmpStruct * pWork = (TDcmpStruct *)work_buf;
@@ -523,7 +463,7 @@ unsigned int explode(
     if(pWork->in_bytes <= 4)
         return CMP_BAD_DATA;
 
-    pWork->ctype      = pWork->in_buff[0]; // Get the compression type (CMP_BINARY or CMP_ASCII)
+    pWork->ctype      = pWork->in_buff[0]; // Get the compression type (BINARY_COMPRESSION or ASCII_COMPRESSION)
     pWork->dsize_bits = pWork->in_buff[1]; // Get the dictionary size
     pWork->bit_buff   = pWork->in_buff[2]; // Initialize 16-bit bit buffer
     pWork->extra_bits = 0;                 // Extra (over 8) bits
@@ -535,9 +475,9 @@ unsigned int explode(
 
     pWork->dsize_mask = 0xFFFF >> (0x10 - pWork->dsize_bits); // Shifted by 'sar' instruction
 
-    if(pWork->ctype != CMP_BINARY)
+    if(pWork->ctype != BINARY_COMPRESSION)
     {
-        if(pWork->ctype != CMP_ASCII)
+        if(pWork->ctype != ASCII_COMPRESSION)
             return CMP_INVALID_MODE;
 
         memcpy(pWork->ChBitsAsc, ChBitsAsc, sizeof(pWork->ChBitsAsc));
@@ -557,4 +497,33 @@ unsigned int explode(
 }
 */
 
-export default () => {}
+const explode = () => {
+  const pWork = {
+    offs0000:     0,
+    ctype:        0,
+    outputPos:    0,
+    dsize_bits:   0,
+    dsize_mask:   0,
+    bit_buff:     0,
+    extra_bits:   0,
+    in_pos:       0,
+    in_bytes:     0,
+    read_buf:     '?',
+    write_buf:    '?',
+    out_buff:     times(() => 0, 0x2204),
+    in_buff:      times(() => 0, 0x800),
+    DistPosCodes: times(() => 0, 0x100),
+    LengthCodes:  times(() => 0, 0x100),
+    offs2C34:     times(() => 0, 0x100),
+    offs2D34:     times(() => 0, 0x100),
+    offs2E34:     times(() => 0, 0x80),
+    offs2EB4:     times(() => 0, 0x100),
+    ChBitsAsc:    times(() => 0, 0x100),
+    DistBits:     times(() => 0, 0x40),
+    LenBits:      times(() => 0, 0x10),
+    ExLenBits:    times(() => 0, 0x10),
+    LenBase:      times(() => 0, 0x10)
+  }
+}
+
+export default explode
