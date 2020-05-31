@@ -1,16 +1,20 @@
+import { clone, repeat } from 'ramda'
 import {
   BINARY_COMPRESSION,
   ASCII_COMPRESSION,
   CMP_NO_ERROR,
   CMP_INVALID_DICTSIZE,
-  CMP_INVALID_MODE
-} from './constants.mjs'
-
-export const CMP_IMPLODE_DICT_SIZE1 = 1024 // Dictionary size of 1024
-export const CMP_IMPLODE_DICT_SIZE2 = 2048 // Dictionary size of 2048
-export const CMP_IMPLODE_DICT_SIZE3 = 4096 // Dictionary size of 4096
-
-const MAX_REP_LENGTH = 0x204 // The longest allowed repetition
+  CMP_INVALID_MODE,
+  CMP_IMPLODE_DICT_SIZE1,
+  CMP_IMPLODE_DICT_SIZE2,
+  CMP_IMPLODE_DICT_SIZE3,
+  MAX_REP_LENGTH,
+  DistCode,
+  DistBits,
+  LenBits,
+  LenCode,
+  ExLenBits
+} from './common.mjs'
 
 // Calculating hash of the current byte pair.
 // Note that most exact byte pair hash would be buffer[0] + buffer[1] << 0x08,
@@ -389,306 +393,268 @@ static unsigned int FindRep(TCmpStruct * pWork, unsigned char * input_data)
         }
     }
 }
+*/
 
-static void WriteCmpData(TCmpStruct * pWork)
-{
-    unsigned char * input_data_end;         // Pointer to the end of the input data
-    unsigned char * input_data = pWork->work_buff + pWork->dsize_bytes + 0x204;
-    unsigned int input_data_ended = 0;      // If 1, then all data from the input stream have been already loaded
-    unsigned int save_rep_length;           // Saved length of current repetition
-    unsigned int save_distance = 0;         // Saved distance of current repetition
-    unsigned int rep_length;                // Length of the found repetition
-    unsigned int phase = 0;                 // 
+const WriteCmpData = pWork => {
+  /*
+  unsigned char * input_data_end;         // Pointer to the end of the input data
+  unsigned char * input_data = pWork->work_buff + pWork->dsize_bytes + 0x204;
+  unsigned int input_data_ended = 0;      // If 1, then all data from the input stream have been already loaded
+  unsigned int save_rep_length;           // Saved length of current repetition
+  unsigned int save_distance = 0;         // Saved distance of current repetition
+  unsigned int rep_length;                // Length of the found repetition
+  unsigned int phase = 0;                 // 
 
-    // Store the compression type and dictionary size
-    pWork->out_buff[0] = (char)pWork->ctype;
-    pWork->out_buff[1] = (char)pWork->dsize_bits;
-    pWork->out_bytes = 2;
+  // Store the compression type and dictionary size
+  pWork->out_buff[0] = (char)pWork->ctype;
+  pWork->out_buff[1] = (char)pWork->dsize_bits;
+  pWork->out_bytes = 2;
 
-    // Reset output buffer to zero
-    memset(&pWork->out_buff[2], 0, sizeof(pWork->out_buff) - 2);
-    pWork->out_bits = 0;
+  // Reset output buffer to zero
+  memset(&pWork->out_buff[2], 0, sizeof(pWork->out_buff) - 2);
+  pWork->out_bits = 0;
 
-    while(input_data_ended == 0)
-    {
-        unsigned int bytes_to_load = 0x1000;
-        int total_loaded = 0;
-        int bytes_loaded;
+  while(input_data_ended == 0)
+  {
+      unsigned int bytes_to_load = 0x1000;
+      int total_loaded = 0;
+      int bytes_loaded;
 
-        // Load the bytes from the input stream, up to 0x1000 bytes
-        while(bytes_to_load != 0)
-        {
-            bytes_loaded = pWork->read_buf((char *)pWork->work_buff + pWork->dsize_bytes + 0x204 + total_loaded,
-                                                  &bytes_to_load,
-                                                   pWork->param);
-            if(bytes_loaded == 0)
-            {
-                if(total_loaded == 0 && phase == 0)
-                    goto __Exit;
-                input_data_ended = 1;
-                break;
-            }
-            else
-            {
-                bytes_to_load -= bytes_loaded;
-                total_loaded += bytes_loaded;
-            }
-        }
+      // Load the bytes from the input stream, up to 0x1000 bytes
+      while(bytes_to_load != 0)
+      {
+          bytes_loaded = pWork->read_buf((char *)pWork->work_buff + pWork->dsize_bytes + 0x204 + total_loaded,
+                                                &bytes_to_load,
+                                                  pWork->param);
+          if(bytes_loaded == 0)
+          {
+              if(total_loaded == 0 && phase == 0)
+                  goto __Exit;
+              input_data_ended = 1;
+              break;
+          }
+          else
+          {
+              bytes_to_load -= bytes_loaded;
+              total_loaded += bytes_loaded;
+          }
+      }
 
-        input_data_end = pWork->work_buff + pWork->dsize_bytes + total_loaded;
-        if(input_data_ended)
-            input_data_end += 0x204;
-        
-        //
-        // Warning: The end of the buffer passed to "SortBuffer" is actually 2 bytes beyond
-        // valid data. It is questionable if this is actually a bug or not,
-        // but it might cause the compressed data output to be dependent on random bytes
-        // that are in the buffer. 
-        // To prevent that, the calling application must always zero the compression
-        // buffer before passing it to "implode"
-        //
+      input_data_end = pWork->work_buff + pWork->dsize_bytes + total_loaded;
+      if(input_data_ended)
+          input_data_end += 0x204;
+      
+      //
+      // Warning: The end of the buffer passed to "SortBuffer" is actually 2 bytes beyond
+      // valid data. It is questionable if this is actually a bug or not,
+      // but it might cause the compressed data output to be dependent on random bytes
+      // that are in the buffer. 
+      // To prevent that, the calling application must always zero the compression
+      // buffer before passing it to "implode"
+      //
 
-        // Search the PAIR_HASHes of the loaded blocks. Also, include
-        // previously compressed data, if any.
-        switch(phase)
-        {
-            case 0: 
-                SortBuffer(pWork, input_data, input_data_end + 1);
-                phase++;
-                if(pWork->dsize_bytes != 0x1000)
-                    phase++;
-                break;
+      // Search the PAIR_HASHes of the loaded blocks. Also, include
+      // previously compressed data, if any.
+      switch(phase)
+      {
+          case 0: 
+              SortBuffer(pWork, input_data, input_data_end + 1);
+              phase++;
+              if(pWork->dsize_bytes != 0x1000)
+                  phase++;
+              break;
 
-            case 1:
-                SortBuffer(pWork, input_data - pWork->dsize_bytes + 0x204, input_data_end + 1);
-                phase++;
-                break;
+          case 1:
+              SortBuffer(pWork, input_data - pWork->dsize_bytes + 0x204, input_data_end + 1);
+              phase++;
+              break;
 
-            default:
-                SortBuffer(pWork, input_data - pWork->dsize_bytes, input_data_end + 1);
-                break;
-        }
+          default:
+              SortBuffer(pWork, input_data - pWork->dsize_bytes, input_data_end + 1);
+              break;
+      }
 
-        // Perform the compression of the current block
-        while(input_data < input_data_end)
-        {
-            // Find if the current byte sequence wasn't there before.
-            rep_length = FindRep(pWork, input_data);
-            while(rep_length != 0)
-            {
-                // If we found repetition of 2 bytes, that is 0x100 or fuhrter back,
-                // don't bother. Storing the distance of 0x100 bytes would actually
-                // take more space than storing the 2 bytes as-is.
-                if(rep_length == 2 && pWork->distance >= 0x100)
-                    break;
+      // Perform the compression of the current block
+      while(input_data < input_data_end)
+      {
+          // Find if the current byte sequence wasn't there before.
+          rep_length = FindRep(pWork, input_data);
+          while(rep_length != 0)
+          {
+              // If we found repetition of 2 bytes, that is 0x100 or fuhrter back,
+              // don't bother. Storing the distance of 0x100 bytes would actually
+              // take more space than storing the 2 bytes as-is.
+              if(rep_length == 2 && pWork->distance >= 0x100)
+                  break;
 
-                // When we are at the end of the input data, we cannot allow
-                // the repetition to go past the end of the input data.
-                if(input_data_ended && input_data + rep_length > input_data_end)
-                {
-                    // Shorten the repetition length so that it only covers valid data
-                    rep_length = (unsigned long)(input_data_end - input_data);
-                    if(rep_length < 2)
-                        break;
+              // When we are at the end of the input data, we cannot allow
+              // the repetition to go past the end of the input data.
+              if(input_data_ended && input_data + rep_length > input_data_end)
+              {
+                  // Shorten the repetition length so that it only covers valid data
+                  rep_length = (unsigned long)(input_data_end - input_data);
+                  if(rep_length < 2)
+                      break;
 
-                    // If we got repetition of 2 bytes, that is 0x100 or more backward, don't bother
-                    if(rep_length == 2 && pWork->distance >= 0x100)
-                        break;
-                    goto __FlushRepetition;
-                }
+                  // If we got repetition of 2 bytes, that is 0x100 or more backward, don't bother
+                  if(rep_length == 2 && pWork->distance >= 0x100)
+                      break;
+                  goto __FlushRepetition;
+              }
 
-                if(rep_length >= 8 || input_data + 1 >= input_data_end)
-                    goto __FlushRepetition;
+              if(rep_length >= 8 || input_data + 1 >= input_data_end)
+                  goto __FlushRepetition;
 
-                // Try to find better repetition 1 byte later.
-                // Example: "ARROCKFORT" "AROCKFORT"
-                // When "input_data" points to the second string, FindRep
-                // returns the occurence of "AR". But there is longer repetition "ROCKFORT",
-                // beginning 1 byte after.
-                save_rep_length = rep_length;
-                save_distance = pWork->distance;
-                rep_length = FindRep(pWork, input_data + 1);
+              // Try to find better repetition 1 byte later.
+              // Example: "ARROCKFORT" "AROCKFORT"
+              // When "input_data" points to the second string, FindRep
+              // returns the occurence of "AR". But there is longer repetition "ROCKFORT",
+              // beginning 1 byte after.
+              save_rep_length = rep_length;
+              save_distance = pWork->distance;
+              rep_length = FindRep(pWork, input_data + 1);
 
-                // Only use the new repetition if it's length is greater than the previous one
-                if(rep_length > save_rep_length)
-                {
-                    // If the new repetition if only 1 byte better
-                    // and the previous distance is less than 0x80 bytes, use the previous repetition
-                    if(rep_length > save_rep_length + 1 || save_distance > 0x80)
-                    {
-                        // Flush one byte, so that input_data will point to the secondary repetition
-                        OutputBits(pWork, pWork->nChBits[*input_data], pWork->nChCodes[*input_data]);
-                        input_data++;
-                        continue;
-                    }
-                }
+              // Only use the new repetition if it's length is greater than the previous one
+              if(rep_length > save_rep_length)
+              {
+                  // If the new repetition if only 1 byte better
+                  // and the previous distance is less than 0x80 bytes, use the previous repetition
+                  if(rep_length > save_rep_length + 1 || save_distance > 0x80)
+                  {
+                      // Flush one byte, so that input_data will point to the secondary repetition
+                      OutputBits(pWork, pWork->nChBits[*input_data], pWork->nChCodes[*input_data]);
+                      input_data++;
+                      continue;
+                  }
+              }
 
-                // Revert to the previous repetition
-                rep_length = save_rep_length;
-                pWork->distance = save_distance;
+              // Revert to the previous repetition
+              rep_length = save_rep_length;
+              pWork->distance = save_distance;
 
-                __FlushRepetition:
+              __FlushRepetition:
 
-                OutputBits(pWork, pWork->nChBits[rep_length + 0xFE], pWork->nChCodes[rep_length + 0xFE]);
-                if(rep_length == 2)
-                {
-                    OutputBits(pWork, pWork->dist_bits[pWork->distance >> 2],
-                                      pWork->dist_codes[pWork->distance >> 2]);
-                    OutputBits(pWork, 2, pWork->distance & 3);
-                }
-                else
-                {
-                    OutputBits(pWork, pWork->dist_bits[pWork->distance >> pWork->dsize_bits],
-                                      pWork->dist_codes[pWork->distance >> pWork->dsize_bits]);
-                    OutputBits(pWork, pWork->dsize_bits, pWork->dsize_mask & pWork->distance);
-                }
+              OutputBits(pWork, pWork->nChBits[rep_length + 0xFE], pWork->nChCodes[rep_length + 0xFE]);
+              if(rep_length == 2)
+              {
+                  OutputBits(pWork, pWork->dist_bits[pWork->distance >> 2],
+                                    pWork->dist_codes[pWork->distance >> 2]);
+                  OutputBits(pWork, 2, pWork->distance & 3);
+              }
+              else
+              {
+                  OutputBits(pWork, pWork->dist_bits[pWork->distance >> pWork->dsize_bits],
+                                    pWork->dist_codes[pWork->distance >> pWork->dsize_bits]);
+                  OutputBits(pWork, pWork->dsize_bits, pWork->dsize_mask & pWork->distance);
+              }
 
-                // Move the begin of the input data by the length of the repetition
-                input_data += rep_length;
-                goto _00402252;
-            }
+              // Move the begin of the input data by the length of the repetition
+              input_data += rep_length;
+              goto _00402252;
+          }
 
-            // If there was no previous repetition for the current position in the input data,
-            // just output the 9-bit literal for the one character
-            OutputBits(pWork, pWork->nChBits[*input_data], pWork->nChCodes[*input_data]);
-            input_data++;
+          // If there was no previous repetition for the current position in the input data,
+          // just output the 9-bit literal for the one character
+          OutputBits(pWork, pWork->nChBits[*input_data], pWork->nChCodes[*input_data]);
+          input_data++;
 _00402252:;
-        }
+      }
 
-        if(input_data_ended == 0)
-        {
-            input_data -= 0x1000;
-            memmove(pWork->work_buff, pWork->work_buff + 0x1000, pWork->dsize_bytes + 0x204);
-        }
-    }
+      if(input_data_ended == 0)
+      {
+          input_data -= 0x1000;
+          memmove(pWork->work_buff, pWork->work_buff + 0x1000, pWork->dsize_bytes + 0x204);
+      }
+  }
 
 __Exit:
 
-    // Write the termination literal
-    OutputBits(pWork, pWork->nChBits[0x305], pWork->nChCodes[0x305]);
-    if(pWork->out_bits != 0)
-        pWork->out_bytes++;
-    pWork->write_buf(pWork->out_buff, &pWork->out_bytes, pWork->param);
-    return;
+  // Write the termination literal
+  OutputBits(pWork, pWork->nChBits[0x305], pWork->nChCodes[0x305]);
+  if(pWork->out_bits != 0)
+    pWork->out_bytes++;
+  pWork->write_buf(pWork->out_buff, &pWork->out_bytes, pWork->param);
+  */
 }
 
-//-----------------------------------------------------------------------------
-// Main imploding function
-
-unsigned int implode(
-    unsigned int (*read_buf)(char *buf, unsigned int *size, void *param),
-    void         (*write_buf)(char *buf, unsigned int *size, void *param),
-    char         *work_buf,
-    void         *param,
-    unsigned int *type,
-    unsigned int *dsize)
-{
-    TCmpStruct * pWork = (TCmpStruct *)work_buf;
-    unsigned int nChCode;
-    unsigned int nCount;
-    unsigned int i;
-    int nCount2;
-
-    // Fill the work buffer information
-    // Note: The caller must zero the "work_buff" before passing it to implode
-    pWork->read_buf    = read_buf;
-    pWork->write_buf   = write_buf;
-    pWork->dsize_bytes = *dsize;
-    pWork->ctype       = *type;
-    pWork->param       = param;
-    pWork->dsize_bits  = 4;
-    pWork->dsize_mask  = 0x0F;
-
-    // Test dictionary size
-    switch(*dsize)
-    {
-        case CMP_IMPLODE_DICT_SIZE3:    // 0x1000 bytes
-            pWork->dsize_bits++;
-            pWork->dsize_mask |= 0x20;
-            // No break here !!!
-
-        case CMP_IMPLODE_DICT_SIZE2:    // 0x800 bytes
-            pWork->dsize_bits++;
-            pWork->dsize_mask |= 0x10;
-            // No break here !!!
-
-        case CMP_IMPLODE_DICT_SIZE1:    // 0x400
-            break;
-
-        default:
-            return CMP_INVALID_DICTSIZE;
-    }
-
-    // Test the compression type
-    switch(*type)
-    {
-        case BINARY_COMPRESSION: // We will compress data with binary compression type
-            for(nChCode = 0, nCount = 0; nCount < 0x100; nCount++)
-            {
-                pWork->nChBits[nCount]  = 9;
-                pWork->nChCodes[nCount] = (unsigned short)nChCode;
-                nChCode = (nChCode & 0x0000FFFF) + 2;
-            }
-            break;
-
-
-        case ASCII_COMPRESSION: // We will compress data with ASCII compression type
-            for(nCount = 0; nCount < 0x100; nCount++)
-            {
-                pWork->nChBits[nCount]  = (unsigned char )(ChBitsAsc[nCount] + 1);
-                pWork->nChCodes[nCount] = (unsigned short)(ChCodeAsc[nCount] * 2);
-            }
-            break;
-
-        default:
-            return CMP_INVALID_MODE;
-    }
-
-    for(i = 0; i < 0x10; i++)
-    {
-        if(1 << ExLenBits[i])
-        {
-            for(nCount2 = 0; nCount2 < (1 << ExLenBits[i]); nCount2++)
-            {
-                pWork->nChBits[nCount]  = (unsigned char)(ExLenBits[i] + LenBits[i] + 1);
-                pWork->nChCodes[nCount] = (unsigned short)((nCount2 << (LenBits[i] + 1)) | ((LenCode[i] & 0xFFFF00FF) * 2) | 1);
-                nCount++;
-            }
-        }
-    }
-
-    // Copy the distance codes and distance bits and perform the compression
-    memcpy(&pWork->dist_codes, DistCode, sizeof(DistCode));
-    memcpy(&pWork->dist_bits, DistBits, sizeof(DistBits));
-    WriteCmpData(pWork);
-    return CMP_NO_ERROR;
-}
-*/
-
-const implode = () => {
+const implode = (read_buf, write_buf, type, dsize) => {
   const pWork = {
     distance:           0,
     out_bytes:          0,
     out_bits:           0,
-    dsize_bits:         0,
-    dsize_mask:         0,
-    ctype:              0,
-    dsize_bytes:        0,
-    dist_bits:          times(() => 0, 0x40),
-    dist_codes:         times(() => 0, 0x40),
-    nChBits:            times(() => 0, 0x306),
-    nChCodes:           times(() => 0, 0x306),
+    dsize_bits:         4,
+    dsize_mask:         0x0f,
+    ctype:              type,
+    dsize_bytes:        dsize,
+    dist_bits:          repeat(0, 0x40),
+    dist_codes:         repeat(0, 0x40),
+    nChBits:            repeat(0, 0x306),
+    nChCodes:           repeat(0, 0x306),
     offs09AE:           0,
-    read_buf:           '?',
-    write_buf:          '?',
-    offs09BC:           times(() => 0, 0x204),
+    read_buf:           read_buf,
+    write_buf:          write_buf,
+    offs09BC:           repeat(0, 0x204),
     offs0DC4:           0,
-    phash_to_index:     times(() => 0, 0x900),
+    phash_to_index:     repeat(0, 0x900),
     phash_to_index_end: 0,
-    out_buff:           times(() => 0, 0x802),
-    work_buff:          times(() => 0, 0x2204),
-    phash_offs:         times(() => 0, 0x2204)
+    out_buff:           repeat(0, 0x802),
+    work_buff:          repeat(0, 0x2204),
+    phash_offs:         repeat(0, 0x2204)
   }
+
+  // Test dictionary size
+  switch (dsize) {
+    case CMP_IMPLODE_DICT_SIZE3: // 0x1000 bytes
+      pWork.dsize_bits += 2
+      pWork.dsize_mask |= 0x30
+      break
+    case CMP_IMPLODE_DICT_SIZE2: // 0x800 bytes
+      pWork.dsize_bits++
+      pWork.dsize_mask |= 0x10
+      break
+    case CMP_IMPLODE_DICT_SIZE1: // 0x400
+      break
+    default:
+      return CMP_INVALID_DICTSIZE
+  }
+
+  let nCount
+
+  // Test the compression type
+  switch (type) {
+    case BINARY_COMPRESSION: // We will compress data with binary compression type
+      for(let nChCode = 0, nCount = 0; nCount < 0x100; nCount++) {
+        pWork.nChBits[nCount]  = 9
+        pWork.nChCodes[nCount] = nChCode
+        nChCode = (nChCode & 0x0000FFFF) + 2
+      }
+      break
+    case ASCII_COMPRESSION: // We will compress data with ASCII compression type
+      for(nCount = 0; nCount < 0x100; nCount++) {
+        pWork.nChBits[nCount]  = ChBitsAsc[nCount] + 1
+        pWork.nChCodes[nCount] = ChCodeAsc[nCount] * 2
+      }
+      break
+    default:
+      return CMP_INVALID_MODE
+  }
+
+  for (let i = 0; i < 0x10; i++) {
+    if (1 << ExLenBits[i]) {
+      for (let nCount2 = 0; nCount2 < (1 << ExLenBits[i]); nCount2++) {
+        pWork.nChBits[nCount]  = ExLenBits[i] + LenBits[i] + 1
+        pWork.nChCodes[nCount] = (nCount2 << (LenBits[i] + 1)) | ((LenCode[i] & 0xFFFF00FF) * 2) | 1
+        nCount++
+      }
+    }
+  }
+
+  // Copy the distance codes and distance bits and perform the compression
+  pWork.dist_codes = clone(DistCode)
+  pWork.dist_bits = clone(DistBits)
+  WriteCmpData(pWork)
+
+  return CMP_NO_ERROR
 }
 
 export default implode
