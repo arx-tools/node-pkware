@@ -174,11 +174,11 @@ static unsigned int DecodeLit(TDcmpStruct * pWork)
     {
         // Remove one bit from the input data
         if(WasteBits(pWork, 1))
-            return 0x306;   
-                      
+            return 0x306;
+
         // The next 8 bits hold the index to the length code table
         length_code = pWork->LengthCodes[pWork->bit_buff & 0xFF];
-        
+
         // Remove the apropriate number of bits
         if(WasteBits(pWork, pWork->LenBits[length_code]))
             return 0x306;
@@ -283,11 +283,12 @@ static unsigned int DecodeDist(TDcmpStruct * pWork, unsigned int rep_length)
     }
     return distance + 1;
 }
+*/
 
-static unsigned int Expand(TDcmpStruct * pWork)
-{
+const Expand = pWork => {
+  let result
+  /*
     unsigned int next_literal;         // Literal decoded from the compressed data
-    unsigned int result;               // Value to be returned
     unsigned int copyBytes;             // Number of bytes to copy to the output buffer
 
     pWork->outputPos = 0x1000;          // Initialize output buffer position
@@ -338,7 +339,7 @@ static unsigned int Expand(TDcmpStruct * pWork)
         {
             pWork->out_buff[pWork->outputPos++] = (unsigned char)next_literal;
         }
-    
+
         // Flush the output buffer, if number of extracted bytes has reached the end
         if(pWork->outputPos >= 0x2000)
         {
@@ -359,35 +360,35 @@ static unsigned int Expand(TDcmpStruct * pWork)
     // Flush any remaining decompressed bytes
     copyBytes = pWork->outputPos - 0x1000;
     pWork->write_buf((char *)&pWork->out_buff[0x1000], &copyBytes, pWork->param);
-    return result;
+    */
+  return result
 }
-*/
 
 const explode = (read_buf, write_buf) => {
   const pWork = {
-    ctype:        0,
-    outputPos:    0,
-    dsize_bits:   0,
-    dsize_mask:   0,
-    bit_buff:     0,
-    extra_bits:   0,
-    in_pos:       800,
-    in_bytes:     0,
-    read_buf:     read_buf,
-    write_buf:    write_buf,
-    out_buff:     repeat(0, 0x2204),
-    in_buff:      repeat(0, 0x800),
+    ctype: 0,
+    outputPos: 0,
+    dsize_bits: 0,
+    dsize_mask: 0,
+    bit_buff: 0,
+    extra_bits: 0,
+    in_pos: 800,
+    in_bytes: 0,
+    read_buf: read_buf,
+    write_buf: write_buf,
+    out_buff: repeat(0, 0x2204),
+    in_buff: repeat(0, 0x800),
     DistPosCodes: repeat(0, 0x100),
-    LengthCodes:  repeat(0, 0x100),
-    offs2C34:     repeat(0, 0x100),
-    offs2D34:     repeat(0, 0x100),
-    offs2E34:     repeat(0, 0x80),
-    offs2EB4:     repeat(0, 0x100),
-    ChBitsAsc:    repeat(0, 0x100),
-    DistBits:     repeat(0, 0x40),
-    LenBits:      repeat(0, 0x10),
-    ExLenBits:    repeat(0, 0x10),
-    LenBase:      repeat(0, 0x10)
+    LengthCodes: repeat(0, 0x100),
+    offs2C34: repeat(0, 0x100),
+    offs2D34: repeat(0, 0x100),
+    offs2E34: repeat(0, 0x80),
+    offs2EB4: repeat(0, 0x100),
+    ChBitsAsc: repeat(0, 0x100),
+    DistBits: repeat(0, 0x40),
+    LenBits: repeat(0, 0x10),
+    ExLenBits: repeat(0, 0x10),
+    LenBase: repeat(0, 0x10)
   }
 
   /*
@@ -404,7 +405,7 @@ const explode = (read_buf, write_buf) => {
   pWork->in_pos     = 3;                 // Position in input buffer
 
   // Test for the valid dictionary size
-  if(4 > pWork->dsize_bits || pWork->dsize_bits > 6) 
+  if(4 > pWork->dsize_bits || pWork->dsize_bits > 6)
       return CMP_INVALID_DICTSIZE;
 
   pWork->dsize_mask = 0xFFFF >> (0x10 - pWork->dsize_bits); // Shifted by 'sar' instruction
@@ -424,9 +425,11 @@ const explode = (read_buf, write_buf) => {
   memcpy(pWork->LenBase, LenBase, sizeof(pWork->LenBase));
   memcpy(pWork->DistBits, DistBits, sizeof(pWork->DistBits));
   GenDecodeTabs(pWork->DistPosCodes, DistCode, pWork->DistBits, sizeof(pWork->DistBits));
-  if(Expand(pWork) != 0x306)
-      return CMP_NO_ERROR;
   */
+
+  if (Expand(pWork) != 0x306) {
+    return CMP_NO_ERROR
+  }
 
   return CMP_ABORT
 }

@@ -1,7 +1,7 @@
 import fs from 'fs'
 import { EOL } from 'os'
 import through2 from 'through2'
-// import { implode, explode } from '../src/index.mjs'
+// import { implode, explode } from '../src/index.js'
 
 const toConsole = (chunk, encoding, callback) => {
   process.stdout.write(chunk)

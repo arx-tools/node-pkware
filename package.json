@@ -5,7 +5,9 @@
   "main": "src/index.mjs",
   "scripts": {
     "test": "node --experimental-modules --no-warnings test/index.mjs",
-    "test:watch": "nodemon --experimental-modules --no-warnings test/index.mjs --ext .mjs"
+    "test:watch": "nodemon --experimental-modules --no-warnings test/index.mjs --ext .mjs",
+    "lint": "eslint \"src/**/*.+(js|mjs)\"",
+    "lint:fix": "npm run lint:js -- --fix"
   },
   "repository": {
     "type": "git",
@@ -22,6 +24,12 @@
     "through2": "^3.0.1"
   },
   "devDependencies": {
+    "eslint": "^7.1.0",
+    "eslint-config-standard": "^14.1.1",
+    "eslint-plugin-import": "^2.20.2",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^4.0.1",
     "nodemon": "^2.0.4"
   }
 }
