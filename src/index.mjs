@@ -5,9 +5,4 @@ import explode from './explode.mjs'
 const compress = implode
 const decompress = explode
 
-export {
-  implode,
-  explode,
-  compress,
-  decompress
-}
+export { implode, explode, compress, decompress }

@@ -1,3 +1,5 @@
+/* eslint-disable camelcase, no-unused-vars */
+
 import { clone, repeat } from 'ramda'
 import {
   BINARY_COMPRESSION,
@@ -13,10 +15,10 @@ import {
   DistBits,
   LenBits,
   LenCode,
-  ExLenBits
+  ExLenBits,
 } from './common.mjs'
 
-const BYTE_PAIR_HASH = buffer => ((buffer[0] * 4) + (buffer[1] * 5))
+const BYTE_PAIR_HASH = (buffer) => buffer[0] * 4 + buffer[1] * 5
 
 /*
 //-----------------------------------------------------------------------------
@@ -391,7 +393,7 @@ static unsigned int FindRep(TCmpStruct * pWork, unsigned char * input_data)
 }
 */
 
-const WriteCmpData = pWork => {
+const WriteCmpData = (pWork) => {
   /*
   unsigned char * input_data_end;         // Pointer to the end of the input data
   unsigned char * input_data = pWork->work_buff + pWork->dsize_bytes + 0x204;
@@ -595,7 +597,7 @@ const implode = (read_buf, write_buf, type, dsize) => {
     phash_to_index_end: 0,
     out_buff: repeat(0, 0x802),
     work_buff: repeat(0, 0x2204),
-    phash_offs: repeat(0, 0x2204)
+    phash_offs: repeat(0, 0x2204),
   }
 
   /*
@@ -723,5 +725,7 @@ const implode = (read_buf, write_buf, type, dsize) => {
 
   return CMP_NO_ERROR
 }
+
+/* eslint-enable */
 
 export default implode

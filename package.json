@@ -7,7 +7,7 @@
     "test": "node --experimental-modules --no-warnings test/index.mjs",
     "test:watch": "nodemon --experimental-modules --no-warnings test/index.mjs --ext .mjs",
     "lint": "eslint \"src/**/*.+(js|mjs)\"",
-    "lint:fix": "npm run lint:js -- --fix",
+    "lint:fix": "npm run lint -- --fix",
     "unit": "mjs-mocha",
     "unit:watch": "nodemon --exec \"npx mjs-mocha\" --watch *.spec.mjs --watch *.test.mjs",
     "lint:staged": "lint-staged"
@@ -29,15 +29,21 @@
   "devDependencies": {
     "assert": "^2.0.0",
     "eslint": "^7.1.0",
+    "eslint-config-prettier": "^6.11.0",
+    "eslint-config-prettier-standard": "^3.0.1",
     "eslint-config-standard": "^14.1.1",
     "eslint-plugin-import": "^2.20.2",
     "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^3.1.3",
     "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-ramda": "^2.5.1",
     "eslint-plugin-standard": "^4.0.1",
     "lint-staged": "^10.2.9",
     "mjs-mocha": "^3.0.0",
     "nodemon": "^2.0.4",
-    "pre-commit": "^1.2.2"
+    "pre-commit": "^1.2.2",
+    "prettier": "^2.0.5",
+    "prettier-config-standard": "^1.0.1"
   },
   "pre-commit": [
     "lint:staged",

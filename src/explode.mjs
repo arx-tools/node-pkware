@@ -1,3 +1,5 @@
+/* eslint-disable camelcase, no-unused-vars */
+
 import { length, repeat } from 'ramda'
 import {
   BINARY_COMPRESSION,
@@ -19,7 +21,7 @@ import {
   ExLenBits,
   LenBase,
   ChBitsAsc,
-  ChCodeAsc
+  ChCodeAsc,
 } from './common.mjs'
 
 /*
@@ -285,7 +287,7 @@ static unsigned int DecodeDist(TDcmpStruct * pWork, unsigned int rep_length)
 }
 */
 
-const Expand = pWork => {
+const Expand = (pWork) => {
   let result
   /*
     unsigned int next_literal;         // Literal decoded from the compressed data
@@ -388,7 +390,7 @@ const explode = (read_buf, write_buf) => {
     DistBits: repeat(0, 0x40),
     LenBits: repeat(0, 0x10),
     ExLenBits: repeat(0, 0x10),
-    LenBase: repeat(0, 0x10)
+    LenBase: repeat(0, 0x10),
   }
 
   /*
@@ -427,11 +429,13 @@ const explode = (read_buf, write_buf) => {
   GenDecodeTabs(pWork->DistPosCodes, DistCode, pWork->DistBits, sizeof(pWork->DistBits));
   */
 
-  if (Expand(pWork) != 0x306) {
+  if (Expand(pWork) !== 0x306) {
     return CMP_NO_ERROR
   }
 
   return CMP_ABORT
 }
+
+/* eslint-enable */
 
 export default explode
