@@ -9,7 +9,8 @@
     "lint": "eslint \"src/**/*.+(js|mjs)\"",
     "lint:fix": "npm run lint:js -- --fix",
     "unit": "mjs-mocha",
-    "unit:watch": "nodemon --exec \"npx mjs-mocha\" --watch *.spec.mjs --watch *.test.mjs"
+    "unit:watch": "nodemon --exec \"npx mjs-mocha\" --watch *.spec.mjs --watch *.test.mjs",
+    "lint:staged": "lint-staged"
   },
   "repository": {
     "type": "git",
@@ -33,7 +34,16 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.1",
+    "lint-staged": "^10.2.9",
     "mjs-mocha": "^3.0.0",
-    "nodemon": "^2.0.4"
+    "nodemon": "^2.0.4",
+    "pre-commit": "^1.2.2"
+  },
+  "pre-commit": [
+    "lint:staged",
+    "unit"
+  ],
+  "lint-staged": {
+    "*.{js,mjs}": "eslint --fix"
   }
 }
