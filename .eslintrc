@@ -8,7 +8,14 @@
   ],
   "rules": {
     "prefer-template": "error",
-    "prettier/prettier": [ "error", { "printWidth": 120 } ],
+    "prettier/prettier": [
+      "error",
+      {
+        "semi": false,
+        "singleQuote": true,
+        "printWidth": 120
+      }
+    ],
     "no-var": "error",
     "prefer-const": "error",
     "import/no-unresolved": "error",
@@ -48,10 +55,16 @@
     "ramda/when-simplification": "error"
   },
   "settings": {
-    "import/extensions": [".mjs", ".js"],
+    "import/extensions": [
+      ".mjs",
+      ".js"
+    ],
     "import/resolver": {
       "node": {
-        "extensions": [".mjs", ".js"]
+        "extensions": [
+          ".mjs",
+          ".js"
+        ]
       }
     }
   }

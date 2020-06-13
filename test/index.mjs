@@ -10,14 +10,12 @@ const toConsole = (chunk, encoding, callback) => {
 }
 
 const turnEveryAtoZ = function (chunk, encoding, callback) {
-  callback(null, Buffer.from(
-    Array.from(chunk).map(char => char === 97 ? 122 : char)
-  ))
+  callback(null, Buffer.from(Array.from(chunk).map((char) => (char === 97 ? 122 : char))))
 }
 
 const test = () => {
   return new Promise((resolve, reject) => {
-    fs.createReadStream('./test/files/small.decomp')
+    fs.createReadStream('./test/files/small')
       .pipe(through2(toConsole))
       .pipe(through2(turnEveryAtoZ))
       .pipe(through2(toConsole))
@@ -30,6 +28,6 @@ test()
   .then(() => {
     console.log('OK')
   })
-  .catch(e => {
+  .catch((e) => {
     console.error('Something happened!', e)
   })

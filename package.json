@@ -8,8 +8,8 @@
     "test:watch": "nodemon --experimental-modules --no-warnings test/index.mjs --ext .mjs",
     "lint": "eslint \"src/**/*.+(js|mjs)\"",
     "lint:fix": "npm run lint -- --fix",
-    "unit": "mjs-mocha",
-    "unit:watch": "nodemon --exec \"npx mjs-mocha\" --watch *.spec.mjs --watch *.test.mjs",
+    "unit": "mocha --experimental-modules --no-warnings test/**/*.spec.mjs --timeout 5000",
+    "unit:watch": "nodemon --exec \"npm run unit\" --watch test/**/*.spec.mjs",
     "lint:staged": "lint-staged"
   },
   "repository": {
@@ -39,7 +39,7 @@
     "eslint-plugin-ramda": "^2.5.1",
     "eslint-plugin-standard": "^4.0.1",
     "lint-staged": "^10.2.9",
-    "mjs-mocha": "^3.0.0",
+    "mocha": "^8.0.1",
     "nodemon": "^2.0.4",
     "pre-commit": "^1.2.2",
     "prettier": "^2.0.5",
