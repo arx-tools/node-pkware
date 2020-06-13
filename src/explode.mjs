@@ -1,6 +1,6 @@
 /* eslint-disable camelcase, no-unused-vars */
 
-import { length, repeat } from 'ramda'
+import { length, repeat, clone } from '../node_modules/ramda/src/index.mjs'
 import {
   BINARY_COMPRESSION,
   ASCII_COMPRESSION,
@@ -22,6 +22,8 @@ import {
   LenBase,
   ChBitsAsc,
   ChCodeAsc,
+  getValueFromPointer,
+  copyPointer
 } from './common.mjs'
 
 /*
@@ -287,7 +289,7 @@ static unsigned int DecodeDist(TDcmpStruct * pWork, unsigned int rep_length)
 }
 */
 
-const Expand = (pWork) => {
+const Expand = pWork => {
   let result
   /*
     unsigned int next_literal;         // Literal decoded from the compressed data
@@ -376,8 +378,8 @@ const explode = (read_buf, write_buf) => {
     extra_bits: 0,
     in_pos: 800,
     in_bytes: 0,
-    read_buf: read_buf,
-    write_buf: write_buf,
+    read_buf, // copy pointer
+    write_buf, // also copy pointer
     out_buff: repeat(0, 0x2204),
     in_buff: repeat(0, 0x800),
     DistPosCodes: repeat(0, 0x100),
@@ -390,7 +392,7 @@ const explode = (read_buf, write_buf) => {
     DistBits: repeat(0, 0x40),
     LenBits: repeat(0, 0x10),
     ExLenBits: repeat(0, 0x10),
-    LenBase: repeat(0, 0x10),
+    LenBase: repeat(0, 0x10)
   }
 
   /*
@@ -420,8 +422,11 @@ const explode = (read_buf, write_buf) => {
       memcpy(pWork->ChBitsAsc, ChBitsAsc, sizeof(pWork->ChBitsAsc));
       GenAscTabs(pWork);
   }
+  */
 
-  memcpy(pWork->LenBits, LenBits, sizeof(pWork->LenBits));
+  pWork.LenBits = clone(LenBits)
+
+  /*
   GenDecodeTabs(pWork->LengthCodes, LenCode, pWork->LenBits, sizeof(pWork->LenBits));
   memcpy(pWork->ExLenBits, ExLenBits, sizeof(pWork->ExLenBits));
   memcpy(pWork->LenBase, LenBase, sizeof(pWork->LenBase));

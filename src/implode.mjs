@@ -1,6 +1,6 @@
 /* eslint-disable camelcase, no-unused-vars */
 
-import { clone, repeat } from 'ramda'
+import { clone, repeat } from '../node_modules/ramda/src/index.mjs'
 import {
   BINARY_COMPRESSION,
   ASCII_COMPRESSION,
@@ -16,9 +16,13 @@ import {
   LenBits,
   LenCode,
   ExLenBits,
+  ChBitsAsc,
+  ChCodeAsc,
+  getValueFromPointer,
+  copyPointer
 } from './common.mjs'
 
-const BYTE_PAIR_HASH = (buffer) => buffer[0] * 4 + buffer[1] * 5
+const BYTE_PAIR_HASH = buffer => buffer[0] * 4 + buffer[1] * 5
 
 /*
 //-----------------------------------------------------------------------------
@@ -28,7 +32,7 @@ const BYTE_PAIR_HASH = (buffer) => buffer[0] * 4 + buffer[1] * 5
 // Every element of "hash_to_index" will contain lowest index to the
 // "pair_hash_offsets" table, effectively giving offset of the first
 // occurence of the given PAIR_HASH in the input data.
-static void SortBuffer(TCmpStruct * pWork, unsigned char * buffer_begin, unsigned char * buffer_end)
+static void SortBuffer(pWork, unsigned char * buffer_begin, unsigned char * buffer_end)
 {
     unsigned short * phash_to_index;
     unsigned char  * buffer_ptr;
@@ -73,9 +77,10 @@ static void SortBuffer(TCmpStruct * pWork, unsigned char * buffer_begin, unsigne
         pWork->phash_offs[pWork->phash_to_index[byte_pair_hash]] = byte_pair_offs;
     }
 }
+*/
 
-static void FlushBuf(TCmpStruct * pWork)
-{
+const FlushBuf = pWork => {
+  /*
     unsigned char save_ch1;
     unsigned char save_ch2;
     unsigned int size = 0x800;
@@ -92,12 +97,12 @@ static void FlushBuf(TCmpStruct * pWork)
         pWork->out_buff[0] = save_ch1;
     if(pWork->out_bits != 0)
         pWork->out_buff[pWork->out_bytes] = save_ch2;
+    */
 }
 
-static void OutputBits(TCmpStruct * pWork, unsigned int nbits, unsigned long bit_buff)
-{
-    unsigned int out_bits;
-
+const OutputBits = (pWork, nbits, bit_buff) => {
+  let out_bits
+  /*
     // If more than 8 bits to output, do recursion
     if(nbits > 8)
     {
@@ -130,8 +135,10 @@ static void OutputBits(TCmpStruct * pWork, unsigned int nbits, unsigned long bit
     // If there is enough compressed bytes, flush them
     if(pWork->out_bytes >= 0x800)
         FlushBuf(pWork);
+    */
 }
 
+/*
 // This function searches for a repetition
 // (a previous occurence of the current byte sequence)
 // Returns length of the repetition, and stores the backward distance
@@ -160,9 +167,9 @@ static unsigned int FindRep(TCmpStruct * pWork, unsigned char * input_data)
 
     // If the PAIR_HASH offset is below the limit, find a next one
     phash_offs = pWork->phash_offs + phash_offs_index;
-    if(*phash_offs < min_phash_offs)
+    if(getValueFromPointer(phash_offs) < min_phash_offs)
     {
-        while(*phash_offs < min_phash_offs)
+        while(getValueFromPointer(phash_offs) < min_phash_offs)
         {
             phash_offs_index++;
             phash_offs++;
@@ -393,7 +400,7 @@ static unsigned int FindRep(TCmpStruct * pWork, unsigned char * input_data)
 }
 */
 
-const WriteCmpData = (pWork) => {
+const WriteCmpData = pWork => {
   /*
   unsigned char * input_data_end;         // Pointer to the end of the input data
   unsigned char * input_data = pWork->work_buff + pWork->dsize_bytes + 0x204;
@@ -582,74 +589,64 @@ const implode = (read_buf, write_buf, type, dsize) => {
     out_bits: 0,
     dsize_bits: 4,
     dsize_mask: 0x0f,
-    ctype: type,
-    dsize_bytes: dsize,
+    ctype: getValueFromPointer(type),
+    dsize_bytes: getValueFromPointer(dsize),
     dist_bits: repeat(0, 0x40),
     dist_codes: repeat(0, 0x40),
     nChBits: repeat(0, 0x306),
     nChCodes: repeat(0, 0x306),
     offs09AE: 0,
-    read_buf: read_buf,
-    write_buf: write_buf,
+    read_buf: copyPointer(read_buf),
+    write_buf: copyPointer(write_buf),
     offs09BC: repeat(0, 0x204),
     offs0DC4: 0,
     phash_to_index: repeat(0, 0x900),
     phash_to_index_end: 0,
     out_buff: repeat(0, 0x802),
     work_buff: repeat(0, 0x2204),
-    phash_offs: repeat(0, 0x2204),
+    phash_offs: repeat(0, 0x2204)
+  }
+
+  let nChCode
+  let nCount
+  let i
+  let nCount2
+
+  switch (getValueFromPointer(dsize)) {
+    case CMP_IMPLODE_DICT_SIZE3:
+      pWork.dsize_bits += 2
+      pWork.dsize_mask |= 0x30
+      break
+    case CMP_IMPLODE_DICT_SIZE2:
+      pWork.dsize_bits++
+      pWork.dsize_mask |= 0x10
+      break
+    case CMP_IMPLODE_DICT_SIZE1:
+      break
+    default:
+      return CMP_INVALID_DICTSIZE
+  }
+
+  switch (getValueFromPointer(type)) {
+    case BINARY_COMPRESSION:
+      for (nChCode = 0, nCount = 0; nCount < 0x100; nCount++) {
+        pWork.nChBits[nCount] = 9
+        pWork.nChCodes[nCount] = nChCode
+        nChCode = (nChCode & 0x0000ffff) + 2
+      }
+      break
+    case ASCII_COMPRESSION:
+      for (nCount = 0; nCount < 0x100; nCount++) {
+        pWork.nChBits[nCount] = ChBitsAsc[nCount] + 1
+        pWork.nChCodes[nCount] = ChCodeAsc[nCount] * 2
+      }
+      break
+
+    default:
+      return CMP_INVALID_MODE
   }
 
   /*
-  unsigned int nChCode;
-    unsigned int nCount;
-    unsigned int i;
-    int nCount2;
-
-    // Test dictionary size
-    switch(*dsize)
-    {
-        case CMP_IMPLODE_DICT_SIZE3:    // 0x1000 bytes
-            pWork->dsize_bits++;
-            pWork->dsize_mask |= 0x20;
-            // No break here !!!
-
-        case CMP_IMPLODE_DICT_SIZE2:    // 0x800 bytes
-            pWork->dsize_bits++;
-            pWork->dsize_mask |= 0x10;
-            // No break here !!!
-
-        case CMP_IMPLODE_DICT_SIZE1:    // 0x400
-            break;
-
-        default:
-            return CMP_INVALID_DICTSIZE;
-    }
-
-    // Test the compression type
-    switch(*type)
-    {
-        case CMP_BINARY: // We will compress data with binary compression type
-            for(nChCode = 0, nCount = 0; nCount < 0x100; nCount++)
-            {
-                pWork->nChBits[nCount]  = 9;
-                pWork->nChCodes[nCount] = (unsigned short)nChCode;
-                nChCode = (nChCode & 0x0000FFFF) + 2;
-            }
-            break;
-
-        case CMP_ASCII: // We will compress data with ASCII compression type
-            for(nCount = 0; nCount < 0x100; nCount++)
-            {
-                pWork->nChBits[nCount]  = (unsigned char )(ChBitsAsc[nCount] + 1);
-                pWork->nChCodes[nCount] = (unsigned short)(ChCodeAsc[nCount] * 2);
-            }
-            break;
-
-        default:
-            return CMP_INVALID_MODE;
-    }
-
     for(i = 0; i < 0x10; i++)
     {
         if(1 << ExLenBits[i])
@@ -662,66 +659,11 @@ const implode = (read_buf, write_buf, type, dsize) => {
             }
         }
     }
+    */
 
-    // Copy the distance codes and distance bits and perform the compression
-    memcpy(&pWork->dist_codes, DistCode, sizeof(DistCode));
-    memcpy(&pWork->dist_bits, DistBits, sizeof(DistBits));
-    WriteCmpData(pWork);
-  */
-
-  /*
-  // Test dictionary size
-  switch (dsize) {
-    case CMP_IMPLODE_DICT_SIZE3: // 0x1000 bytes
-      pWork.dsize_bits += 2
-      pWork.dsize_mask |= 0x30
-      break
-    case CMP_IMPLODE_DICT_SIZE2: // 0x800 bytes
-      pWork.dsize_bits++
-      pWork.dsize_mask |= 0x10
-      break
-    case CMP_IMPLODE_DICT_SIZE1: // 0x400
-      break
-    default:
-      return CMP_INVALID_DICTSIZE
-  }
-
-  let nCount
-
-  // Test the compression type
-  switch (type) {
-    case BINARY_COMPRESSION: // We will compress data with binary compression type
-      for(let nChCode = 0, nCount = 0; nCount < 0x100; nCount++) {
-        pWork.nChBits[nCount]  = 9
-        pWork.nChCodes[nCount] = nChCode
-        nChCode = (nChCode & 0x0000FFFF) + 2
-      }
-      break
-    case ASCII_COMPRESSION: // We will compress data with ASCII compression type
-      for(nCount = 0; nCount < 0x100; nCount++) {
-        pWork.nChBits[nCount]  = ChBitsAsc[nCount] + 1
-        pWork.nChCodes[nCount] = ChCodeAsc[nCount] * 2
-      }
-      break
-    default:
-      return CMP_INVALID_MODE
-  }
-
-  for (let i = 0; i < 0x10; i++) {
-    if (1 << ExLenBits[i]) {
-      for (let nCount2 = 0; nCount2 < (1 << ExLenBits[i]); nCount2++) {
-        pWork.nChBits[nCount]  = ExLenBits[i] + LenBits[i] + 1
-        pWork.nChCodes[nCount] = (nCount2 << (LenBits[i] + 1)) | ((LenCode[i] & 0xFFFF00FF) * 2) | 1
-        nCount++
-      }
-    }
-  }
-
-  // Copy the distance codes and distance bits and perform the compression
   pWork.dist_codes = clone(DistCode)
   pWork.dist_bits = clone(DistBits)
   WriteCmpData(pWork)
-  */
 
   return CMP_NO_ERROR
 }
