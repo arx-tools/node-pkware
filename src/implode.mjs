@@ -1,6 +1,6 @@
 /* eslint-disable camelcase, no-unused-vars */
 
-import { clone, repeat } from '../node_modules/ramda/src/index.mjs'
+import { clone, repeat, length } from '../node_modules/ramda/src/index.mjs'
 import {
   BINARY_COMPRESSION,
   ASCII_COMPRESSION,
@@ -19,15 +19,13 @@ import {
   ChBitsAsc,
   ChCodeAsc,
   getValueFromPointer,
-  copyPointer
+  copyPointer,
+  makePointerFrom
 } from './common.mjs'
 
 const BYTE_PAIR_HASH = buffer => buffer[0] * 4 + buffer[1] * 5
 
 /*
-//-----------------------------------------------------------------------------
-// Local functions
-
 // Builds the "hash_to_index" table and "pair_hash_offsets" table.
 // Every element of "hash_to_index" will contain lowest index to the
 // "pair_hash_offsets" table, effectively giving offset of the first
@@ -401,24 +399,22 @@ static unsigned int FindRep(TCmpStruct * pWork, unsigned char * input_data)
 */
 
 const WriteCmpData = pWork => {
+  const input_data_ended = 0
+  let save_rep_length
+  const save_distance = 0
+  let rep_length
+  const phase = 0
+
+  const input_data = makePointerFrom(pWork.work_buff, pWork.dsize_bytes + 0x204) // pointer
+  let input_data_end // pointer
+
+  pWork.out_buff = repeat(0, length(pWork.out_buff))
+  pWork.out_buff[0] = pWork.ctype
+  pWork.out_buff[1] = pWork.dsize_bits
+  pWork.out_bytes = 2
+  pWork.out_bits = 0
+
   /*
-  unsigned char * input_data_end;         // Pointer to the end of the input data
-  unsigned char * input_data = pWork->work_buff + pWork->dsize_bytes + 0x204;
-  unsigned int input_data_ended = 0;      // If 1, then all data from the input stream have been already loaded
-  unsigned int save_rep_length;           // Saved length of current repetition
-  unsigned int save_distance = 0;         // Saved distance of current repetition
-  unsigned int rep_length;                // Length of the found repetition
-  unsigned int phase = 0;                 //
-
-  // Store the compression type and dictionary size
-  pWork->out_buff[0] = (char)pWork->ctype;
-  pWork->out_buff[1] = (char)pWork->dsize_bits;
-  pWork->out_bytes = 2;
-
-  // Reset output buffer to zero
-  memset(&pWork->out_buff[2], 0, sizeof(pWork->out_buff) - 2);
-  pWork->out_bits = 0;
-
   while(input_data_ended == 0)
   {
       unsigned int bytes_to_load = 0x1000;

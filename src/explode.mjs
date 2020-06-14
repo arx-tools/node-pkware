@@ -24,7 +24,9 @@ import {
   ChCodeAsc,
   getValueFromPointer,
   copyPointer,
-  getAddressOfValue
+  getAddressOfValue,
+  makePointerFrom,
+  setValueToPointer
 } from './common.mjs'
 
 const GenDecodeTabs = (originalPositions, start_indexes, length_bits) => {
@@ -43,79 +45,60 @@ const GenDecodeTabs = (originalPositions, start_indexes, length_bits) => {
 }
 
 const GenAscTabs = pWork => {
-  let acc
-  let add
-  let count
+  const pChCodeAsc = copyPointer(ChCodeAsc[0xff]) // pointer
 
-  const pChCodeAsc = copyPointer(ChCodeAsc[0xff])
+  for (let count = 0x00ff; count >= 0; count--) {
+    const pChBitsAsc = makePointerFrom(pWork.ChBitsAsc, count) // pointer
+    let bits_asc = getValueFromPointer(pChBitsAsc)
 
-  /*
-    for(count = 0x00FF; pChCodeAsc >= ChCodeAsc; pChCodeAsc--, count--)
-    {
-        unsigned char * pChBitsAsc = pWork->ChBitsAsc + count;
-        unsigned char bits_asc = *pChBitsAsc;
+    let acc
+    let add
 
-        if(bits_asc <= 8)
-        {
-            add = (1 << bits_asc);
-            acc = *pChCodeAsc;
+    if (bits_asc <= 8) {
+      add = 1 << bits_asc
+      acc = getValueFromPointer(pChCodeAsc)
 
-            do
-            {
-                pWork->offs2C34[acc] = (unsigned char)count;
-                acc += add;
-            }
-            while(acc < 0x100);
-        }
-        else if((acc = (*pChCodeAsc & 0xFF)) != 0)
-        {
-            pWork->offs2C34[acc] = 0xFF;
+      do {
+        pWork.offs2C34[acc] = count
+        acc += add
+      } while (acc < 0x100)
+    } else if ((acc = getValueFromPointer(pChCodeAsc) & 0xff) !== 0) {
+      pWork.offs2C34[acc] = 0xff
 
-            if(*pChCodeAsc & 0x3F)
-            {
-                bits_asc -= 4;
-                *pChBitsAsc = bits_asc;
+      if (getValueFromPointer(pChCodeAsc) & 0x3f) {
+        bits_asc -= 4
+        setValueToPointer(pChBitsAsc, bits_asc)
+        add = 1 << bits_asc
 
-                add = (1 << bits_asc);
-                acc = *pChCodeAsc >> 4;
-                do
-                {
-                    pWork->offs2D34[acc] = (unsigned char)count;
-                    acc += add;
-                }
-                while(acc < 0x100);
-            }
-            else
-            {
-                bits_asc -= 6;
-                *pChBitsAsc = bits_asc;
+        acc = getValueFromPointer(pChCodeAsc) >> 4
+        do {
+          pWork.offs2D34[acc] = count
+          acc += add
+        } while (acc < 0x100)
+      } else {
+        bits_asc -= 6
+        setValueToPointer(pChBitsAsc, bits_asc)
+        add = 1 << bits_asc
 
-                add = (1 << bits_asc);
-                acc = *pChCodeAsc >> 6;
-                do
-                {
-                    pWork->offs2E34[acc] = (unsigned char)count;
-                    acc += add;
-                }
-                while(acc < 0x80);
-            }
-        }
-        else
-        {
-            bits_asc -= 8;
-            *pChBitsAsc = bits_asc;
+        acc = getValueFromPointer(pChCodeAsc) >> 6
+        do {
+          pWork.offs2E34[acc] = count
+          acc += add
+        } while (acc < 0x80)
+      }
+    } else {
+      bits_asc -= 8
+      setValueToPointer(pChBitsAsc, bits_asc)
+      add = 1 << bits_asc
 
-            add = (1 << bits_asc);
-            acc = *pChCodeAsc >> 8;
-            do
-            {
-                pWork->offs2EB4[acc] = (unsigned char)count;
-                acc += add;
-            }
-            while(acc < 0x100);
-        }
+      acc = getValueFromPointer(pChCodeAsc) >> 8
+
+      do {
+        pWork.offs2EB4[acc] = count
+        acc += add
+      } while (acc < 0x100)
     }
-    */
+  }
 }
 
 /*

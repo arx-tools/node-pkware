@@ -117,3 +117,5 @@ export const ChCodeAsc = [
 export const getValueFromPointer = x => x
 export const copyPointer = x => x
 export const getAddressOfValue = x => x
+export const makePointerFrom = (startAddress, additions = 0) => startAddress[additions]
+export const setValueToPointer = (pointer, newValue) => {}
