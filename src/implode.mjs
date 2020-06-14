@@ -88,30 +88,29 @@ const FlushBuf = pWork => {
     save_ch1 = pWork->out_buff[0x800];
     save_ch2 = pWork->out_buff[pWork->out_bytes];
     pWork->out_bytes -= 0x800;
-
-    memset(pWork->out_buff, 0, sizeof(pWork->out_buff));
-
-    if(pWork->out_bytes != 0)
-        pWork->out_buff[0] = save_ch1;
-    if(pWork->out_bits != 0)
-        pWork->out_buff[pWork->out_bytes] = save_ch2;
     */
+
+  pWork.out_buff = repeat(0, length(pWork.out_buff))
+
+  if (pWork.out_bytes !== 0) {
+    pWork.out_buff[0] = save_ch1
+  }
+  if (pWork.out_bits !== 0) {
+    pWork.out_buff[pWork.out_bytes] = save_ch2
+  }
 }
 
 const OutputBits = (pWork, nbits, bit_buff) => {
-  let out_bits
-  /*
-    // If more than 8 bits to output, do recursion
-    if(nbits > 8)
-    {
-        OutputBits(pWork, 8, bit_buff);
-        bit_buff >>= 8;
-        nbits -= 8;
-    }
+  if (nbits > 8) {
+    OutputBits(pWork, 8, bit_buff)
+    bit_buff >>= 8
+    nbits -= 8
+  }
 
-    // Add bits to the last out byte in out_buff;
-    out_bits = pWork->out_bits;
-    pWork->out_buff[pWork->out_bytes] |= (unsigned char)(bit_buff << out_bits);
+  const out_bits = pWork.out_bits
+  pWork.out_buff[pWork.out_bytes] |= bit_buff << out_bits
+
+  /*
     pWork->out_bits += nbits;
 
     // If 8 or more bits, increment number of bytes

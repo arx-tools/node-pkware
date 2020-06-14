@@ -101,106 +101,71 @@ const GenAscTabs = pWork => {
   }
 }
 
-/*
-//-----------------------------------------------------------------------------
-// Removes given number of bits in the bit buffer. New bits are reloaded from
-// the input buffer, if needed.
-// Returns: PKDCL_OK:         Operation was successful
-//          PKDCL_STREAM_END: There are no more bits in the input buffer
+const WasteBits = (pWork, nBits) => {
+  if (nBits <= pWork.extra_bits) {
+    pWork.extra_bits -= nBits
+    pWork.bit_buff >>= nBits
+    return PKDCL_OK
+  }
 
-static int WasteBits(TDcmpStruct * pWork, unsigned int nBits)
-{
-    // If number of bits required is less than number of (bits in the buffer) ?
-    if(nBits <= pWork->extra_bits)
-    {
-        pWork->extra_bits -= nBits;
-        pWork->bit_buff  >>= nBits;
-        return PKDCL_OK;
+  pWork.bit_buff >>= pWork.extra_bits
+  if (pWork.in_pos === pWork.in_bytes) {
+    pWork.in_pos = length(pWork.in_buff)
+    if ((pWork.in_bytes = pWork.read_buf(getValueFromPointer(pWork.in_buff), copyPointer(pWork.in_pos))) === 0) {
+      return PKDCL_STREAM_END
     }
+    pWork.in_pos = 0
+  }
 
-    // Load input buffer if necessary
-    pWork->bit_buff >>= pWork->extra_bits;
-    if(pWork->in_pos == pWork->in_bytes)
-    {
-        pWork->in_pos = sizeof(pWork->in_buff);
-        if((pWork->in_bytes = pWork->read_buf((char *)pWork->in_buff, &pWork->in_pos, pWork->param)) == 0)
-            return PKDCL_STREAM_END;
-        pWork->in_pos = 0;
-    }
-
-    // Update bit buffer
-    pWork->bit_buff  |= (pWork->in_buff[pWork->in_pos++] << 8);
-    pWork->bit_buff >>= (nBits - pWork->extra_bits);
-    pWork->extra_bits = (pWork->extra_bits - nBits) + 8;
-    return PKDCL_OK;
+  pWork.bit_buff |= pWork.in_buff[pWork.in_pos++] << 8
+  pWork.bit_buff >>= nBits - pWork.extra_bits
+  pWork.extra_bits = pWork.extra_bits - nBits + 8
+  return PKDCL_OK
 }
 
-//-----------------------------------------------------------------------------
-// Decodes next literal from the input (compressed) data.
-// Returns : 0x000: One byte 0x00
-//           0x001: One byte 0x01
-//           ...
-//           0x0FF: One byte 0xFF
-//           0x100: Repetition, length of 0x02 bytes
-//           0x101: Repetition, length of 0x03 bytes
-//           ...
-//           0x304: Repetition, length of 0x206 bytes
-//           0x305: End of stream
-//           0x306: Error
+const DecodeLit = pWork => {
+  let extra_length_bits
+  let length_code
+  let value
 
-static unsigned int DecodeLit(TDcmpStruct * pWork)
-{
-    unsigned int extra_length_bits;    // Number of bits of extra literal length
-    unsigned int length_code;          // Length code
-    unsigned int value;
+  if (pWork.bit_buff & 1) {
+    if (WasteBits(pWork, 1)) {
+      return 0x306
+    }
 
-    // Test the current bit in byte buffer. If is not set, simply return the next 8 bits.
-    if(pWork->bit_buff & 1)
-    {
-        // Remove one bit from the input data
-        if(WasteBits(pWork, 1))
-            return 0x306;
+    length_code = pWork.LengthCodes[pWork.bit_buff & 0xff]
 
-        // The next 8 bits hold the index to the length code table
-        length_code = pWork->LengthCodes[pWork->bit_buff & 0xFF];
+    if (WasteBits(pWork, pWork.LenBits[length_code])) {
+      return 0x306
+    }
 
-        // Remove the apropriate number of bits
-        if(WasteBits(pWork, pWork->LenBits[length_code]))
-            return 0x306;
+    if ((extra_length_bits = pWork.ExLenBits[length_code]) !== 0) {
+      const extra_length = pWork.bit_buff & ((1 << extra_length_bits) - 1)
 
-        // Are there some extra bits for the obtained length code ?
-        if((extra_length_bits = pWork->ExLenBits[length_code]) != 0)
-        {
-            unsigned int extra_length = pWork->bit_buff & ((1 << extra_length_bits) - 1);
-
-            if(WasteBits(pWork, extra_length_bits))
-            {
-                if((length_code + extra_length) != 0x10E)
-                    return 0x306;
-            }
-            length_code = pWork->LenBase[length_code] + extra_length;
+      if (WasteBits(pWork, extra_length_bits)) {
+        if (length_code + extra_length !== 0x10e) {
+          return 0x306
         }
-
-        // In order to distinguish uncompressed byte from repetition length,
-        // we have to add 0x100 to the length.
-        return length_code + 0x100;
+      }
+      length_code = pWork.LenBase[length_code] + extra_length
     }
+    return length_code + 0x100
+  }
 
-    // Remove one bit from the input data
-    if(WasteBits(pWork, 1))
-        return 0x306;
+  if (WasteBits(pWork, 1)) {
+    return 0x306
+  }
 
-    // If the binary compression type, read 8 bits and return them as one byte.
-    if(pWork->ctype == CMP_BINARY)
-    {
-        unsigned int uncompressed_byte = pWork->bit_buff & 0xFF;
+  if (pWork.ctype === BINARY_COMPRESSION) {
+    const uncompressed_byte = pWork.bit_buff & 0xff
 
-        if(WasteBits(pWork, 8))
-            return 0x306;
-        return uncompressed_byte;
+    if (WasteBits(pWork, 8)) {
+      return 0x306
     }
+    return uncompressed_byte
+  }
 
-    // When ASCII compression ...
+  /*
     if(pWork->bit_buff & 0xFF)
     {
         value = pWork->offs2C34[pWork->bit_buff & 0xFF];
@@ -232,38 +197,31 @@ static unsigned int DecodeLit(TDcmpStruct * pWork)
     }
 
     return WasteBits(pWork, pWork->ChBitsAsc[value]) ? 0x306 : value;
+    */
 }
-*/
 
 const DecodeDist = (pWork, rep_length) => {
-  let dist_pos_code
-  let dist_pos_bits
   let distance
 
-  /*
-    // Next 2-8 bits in the input buffer is the distance position code
-    dist_pos_code = pWork->DistPosCodes[pWork->bit_buff & 0xFF];
-    dist_pos_bits = pWork->DistBits[dist_pos_code];
-    if(WasteBits(pWork, dist_pos_bits))
-        return 0;
+  const dist_pos_code = pWork.DistPosCodes[pWork.bit_buff & 0xff]
+  const dist_pos_bits = pWork.DistBits[dist_pos_code]
 
-    if(rep_length == 2)
-    {
-        // If the repetition is only 2 bytes length,
-        // then take 2 bits from the stream in order to get the distance
-        distance = (dist_pos_code << 2) | (pWork->bit_buff & 0x03);
-        if(WasteBits(pWork, 2))
-            return 0;
+  if (WasteBits(pWork, dist_pos_bits)) {
+    return 0
+  }
+
+  if (rep_length === 2) {
+    distance = (dist_pos_code << 2) | (pWork.bit_buff & 0x03)
+    if (WasteBits(pWork, 2)) {
+      return 0
     }
-    else
-    {
-        // If the repetition is more than 2 bytes length,
-        // then take "dsize_bits" bits in order to get the distance
-        distance = (dist_pos_code << pWork->dsize_bits) | (pWork->bit_buff & pWork->dsize_mask);
-        if(WasteBits(pWork, pWork->dsize_bits))
-            return 0;
+  } else {
+    distance = (dist_pos_code << pWork.dsize_bits) | (pWork.bit_buff & pWork.dsize_mask)
+    if (WasteBits(pWork, pWork.dsize_bits)) {
+      return 0
     }
-    */
+  }
+
   return distance + 1
 }
 
@@ -275,10 +233,6 @@ const Expand = pWork => {
   pWork.outputPos = 0x1000
 
   /*
-    // Decode the next literal from the input data.
-    // The returned literal can either be an uncompressed byte (next_literal < 0x100)
-    // or an encoded length of the repeating byte sequence that
-    // is to be copied to the current buffer position
     while((result = next_literal = DecodeLit(pWork)) < 0x305)
     {
         // If the literal is greater than 0x100, it holds length
