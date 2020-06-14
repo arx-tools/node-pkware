@@ -116,3 +116,4 @@ export const ChCodeAsc = [
 // with meaningful labels
 export const getValueFromPointer = x => x
 export const copyPointer = x => x
+export const getAddressOfValue = x => x
