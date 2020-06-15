@@ -20,16 +20,13 @@ import {
   ChCodeAsc,
   getValueFromPointer,
   copyPointer,
-  makePointerFrom
+  makePointerFrom,
+  getAddressOfValue
 } from './common.mjs'
 
 const BYTE_PAIR_HASH = buffer => buffer[0] * 4 + buffer[1] * 5
 
 /*
-// Builds the "hash_to_index" table and "pair_hash_offsets" table.
-// Every element of "hash_to_index" will contain lowest index to the
-// "pair_hash_offsets" table, effectively giving offset of the first
-// occurence of the given PAIR_HASH in the input data.
 static void SortBuffer(pWork, unsigned char * buffer_begin, unsigned char * buffer_end)
 {
     unsigned short * phash_to_index;
@@ -78,17 +75,13 @@ static void SortBuffer(pWork, unsigned char * buffer_begin, unsigned char * buff
 */
 
 const FlushBuf = pWork => {
-  let save_ch1
-  let save_ch2
   const size = 0x800
 
-  /*
-    pWork->write_buf(pWork->out_buff, &size, pWork->param);
+  pWork.write_buf(pWork.out_buff, getAddressOfValue(size))
 
-    save_ch1 = pWork->out_buff[0x800];
-    save_ch2 = pWork->out_buff[pWork->out_bytes];
-    pWork->out_bytes -= 0x800;
-    */
+  const save_ch1 = pWork.out_buff[0x800]
+  const save_ch2 = pWork.out_buff[pWork.out_bytes]
+  pWork.out_bytes -= 0x800
 
   pWork.out_buff = repeat(0, length(pWork.out_buff))
 
@@ -110,36 +103,28 @@ const OutputBits = (pWork, nbits, bit_buff) => {
   const out_bits = pWork.out_bits
   pWork.out_buff[pWork.out_bytes] |= bit_buff << out_bits
 
-  /*
-    pWork->out_bits += nbits;
+  pWork.out_bits += nbits
 
-    // If 8 or more bits, increment number of bytes
-    if(pWork->out_bits > 8)
-    {
-        pWork->out_bytes++;
-        bit_buff >>= (8 - out_bits);
+  // If 8 or more bits, increment number of bytes
+  if (pWork.out_bits > 8) {
+    pWork.out_bytes++
+    bit_buff >>= 8 - out_bits
 
-        pWork->out_buff[pWork->out_bytes] = (unsigned char)bit_buff;
-        pWork->out_bits &= 7;
+    pWork.out_buff[pWork.out_bytes] = bit_buff
+    pWork.out_bits &= 7
+  } else {
+    pWork.out_bits &= 7
+    if (pWork.out_bits === 0) {
+      pWork.out_bytes++
     }
-    else
-    {
-        pWork->out_bits &= 7;
-        if(pWork->out_bits == 0)
-            pWork->out_bytes++;
-    }
+  }
 
-    // If there is enough compressed bytes, flush them
-    if(pWork->out_bytes >= 0x800)
-        FlushBuf(pWork);
-    */
+  if (pWork.out_bytes >= 0x800) {
+    FlushBuf(pWork)
+  }
 }
 
 /*
-// This function searches for a repetition
-// (a previous occurence of the current byte sequence)
-// Returns length of the repetition, and stores the backward distance
-// to pWork structure.
 static unsigned int FindRep(TCmpStruct * pWork, unsigned char * input_data)
 {
     unsigned short * phash_to_index;            // Pointer into pWork->phash_to_index table
@@ -398,7 +383,7 @@ static unsigned int FindRep(TCmpStruct * pWork, unsigned char * input_data)
 */
 
 const WriteCmpData = pWork => {
-  const input_data_ended = 0
+  let input_data_ended = 0
   let save_rep_length
   const save_distance = 0
   let rep_length
@@ -413,37 +398,36 @@ const WriteCmpData = pWork => {
   pWork.out_bytes = 2
   pWork.out_bits = 0
 
-  /*
-  while(input_data_ended == 0)
-  {
-      unsigned int bytes_to_load = 0x1000;
-      int total_loaded = 0;
-      int bytes_loaded;
+  while (input_data_ended === 0) {
+    let bytes_to_load = 0x1000
+    let total_loaded = 0
+    let bytes_loaded
 
-      // Load the bytes from the input stream, up to 0x1000 bytes
-      while(bytes_to_load != 0)
-      {
-          bytes_loaded = pWork->read_buf((char *)pWork->work_buff + pWork->dsize_bytes + 0x204 + total_loaded,
-                                                &bytes_to_load,
-                                                  pWork->param);
-          if(bytes_loaded == 0)
-          {
-              if(total_loaded == 0 && phase == 0)
-                  goto __Exit;
-              input_data_ended = 1;
-              break;
-          }
-          else
-          {
-              bytes_to_load -= bytes_loaded;
-              total_loaded += bytes_loaded;
-          }
+    // Load the bytes from the input stream, up to 0x1000 bytes
+    while (bytes_to_load !== 0) {
+      bytes_loaded = pWork.read_buf(
+        makePointerFrom(pWork.work_buff, pWork.dsize_bytes + 0x204 + total_loaded),
+        getAddressOfValue(bytes_to_load)
+      )
+
+      if (bytes_loaded === 0) {
+        if (total_loaded === 0 && phase === 0)
+          /*
+            goto __Exit;
+          */
+          input_data_ended = 1
+        break
+      } else {
+        bytes_to_load -= bytes_loaded
+        total_loaded += bytes_loaded
       }
+    }
 
-      input_data_end = pWork->work_buff + pWork->dsize_bytes + total_loaded;
-      if(input_data_ended)
-          input_data_end += 0x204;
-
+    /*
+    input_data_end = pWork->work_buff + pWork->dsize_bytes + total_loaded;
+    if(input_data_ended)
+    input_data_end += 0x204;
+    
       //
       // Warning: The end of the buffer passed to "SortBuffer" is actually 2 bytes beyond
       // valid data. It is questionable if this is actually a bug or not,
@@ -565,16 +549,19 @@ _00402252:;
           input_data -= 0x1000;
           memmove(pWork->work_buff, pWork->work_buff + 0x1000, pWork->dsize_bytes + 0x204);
       }
+      */
   }
 
-__Exit:
-
-  // Write the termination literal
-  OutputBits(pWork, pWork->nChBits[0x305], pWork->nChCodes[0x305]);
-  if(pWork->out_bits != 0)
-    pWork->out_bytes++;
-  pWork->write_buf(pWork->out_buff, &pWork->out_bytes, pWork->param);
+  /*
+  __Exit:
   */
+
+  OutputBits(pWork, pWork.nChBits[0x305], pWork.nChCodes[0x305])
+
+  if (pWork.out_bits !== 0) {
+    pWork.out_bytes++
+  }
+  pWork.write_buf(pWork.out_buff, getAddressOfValue(pWork.out_bytes))
 }
 
 const implode = (read_buf, write_buf, type, dsize) => {

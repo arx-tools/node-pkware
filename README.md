@@ -14,7 +14,7 @@ helpful links:
 ```c
 int value = 12; // set a value to a variable
 
-int *pointerToValue = &value; // get the address for a variable and store it in a pointer
+int *pointerToValue = &value; // get the address for a variable
 
 int *anotherPointer = pointerToValue; // copy a pointer
 
