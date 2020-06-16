@@ -26,9 +26,9 @@ import {
 
 const BYTE_PAIR_HASH = buffer => buffer[0] * 4 + buffer[1] * 5
 
-/*
-static void SortBuffer(pWork, unsigned char * buffer_begin, unsigned char * buffer_end)
-{
+const SortBuffer = (pWork, buffer_begin, buffer_end) => {
+  // buffer_begin and buffer_end are pointers
+  /*
     unsigned short * phash_to_index;
     unsigned char  * buffer_ptr;
     unsigned short total_sum = 0;
@@ -71,8 +71,8 @@ static void SortBuffer(pWork, unsigned char * buffer_begin, unsigned char * buff
         pWork->phash_to_index[byte_pair_hash]--;
         pWork->phash_offs[pWork->phash_to_index[byte_pair_hash]] = byte_pair_offs;
     }
+    */
 }
-*/
 
 const FlushBuf = pWork => {
   const size = 0x800
@@ -387,7 +387,7 @@ const WriteCmpData = pWork => {
   let save_rep_length
   const save_distance = 0
   let rep_length
-  const phase = 0
+  let phase = 0
 
   const input_data = makePointerFrom(pWork.work_buff, pWork.dsize_bytes + 0x204) // pointer
   let input_data_end // pointer
@@ -411,11 +411,12 @@ const WriteCmpData = pWork => {
       )
 
       if (bytes_loaded === 0) {
-        if (total_loaded === 0 && phase === 0)
+        if (total_loaded === 0 && phase === 0) {
           /*
             goto __Exit;
           */
           input_data_ended = 1
+        }
         break
       } else {
         bytes_to_load -= bytes_loaded
@@ -423,41 +424,29 @@ const WriteCmpData = pWork => {
       }
     }
 
+    input_data_end = pWork.work_buff + pWork.dsize_bytes + total_loaded
+    if (input_data_ended) {
+      input_data_end += 0x204
+    }
+
+    switch (phase) {
+      case 0:
+        SortBuffer(pWork, input_data, input_data_end + 1)
+        phase++
+        if (pWork.dsize_bytes !== 0x1000) {
+          phase++
+        }
+        break
+      case 1:
+        SortBuffer(pWork, input_data - pWork.dsize_bytes + 0x204, input_data_end + 1)
+        phase++
+        break
+      default:
+        SortBuffer(pWork, input_data - pWork.dsize_bytes, input_data_end + 1)
+        break
+    }
+
     /*
-    input_data_end = pWork->work_buff + pWork->dsize_bytes + total_loaded;
-    if(input_data_ended)
-    input_data_end += 0x204;
-    
-      //
-      // Warning: The end of the buffer passed to "SortBuffer" is actually 2 bytes beyond
-      // valid data. It is questionable if this is actually a bug or not,
-      // but it might cause the compressed data output to be dependent on random bytes
-      // that are in the buffer.
-      // To prevent that, the calling application must always zero the compression
-      // buffer before passing it to "implode"
-      //
-
-      // Search the PAIR_HASHes of the loaded blocks. Also, include
-      // previously compressed data, if any.
-      switch(phase)
-      {
-          case 0:
-              SortBuffer(pWork, input_data, input_data_end + 1);
-              phase++;
-              if(pWork->dsize_bytes != 0x1000)
-                  phase++;
-              break;
-
-          case 1:
-              SortBuffer(pWork, input_data - pWork->dsize_bytes + 0x204, input_data_end + 1);
-              phase++;
-              break;
-
-          default:
-              SortBuffer(pWork, input_data - pWork->dsize_bytes, input_data_end + 1);
-              break;
-      }
-
       // Perform the compression of the current block
       while(input_data < input_data_end)
       {

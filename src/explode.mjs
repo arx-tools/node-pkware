@@ -11,9 +11,6 @@ import {
   CMP_ABORT,
   PKDCL_OK,
   PKDCL_STREAM_END,
-  PKDCL_NEED_DICT,
-  PKDCL_CONTINUE,
-  PKDCL_GET_INPUT,
   DistCode,
   DistBits,
   LenBits,
@@ -165,39 +162,33 @@ const DecodeLit = pWork => {
     return uncompressed_byte
   }
 
-  /*
-    if(pWork->bit_buff & 0xFF)
-    {
-        value = pWork->offs2C34[pWork->bit_buff & 0xFF];
+  if (pWork.bit_buff & 0xff) {
+    value = pWork.offs2C34[pWork.bit_buff & 0xff]
 
-        if(value == 0xFF)
-        {
-            if(pWork->bit_buff & 0x3F)
-            {
-                if(WasteBits(pWork, 4))
-                    return 0x306;
-
-                value = pWork->offs2D34[pWork->bit_buff & 0xFF];
-            }
-            else
-            {
-                if(WasteBits(pWork, 6))
-                    return 0x306;
-
-                value = pWork->offs2E34[pWork->bit_buff & 0x7F];
-            }
+    if (value === 0xff) {
+      if (pWork.bit_buff & 0x3f) {
+        if (WasteBits(pWork, 4)) {
+          return 0x306
         }
-    }
-    else
-    {
-        if(WasteBits(pWork, 8))
-            return 0x306;
 
-        value = pWork->offs2EB4[pWork->bit_buff & 0xFF];
+        value = pWork.offs2D34[pWork.bit_buff & 0xff]
+      } else {
+        if (WasteBits(pWork, 6)) {
+          return 0x306
+        }
+
+        value = pWork.offs2E34[pWork.bit_buff & 0x7f]
+      }
+    }
+  } else {
+    if (WasteBits(pWork, 8)) {
+      return 0x306
     }
 
-    return WasteBits(pWork, pWork->ChBitsAsc[value]) ? 0x306 : value;
-    */
+    value = pWork.offs2EB4[pWork.bit_buff & 0xff]
+  }
+
+  return WasteBits(pWork, pWork.ChBitsAsc[value]) ? 0x306 : value
 }
 
 const DecodeDist = (pWork, rep_length) => {
