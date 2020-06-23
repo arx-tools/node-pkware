@@ -23,7 +23,8 @@ import {
   copyPointer,
   getAddressOfValue,
   makePointerFrom,
-  setValueToPointer
+  setValueToPointer,
+  toByteArray
 } from './common.mjs'
 
 const GenDecodeTabs = (originalPositions, start_indexes, length_bits) => {
@@ -223,71 +224,53 @@ const Expand = pWork => {
 
   pWork.outputPos = 0x1000
 
-  /*
-    while((result = next_literal = DecodeLit(pWork)) < 0x305)
-    {
-        // If the literal is greater than 0x100, it holds length
-        // of repeating byte sequence
-        // literal of 0x100 means repeating sequence of 0x2 bytes
-        // literal of 0x101 means repeating sequence of 0x3 bytes
-        // ...
-        // literal of 0x305 means repeating sequence of 0x207 bytes
-        if(next_literal >= 0x100)
-        {
-            unsigned char * source;
-            unsigned char * target;
-            unsigned int rep_length;       // Length of the repetition, in bytes
-            unsigned int minus_dist;       // Backward distance to the repetition, relative to the current buffer position
+  // ----------------------
 
-            // Get the length of the repeating sequence.
-            // Note that the repeating block may overlap the current output position,
-            // for example if there was a sequence of equal bytes
-            rep_length = next_literal - 0xFE;
+  while ((result = next_literal = DecodeLit(pWork)) < 0x305) {
+    if (next_literal >= 0x100) {
+      let rep_length
+      let minus_dist
 
-            // Get backward distance to the repetition
-            if((minus_dist = DecodeDist(pWork, rep_length)) == 0)
-            {
-                result = 0x306;
-                break;
-            }
+      rep_length = next_literal - 0xfe
 
-            // Target and source pointer
-            target = &pWork->out_buff[pWork->outputPos];
-            source = target - minus_dist;
+      if ((minus_dist = DecodeDist(pWork, rep_length)) === 0) {
+        result = 0x306
+        break
+      }
 
-            // Update buffer output position
-            pWork->outputPos += rep_length;
+      const target = copyPointer(pWork.out_buff[pWork.outputPos]) // pointer!
+      const source = makePointerFrom(target, -minus_dist) // pointer!
 
-            // Copy the repeating sequence
-            while(rep_length-- > 0)
-                *target++ = *source++;
-        }
-        else
-        {
-            pWork->out_buff[pWork->outputPos++] = (unsigned char)next_literal;
-        }
+      // Update buffer output position
+      pWork.outputPos += rep_length
 
-        // Flush the output buffer, if number of extracted bytes has reached the end
-        if(pWork->outputPos >= 0x2000)
-        {
-            // Copy decompressed data into user buffer
-            copyBytes = 0x1000;
-            pWork->write_buf((char *)&pWork->out_buff[0x1000], &copyBytes, pWork->param);
-
-            // Now copy the decompressed data to the first half of the buffer.
-            // This is needed because the decompression might reuse them as repetitions.
-            // Note that if the output buffer overflowed previously, the extra decompressed bytes
-            // are stored in "out_buff_overflow", and they will now be
-            // within decompressed part of the output buffer.
-            memmove(pWork->out_buff, &pWork->out_buff[0x1000], pWork->outputPos - 0x1000);
-            pWork->outputPos -= 0x1000;
-        }
+      // Copy the repeating sequence
+      let cntr = 1
+      while (rep_length-- > 0) {
+        setValueToPointer(makePointerFrom(target, cntr), getValueFromPointer(makePointerFrom(source, cntr)))
+        cntr++
+      }
+    } else {
+      pWork.out_buff[pWork.outputPos++] = next_literal
     }
 
-    // Flush any remaining decompressed bytes
-    copyBytes = pWork->outputPos - 0x1000;
-    pWork->write_buf((char *)&pWork->out_buff[0x1000], &copyBytes, pWork->param);
-    */
+    // Flush the output buffer, if number of extracted bytes has reached the end
+    if (pWork.outputPos >= 0x2000) {
+      copyBytes = 0x1000
+      pWork.write_buf(toByteArray(pWork.out_buff[0x1000]), copyPointer(copyBytes), pWork.param)
+
+      /*
+      memmove(pWork.out_buff, copyPointer(pWork.out_buff[0x1000]), pWork.outputPos - 0x1000)
+      */
+      pWork.outputPos -= 0x1000
+    }
+  }
+
+  copyBytes = pWork.outputPos - 0x1000
+  pWork.write_buf(toByteArray(pWork.out_buff[0x1000]), copyPointer(copyBytes), pWork.param)
+
+  // ----------------------
+
   return result
 }
 

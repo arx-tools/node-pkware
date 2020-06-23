@@ -1,4 +1,4 @@
-/* eslint-disable camelcase, no-unused-vars */
+/* eslint-disable camelcase, no-unused-vars, no-labels */
 
 import { clone, repeat, length } from '../node_modules/ramda/src/index.mjs'
 import {
@@ -447,105 +447,101 @@ const WriteCmpData = pWork => {
     }
 
     /*
-      // Perform the compression of the current block
-      while(input_data < input_data_end)
-      {
-          // Find if the current byte sequence wasn't there before.
-          rep_length = FindRep(pWork, input_data);
-          while(rep_length != 0)
-          {
-              // If we found repetition of 2 bytes, that is 0x100 or fuhrter back,
-              // don't bother. Storing the distance of 0x100 bytes would actually
-              // take more space than storing the 2 bytes as-is.
-              if(rep_length == 2 && pWork->distance >= 0x100)
-                  break;
+    // Perform the compression of the current block
+    while(input_data < input_data_end)
+    {
+        // Find if the current byte sequence wasn't there before.
+        rep_length = FindRep(pWork, input_data);
+        while(rep_length != 0)
+        {
+            // If we found repetition of 2 bytes, that is 0x100 or fuhrter back,
+            // don't bother. Storing the distance of 0x100 bytes would actually
+            // take more space than storing the 2 bytes as-is.
+            if(rep_length == 2 && pWork->distance >= 0x100)
+                break;
 
-              // When we are at the end of the input data, we cannot allow
-              // the repetition to go past the end of the input data.
-              if(input_data_ended && input_data + rep_length > input_data_end)
-              {
-                  // Shorten the repetition length so that it only covers valid data
-                  rep_length = (unsigned long)(input_data_end - input_data);
-                  if(rep_length < 2)
-                      break;
+            // When we are at the end of the input data, we cannot allow
+            // the repetition to go past the end of the input data.
+            if(input_data_ended && input_data + rep_length > input_data_end)
+            {
+                // Shorten the repetition length so that it only covers valid data
+                rep_length = (unsigned long)(input_data_end - input_data);
+                if(rep_length < 2)
+                    break;
 
-                  // If we got repetition of 2 bytes, that is 0x100 or more backward, don't bother
-                  if(rep_length == 2 && pWork->distance >= 0x100)
-                      break;
-                  goto __FlushRepetition;
-              }
+                // If we got repetition of 2 bytes, that is 0x100 or more backward, don't bother
+                if(rep_length == 2 && pWork->distance >= 0x100)
+                    break;
+                goto __FlushRepetition;
+            }
 
-              if(rep_length >= 8 || input_data + 1 >= input_data_end)
-                  goto __FlushRepetition;
+            if(rep_length >= 8 || input_data + 1 >= input_data_end)
+                goto __FlushRepetition;
 
-              // Try to find better repetition 1 byte later.
-              // Example: "ARROCKFORT" "AROCKFORT"
-              // When "input_data" points to the second string, FindRep
-              // returns the occurence of "AR". But there is longer repetition "ROCKFORT",
-              // beginning 1 byte after.
-              save_rep_length = rep_length;
-              save_distance = pWork->distance;
-              rep_length = FindRep(pWork, input_data + 1);
+            // Try to find better repetition 1 byte later.
+            // Example: "ARROCKFORT" "AROCKFORT"
+            // When "input_data" points to the second string, FindRep
+            // returns the occurence of "AR". But there is longer repetition "ROCKFORT",
+            // beginning 1 byte after.
+            save_rep_length = rep_length;
+            save_distance = pWork->distance;
+            rep_length = FindRep(pWork, input_data + 1);
 
-              // Only use the new repetition if it's length is greater than the previous one
-              if(rep_length > save_rep_length)
-              {
-                  // If the new repetition if only 1 byte better
-                  // and the previous distance is less than 0x80 bytes, use the previous repetition
-                  if(rep_length > save_rep_length + 1 || save_distance > 0x80)
-                  {
-                      // Flush one byte, so that input_data will point to the secondary repetition
-                      OutputBits(pWork, pWork->nChBits[*input_data], pWork->nChCodes[*input_data]);
-                      input_data++;
-                      continue;
-                  }
-              }
+            // Only use the new repetition if it's length is greater than the previous one
+            if(rep_length > save_rep_length)
+            {
+                // If the new repetition if only 1 byte better
+                // and the previous distance is less than 0x80 bytes, use the previous repetition
+                if(rep_length > save_rep_length + 1 || save_distance > 0x80)
+                {
+                    // Flush one byte, so that input_data will point to the secondary repetition
+                    OutputBits(pWork, pWork->nChBits[*input_data], pWork->nChCodes[*input_data]);
+                    input_data++;
+                    continue;
+                }
+            }
 
-              // Revert to the previous repetition
-              rep_length = save_rep_length;
-              pWork->distance = save_distance;
+            // Revert to the previous repetition
+            rep_length = save_rep_length;
+            pWork->distance = save_distance;
 
-              __FlushRepetition:
+            __FlushRepetition:
 
-              OutputBits(pWork, pWork->nChBits[rep_length + 0xFE], pWork->nChCodes[rep_length + 0xFE]);
-              if(rep_length == 2)
-              {
-                  OutputBits(pWork, pWork->dist_bits[pWork->distance >> 2],
-                                    pWork->dist_codes[pWork->distance >> 2]);
-                  OutputBits(pWork, 2, pWork->distance & 3);
-              }
-              else
-              {
-                  OutputBits(pWork, pWork->dist_bits[pWork->distance >> pWork->dsize_bits],
-                                    pWork->dist_codes[pWork->distance >> pWork->dsize_bits]);
-                  OutputBits(pWork, pWork->dsize_bits, pWork->dsize_mask & pWork->distance);
-              }
+            OutputBits(pWork, pWork->nChBits[rep_length + 0xFE], pWork->nChCodes[rep_length + 0xFE]);
+            if(rep_length == 2)
+            {
+                OutputBits(pWork, pWork->dist_bits[pWork->distance >> 2],
+                                  pWork->dist_codes[pWork->distance >> 2]);
+                OutputBits(pWork, 2, pWork->distance & 3);
+            }
+            else
+            {
+                OutputBits(pWork, pWork->dist_bits[pWork->distance >> pWork->dsize_bits],
+                                  pWork->dist_codes[pWork->distance >> pWork->dsize_bits]);
+                OutputBits(pWork, pWork->dsize_bits, pWork->dsize_mask & pWork->distance);
+            }
 
-              // Move the begin of the input data by the length of the repetition
-              input_data += rep_length;
-              goto _00402252;
-          }
+            // Move the begin of the input data by the length of the repetition
+            input_data += rep_length;
+            goto _00402252;
+        }
 
-          // If there was no previous repetition for the current position in the input data,
-          // just output the 9-bit literal for the one character
-          OutputBits(pWork, pWork->nChBits[*input_data], pWork->nChCodes[*input_data]);
-          input_data++;
+        // If there was no previous repetition for the current position in the input data,
+        // just output the 9-bit literal for the one character
+        OutputBits(pWork, pWork->nChBits[*input_data], pWork->nChCodes[*input_data]);
+        input_data++;
 _00402252:;
-      }
+    }
 
-      if(input_data_ended == 0)
-      {
-          input_data -= 0x1000;
-          memmove(pWork->work_buff, pWork->work_buff + 0x1000, pWork->dsize_bytes + 0x204);
-      }
-      */
+    if(input_data_ended == 0)
+    {
+        input_data -= 0x1000;
+        memmove(pWork->work_buff, pWork->work_buff + 0x1000, pWork->dsize_bytes + 0x204);
+    }
+    */
   }
 
-  /*
-  __Exit:
-  */
-
-  OutputBits(pWork, pWork.nChBits[0x305], pWork.nChCodes[0x305])
+  __Exit: OutputBits(pWork, pWork.nChBits[0x305], pWork.nChCodes[0x305])
 
   if (pWork.out_bits !== 0) {
     pWork.out_bytes++
