@@ -23,8 +23,7 @@
   "author": "Lajos Meszaros <m_lajos@hotmail.com>",
   "license": "GPL-3.0-or-later",
   "dependencies": {
-    "ramda": "^0.27.0",
-    "through2": "^3.0.1"
+    "ramda": "^0.27.0"
   },
   "devDependencies": {
     "assert": "^2.0.0",
