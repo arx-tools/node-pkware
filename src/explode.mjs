@@ -259,9 +259,8 @@ const Expand = pWork => {
       copyBytes = 0x1000
       pWork.write_buf(toByteArray(pWork.out_buff[0x1000]), copyPointer(copyBytes), pWork.param)
 
-      /*
-      memmove(pWork.out_buff, copyPointer(pWork.out_buff[0x1000]), pWork.outputPos - 0x1000)
-      */
+      // watch out, copyWithin() is mutating out_buff!
+      pWork.out_buff.copyWithin(0, 0x1000, pWork.outputPos)
       pWork.outputPos -= 0x1000
     }
   }

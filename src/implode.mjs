@@ -34,10 +34,11 @@ const SortBuffer = (pWork, buffer_begin, buffer_end) => {
     unsigned short total_sum = 0;
     unsigned long byte_pair_hash;           // Hash value of the byte pair
     unsigned short byte_pair_offs;          // Offset of the byte pair, relative to "work_buff"
+  */
 
-    // Zero the entire "phash_to_index" table
-    memset(pWork->phash_to_index, 0, sizeof(pWork->phash_to_index));
+  pWork.phash_to_index = repeat(0, 0x900)
 
+  /*
     // Step 1: Count amount of each PAIR_HASH in the input buffer
     // The table will look like this:
     //  offs 0x000: Number of occurences of PAIR_HASH 0
@@ -389,7 +390,7 @@ const WriteCmpData = pWork => {
   let rep_length
   let phase = 0
 
-  const input_data = makePointerFrom(pWork.work_buff, pWork.dsize_bytes + 0x204) // pointer
+  let input_data = makePointerFrom(pWork.work_buff, pWork.dsize_bytes + 0x204) // pointer
   let input_data_end // pointer
 
   pWork.out_buff = repeat(0, length(pWork.out_buff))
@@ -532,13 +533,13 @@ const WriteCmpData = pWork => {
         input_data++;
 _00402252:;
     }
-
-    if(input_data_ended == 0)
-    {
-        input_data -= 0x1000;
-        memmove(pWork->work_buff, pWork->work_buff + 0x1000, pWork->dsize_bytes + 0x204);
-    }
     */
+
+    if (input_data_ended === 0) {
+      input_data -= 0x1000
+      // watch out, copyWithin() is mutating work_buff!
+      pWork.work_buff.copyWithin(0, 0x1000, 0x1000 + pWork.dsize_bytes + 0x204)
+    }
   }
 
   __Exit: OutputBits(pWork, pWork.nChBits[0x305], pWork.nChCodes[0x305])
