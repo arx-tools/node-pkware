@@ -27,14 +27,13 @@ import {
 const BYTE_PAIR_HASH = buffer => buffer[0] * 4 + buffer[1] * 5
 
 const SortBuffer = (pWork, buffer_begin, buffer_end) => {
-  // buffer_begin and buffer_end are pointers
   /*
-    unsigned short * phash_to_index;
-    unsigned char  * buffer_ptr;
-    unsigned short total_sum = 0;
-    unsigned long byte_pair_hash;           // Hash value of the byte pair
-    unsigned short byte_pair_offs;          // Offset of the byte pair, relative to "work_buff"
+  unsigned short * phash_to_index;
+  unsigned char  * buffer_ptr;
   */
+  const total_sum = 0
+  let byte_pair_hash // Hash value of the byte pair
+  let byte_pair_offs // Offset of the byte pair, relative to "work_buff"
 
   pWork.phash_to_index = repeat(0, 0x900)
 
@@ -46,7 +45,7 @@ const SortBuffer = (pWork, buffer_begin, buffer_end) => {
     //  ...
     //  offs 0x8F7: Number of occurences of PAIR_HASH 0x8F7 (the highest hash value)
     for(buffer_ptr = buffer_begin; buffer_ptr < buffer_end; buffer_ptr++)
-        pWork->phash_to_index[BYTE_PAIR_HASH(buffer_ptr)]++;
+        pWork.phash_to_index[BYTE_PAIR_HASH(buffer_ptr)]++;
 
     // Step 2: Convert the table to the array of PAIR_HASH amounts.
     // Each element contains count of PAIR_HASHes that is less or equal
@@ -56,7 +55,7 @@ const SortBuffer = (pWork, buffer_begin, buffer_end) => {
     //  offs 0x001: Number of occurences of PAIR_HASH 1 or lower
     //  ...
     //  offs 0x8F7: Number of occurences of PAIR_HASH 0x8F7 or lower
-    for(phash_to_index = pWork->phash_to_index; phash_to_index < &pWork->phash_to_index_end; phash_to_index++)
+    for(phash_to_index = pWork.phash_to_index; phash_to_index < &pWork.phash_to_index_end; phash_to_index++)
     {
         total_sum = total_sum + phash_to_index[0];
         phash_to_index[0] = total_sum;
@@ -67,10 +66,10 @@ const SortBuffer = (pWork, buffer_begin, buffer_end) => {
     for(buffer_end--; buffer_end >= buffer_begin; buffer_end--)
     {
         byte_pair_hash = BYTE_PAIR_HASH(buffer_end);
-        byte_pair_offs = (unsigned short)(buffer_end - pWork->work_buff);
+        byte_pair_offs = (unsigned short)(buffer_end - pWork.work_buff);
 
-        pWork->phash_to_index[byte_pair_hash]--;
-        pWork->phash_offs[pWork->phash_to_index[byte_pair_hash]] = byte_pair_offs;
+        pWork.phash_to_index[byte_pair_hash]--;
+        pWork.phash_offs[pWork.phash_to_index[byte_pair_hash]] = byte_pair_offs;
     }
     */
 }
@@ -125,31 +124,27 @@ const OutputBits = (pWork, nbits, bit_buff) => {
   }
 }
 
-/*
-static unsigned int FindRep(TCmpStruct * pWork, unsigned char * input_data)
-{
-    unsigned short * phash_to_index;            // Pointer into pWork->phash_to_index table
-    unsigned short * phash_offs;                // Pointer to the table containing offsets of each PAIR_HASH
-    unsigned char * repetition_limit;           // An eventual repetition must be at position below this pointer
-    unsigned char * prev_repetition;            // Pointer to the previous occurence of the current PAIR_HASH
-    unsigned char * prev_rep_end;               // End of the previous repetition
-    unsigned char * input_data_ptr;
-    unsigned short phash_offs_index;            // Index to the table with PAIR_HASH positions
-    unsigned short min_phash_offs;              // The lowest allowed hash offset
-    unsigned short offs_in_rep;                 // Offset within found repetition
-    unsigned int equal_byte_count;              // Number of bytes that are equal to the previous occurence
-    unsigned int rep_length = 1;                // Length of the found repetition
-    unsigned int rep_length2;                   // Secondary repetition
-    unsigned char pre_last_byte;                // Last but one byte from a repetion
-    unsigned short di_val;
+const FindRep = (pWork, input_data) => {
+  const phash_to_index = makePointerFrom(pWork.phash_to_index, BYTE_PAIR_HASH(input_data))
+  /*
+  unsigned short * phash_offs;                // Pointer to the table containing offsets of each PAIR_HASH
+  unsigned char * repetition_limit;           // An eventual repetition must be at position below this pointer
+  unsigned char * prev_repetition;            // Pointer to the previous occurence of the current PAIR_HASH
+  unsigned char * prev_rep_end;               // End of the previous repetition
+  unsigned char * input_data_ptr;
+  */
+  const phash_offs_index = phash_to_index[0]
+  const min_phash_offs = makePointerFrom(input_data, -pWork.work_buff + pWork.dsize_bytes - 1)
+  let offs_in_rep // Offset within found repetition
+  let equal_byte_count // Number of bytes that are equal to the previous occurence
+  const rep_length = 1 // Length of the found repetition
+  let rep_length2 // Secondary repetition
+  let pre_last_byte // Last but one byte from a repetion
+  let di_val
 
-    // Calculate the previous position of the PAIR_HASH
-    phash_to_index   = pWork->phash_to_index + BYTE_PAIR_HASH(input_data);
-    min_phash_offs   = (unsigned short)((input_data - pWork->work_buff) - pWork->dsize_bytes + 1);
-    phash_offs_index = phash_to_index[0];
-
+  /*
     // If the PAIR_HASH offset is below the limit, find a next one
-    phash_offs = pWork->phash_offs + phash_offs_index;
+    phash_offs = pWork.phash_offs + phash_offs_index;
     if(getValueFromPointer(phash_offs) < min_phash_offs)
     {
         while(getValueFromPointer(phash_offs) < min_phash_offs)
@@ -162,8 +157,8 @@ static unsigned int FindRep(TCmpStruct * pWork, unsigned char * input_data)
 
     // Get the first location of the PAIR_HASH,
     // and thus the first eventual location of byte repetition
-    phash_offs = pWork->phash_offs + phash_offs_index;
-    prev_repetition = pWork->work_buff + phash_offs[0];
+    phash_offs = pWork.phash_offs + phash_offs_index;
+    prev_repetition = pWork.work_buff + phash_offs[0];
     repetition_limit = input_data - 1;
 
     // If the current PAIR_HASH was not encountered before,
@@ -208,7 +203,7 @@ static unsigned int FindRep(TCmpStruct * pWork, unsigned char * input_data)
             {
                 // Calculate the backward distance of the repetition.
                 // Note that the distance is stored as decremented by 1
-                pWork->distance = (unsigned int)(input_data - prev_repetition + equal_byte_count - 1);
+                pWork.distance = (unsigned int)(input_data - prev_repetition + equal_byte_count - 1);
 
                 // Repetitions longer than 10 bytes will be stored in more bits,
                 // so they need a bit different handling
@@ -221,7 +216,7 @@ static unsigned int FindRep(TCmpStruct * pWork, unsigned char * input_data)
         // There might be a more recent occurence of the same repetition.
         phash_offs_index++;
         phash_offs++;
-        prev_repetition = pWork->work_buff + phash_offs[0];
+        prev_repetition = pWork.work_buff + phash_offs[0];
 
         // If the next repetition is beyond the minimum allowed repetition, we are done.
         if(prev_repetition >= repetition_limit)
@@ -230,17 +225,18 @@ static unsigned int FindRep(TCmpStruct * pWork, unsigned char * input_data)
             return (rep_length >= 2) ? rep_length : 0;
         }
     }
+    */
 
-    // If the repetition has max length of 0x204 bytes, we can't go any fuhrter
-    if(equal_byte_count == MAX_REP_LENGTH)
-    {
-        pWork->distance--;
-        return equal_byte_count;
-    }
+  // If the repetition has max length of 0x204 bytes, we can't go any fuhrter
+  if (equal_byte_count === MAX_REP_LENGTH) {
+    pWork.distance--
+    return equal_byte_count
+  }
 
+  /*
     // Check for possibility of a repetition that occurs at more recent position
-    phash_offs = pWork->phash_offs + phash_offs_index;
-    if(pWork->work_buff + phash_offs[1] >= repetition_limit)
+    phash_offs = pWork.phash_offs + phash_offs_index;
+    if(pWork.work_buff + phash_offs[1] >= repetition_limit)
         return rep_length;
 
     //
@@ -270,8 +266,8 @@ static unsigned int FindRep(TCmpStruct * pWork, unsigned char * input_data)
     //          The last repetition is the best one.
     //
 
-    pWork->offs09BC[0] = 0xFFFF;
-    pWork->offs09BC[1] = 0x0000;
+    pWork.offs09BC[0] = 0xFFFF;
+    pWork.offs09BC[1] = 0x0000;
     di_val = 0;
 
     // Note: I failed to figure out what does the table "offs09BC" mean.
@@ -280,11 +276,11 @@ static unsigned int FindRep(TCmpStruct * pWork, unsigned char * input_data)
     {
         if(input_data[offs_in_rep] != input_data[di_val])
         {
-            di_val = pWork->offs09BC[di_val];
+            di_val = pWork.offs09BC[di_val];
             if(di_val != 0xFFFF)
                 continue;
         }
-        pWork->offs09BC[++offs_in_rep] = ++di_val;
+        pWork.offs09BC[++offs_in_rep] = ++di_val;
     }
 
     //
@@ -293,18 +289,18 @@ static unsigned int FindRep(TCmpStruct * pWork, unsigned char * input_data)
     // a start of a greater sequence match.
     //
 
-    prev_repetition = pWork->work_buff + phash_offs[0];
+    prev_repetition = pWork.work_buff + phash_offs[0];
     prev_rep_end = prev_repetition + rep_length;
     rep_length2 = rep_length;
 
     for(;;)
     {
-        rep_length2 = pWork->offs09BC[rep_length2];
+        rep_length2 = pWork.offs09BC[rep_length2];
         if(rep_length2 == 0xFFFF)
             rep_length2 = 0;
 
         // Get the pointer to the previous repetition
-        phash_offs = pWork->phash_offs + phash_offs_index;
+        phash_offs = pWork.phash_offs + phash_offs_index;
 
         // Skip those repetitions that don't reach the end
         // of the first found repetition
@@ -312,7 +308,7 @@ static unsigned int FindRep(TCmpStruct * pWork, unsigned char * input_data)
         {
             phash_offs++;
             phash_offs_index++;
-            prev_repetition = pWork->work_buff + *phash_offs;
+            prev_repetition = pWork.work_buff + *phash_offs;
             if(prev_repetition >= repetition_limit)
                 return rep_length;
         }
@@ -334,12 +330,12 @@ static unsigned int FindRep(TCmpStruct * pWork, unsigned char * input_data)
         }
         else
         {
-            phash_offs = pWork->phash_offs + phash_offs_index;
+            phash_offs = pWork.phash_offs + phash_offs_index;
             do
             {
                 phash_offs++;
                 phash_offs_index++;
-                prev_repetition = pWork->work_buff + *phash_offs;
+                prev_repetition = pWork.work_buff + *phash_offs;
                 if(prev_repetition >= repetition_limit)
                     return rep_length;
             }
@@ -362,7 +358,7 @@ static unsigned int FindRep(TCmpStruct * pWork, unsigned char * input_data)
         if(rep_length2 >= rep_length)
         {
             // Calculate the distance of the new repetition
-            pWork->distance = (unsigned int)(input_data - prev_repetition - 1);
+            pWork.distance = (unsigned int)(input_data - prev_repetition - 1);
             if((rep_length = rep_length2) == 0x204)
                 return rep_length;
 
@@ -372,16 +368,16 @@ static unsigned int FindRep(TCmpStruct * pWork, unsigned char * input_data)
             {
                 if(input_data[offs_in_rep] != input_data[di_val])
                 {
-                    di_val = pWork->offs09BC[di_val];
+                    di_val = pWork.offs09BC[di_val];
                     if(di_val != 0xFFFF)
                         continue;
                 }
-                pWork->offs09BC[++offs_in_rep] = ++di_val;
+                pWork.offs09BC[++offs_in_rep] = ++di_val;
             }
         }
     }
+  */
 }
-*/
 
 const WriteCmpData = pWork => {
   let input_data_ended = 0
@@ -458,7 +454,7 @@ const WriteCmpData = pWork => {
             // If we found repetition of 2 bytes, that is 0x100 or fuhrter back,
             // don't bother. Storing the distance of 0x100 bytes would actually
             // take more space than storing the 2 bytes as-is.
-            if(rep_length == 2 && pWork->distance >= 0x100)
+            if(rep_length == 2 && pWork.distance >= 0x100)
                 break;
 
             // When we are at the end of the input data, we cannot allow
@@ -471,7 +467,7 @@ const WriteCmpData = pWork => {
                     break;
 
                 // If we got repetition of 2 bytes, that is 0x100 or more backward, don't bother
-                if(rep_length == 2 && pWork->distance >= 0x100)
+                if(rep_length == 2 && pWork.distance >= 0x100)
                     break;
                 goto __FlushRepetition;
             }
@@ -485,7 +481,7 @@ const WriteCmpData = pWork => {
             // returns the occurence of "AR". But there is longer repetition "ROCKFORT",
             // beginning 1 byte after.
             save_rep_length = rep_length;
-            save_distance = pWork->distance;
+            save_distance = pWork.distance;
             rep_length = FindRep(pWork, input_data + 1);
 
             // Only use the new repetition if it's length is greater than the previous one
@@ -496,7 +492,7 @@ const WriteCmpData = pWork => {
                 if(rep_length > save_rep_length + 1 || save_distance > 0x80)
                 {
                     // Flush one byte, so that input_data will point to the secondary repetition
-                    OutputBits(pWork, pWork->nChBits[*input_data], pWork->nChCodes[*input_data]);
+                    OutputBits(pWork, pWork.nChBits[*input_data], pWork.nChCodes[*input_data]);
                     input_data++;
                     continue;
                 }
@@ -504,22 +500,22 @@ const WriteCmpData = pWork => {
 
             // Revert to the previous repetition
             rep_length = save_rep_length;
-            pWork->distance = save_distance;
+            pWork.distance = save_distance;
 
             __FlushRepetition:
 
-            OutputBits(pWork, pWork->nChBits[rep_length + 0xFE], pWork->nChCodes[rep_length + 0xFE]);
+            OutputBits(pWork, pWork.nChBits[rep_length + 0xFE], pWork.nChCodes[rep_length + 0xFE]);
             if(rep_length == 2)
             {
-                OutputBits(pWork, pWork->dist_bits[pWork->distance >> 2],
-                                  pWork->dist_codes[pWork->distance >> 2]);
-                OutputBits(pWork, 2, pWork->distance & 3);
+                OutputBits(pWork, pWork.dist_bits[pWork.distance >> 2],
+                                  pWork.dist_codes[pWork.distance >> 2]);
+                OutputBits(pWork, 2, pWork.distance & 3);
             }
             else
             {
-                OutputBits(pWork, pWork->dist_bits[pWork->distance >> pWork->dsize_bits],
-                                  pWork->dist_codes[pWork->distance >> pWork->dsize_bits]);
-                OutputBits(pWork, pWork->dsize_bits, pWork->dsize_mask & pWork->distance);
+                OutputBits(pWork, pWork.dist_bits[pWork.distance >> pWork.dsize_bits],
+                                  pWork.dist_codes[pWork.distance >> pWork.dsize_bits]);
+                OutputBits(pWork, pWork.dsize_bits, pWork.dsize_mask & pWork.distance);
             }
 
             // Move the begin of the input data by the length of the repetition
@@ -529,7 +525,7 @@ const WriteCmpData = pWork => {
 
         // If there was no previous repetition for the current position in the input data,
         // just output the 9-bit literal for the one character
-        OutputBits(pWork, pWork->nChBits[*input_data], pWork->nChCodes[*input_data]);
+        OutputBits(pWork, pWork.nChBits[*input_data], pWork.nChCodes[*input_data]);
         input_data++;
 _00402252:;
     }
