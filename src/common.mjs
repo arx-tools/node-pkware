@@ -111,15 +111,3 @@ export const ChCodeAsc = [
   0x0600, 0x1A00, 0x0E40, 0x0640, 0x0A40, 0x0A00, 0x1200, 0x0200,
   0x1C00, 0x0C00, 0x1400, 0x0400, 0x1800, 0x0800, 0x1000, 0x0000
 ]
-
-// placeholder functions, which help readability by replacing special characters
-// with meaningful labels
-export const getValueFromPointer = x => x
-export const copyPointer = x => x
-export const getAddressOfValue = x => x
-export const makePointerFrom = (startAddress, additions = 0) => startAddress[additions]
-export const setValueToPointer = (pointer, newValue) => {}
-export const toByteArray = x => {
-  // https://stackoverflow.com/a/7571088/1806628
-  return x
-}

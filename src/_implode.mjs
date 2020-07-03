@@ -17,12 +17,10 @@ import {
   LenCode,
   ExLenBits,
   ChBitsAsc,
-  ChCodeAsc,
-  getValueFromPointer,
-  copyPointer,
-  makePointerFrom,
-  getAddressOfValue
+  ChCodeAsc
 } from './common.mjs'
+
+import { getValueFromPointer, copyPointer, makePointerFrom, getAddressOfValue } from './_helpers.mjs'
 
 const BYTE_PAIR_HASH = buffer => buffer[0] * 4 + buffer[1] * 5
 

@@ -18,14 +18,17 @@ import {
   ExLenBits,
   LenBase,
   ChBitsAsc,
-  ChCodeAsc,
+  ChCodeAsc
+} from './common.mjs'
+
+import {
   getValueFromPointer,
   copyPointer,
   getAddressOfValue,
   makePointerFrom,
   setValueToPointer,
   toByteArray
-} from './common.mjs'
+} from './_helpers.mjs'
 
 const GenDecodeTabs = (originalPositions, start_indexes, length_bits) => {
   const positions = clone(originalPositions)
