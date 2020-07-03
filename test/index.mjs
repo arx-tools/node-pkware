@@ -10,7 +10,7 @@ const toConsole = (chunk, encoding, callback) => {
 }
 
 const turnEveryAtoZ = function (chunk, encoding, callback) {
-  callback(null, Buffer.from(Array.from(chunk).map((char) => (char === 97 ? 122 : char))))
+  callback(null, Buffer.from(Array.from(chunk).map(char => (char === 97 ? 122 : char))))
 }
 
 const test = () => {
@@ -28,6 +28,6 @@ test()
   .then(() => {
     console.log('OK')
   })
-  .catch((e) => {
+  .catch(e => {
     console.error('Something happened!', e)
   })

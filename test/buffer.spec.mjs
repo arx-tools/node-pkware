@@ -12,7 +12,7 @@ describe('Buffer', () => {
     assert.ok(buffer1.equals(buffer2))
   })
 
-  it('can aggregate chunks of a stream', (done) => {
+  it('can aggregate chunks of a stream', done => {
     const chunks = []
     fs.createReadStream('test/files/fast.fts')
       .on('data', function (d) {
