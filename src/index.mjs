@@ -5,4 +5,6 @@ import explode from './explode.mjs'
 const compress = implode
 const decompress = explode
 
+// TODO: expose error constants
+
 export { implode, explode, compress, decompress }
