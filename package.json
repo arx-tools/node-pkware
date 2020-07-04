@@ -9,7 +9,7 @@
     "lint": "eslint \"src/**/*.+(js|mjs)\"",
     "lint:fix": "npm run lint -- --fix",
     "unit": "mocha --experimental-modules --no-warnings test/**/*.spec.mjs --timeout 5000",
-    "unit:watch": "nodemon --exec \"npm run unit\" --watch test/**/*.spec.mjs",
+    "unit:watch": "nodemon --exec \"npm run unit\" --watch test --watch src",
     "lint:staged": "lint-staged"
   },
   "repository": {
