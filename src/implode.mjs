@@ -1,5 +1,7 @@
-const implode = (chunk, encoding, callback) => {
-  callback(null, chunk)
+const implode = () => {
+  return (chunk, encoding, callback) => {
+    callback(null, chunk)
+  }
 }
 
 export default implode
