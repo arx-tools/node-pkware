@@ -23,7 +23,7 @@ const through = handler => {
 
 const test = () => {
   return new Promise((resolve, reject) => {
-    fs.createReadStream('./test/files/small')
+    fs.createReadStream('./test/files/large.ascii')
       // .pipe(through(toConsole))
       // .pipe(through(turnEveryAtoZ))
       // .pipe(through(toConsole))

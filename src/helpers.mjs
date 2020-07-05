@@ -4,4 +4,8 @@ const isBetween = curry((min, max, num) => {
   return num >= min && num <= max
 })
 
-export { isBetween }
+const getLowestNBits = curry((numberOfBits, number) => {
+  return number & ((1 << numberOfBits) - 1)
+})
+
+export { isBetween, getLowestNBits }

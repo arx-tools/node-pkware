@@ -1,7 +1,7 @@
 /* global describe, it */
 
 import assert from 'assert'
-import explode, { parseFirstChunk } from '../src/explode.mjs'
+import explode, { parseFirstChunk, generateAsciiTables } from '../src/explode.mjs'
 import { CMP_BAD_DATA, CMP_INVALID_DICTSIZE } from '../src/common.mjs'
 import { isPromise } from './helpers.mjs'
 
@@ -27,5 +27,11 @@ describe('parseFirstChunk', () => {
   it('rejects with CMP_INVALID_DICTSIZE, when 2nd byte is not between 4 and 6', async () => {
     await assert.rejects(parseFirstChunk(Buffer.from([0, 2, 0, 0, 0])), new Error(CMP_INVALID_DICTSIZE))
     await assert.rejects(parseFirstChunk(Buffer.from([0, 8, 0, 0, 0])), new Error(CMP_INVALID_DICTSIZE))
+  })
+})
+
+describe('generateAsciiTables', () => {
+  it('is a function', () => {
+    assert.equal(typeof generateAsciiTables, 'function')
   })
 })

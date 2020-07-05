@@ -1,19 +1,78 @@
-import { repeat, mergeRight, clone } from '../node_modules/ramda/src/index.mjs'
+import { repeat, mergeRight } from '../node_modules/ramda/src/index.mjs'
 import {
   CMP_BAD_DATA,
   CMP_INVALID_DICTSIZE,
   BINARY_COMPRESSION,
   ASCII_COMPRESSION,
   CMP_INVALID_MODE,
+  ChCodeAsc,
   ChBitsAsc
 } from './common.mjs'
-import { isBetween } from './helpers.mjs'
+import { isBetween, getLowestNBits } from './helpers.mjs'
 
-const genAscTabs = state => {}
+const generateAsciiTables = () => {
+  const state = {
+    asciiTable2C34: repeat(0, 0x100),
+    asciiTable2D34: repeat(0, 0x100),
+    asciiTable2E34: repeat(0, 0x80),
+    asciiTable2EB4: repeat(0, 0x100)
+  }
+
+  state.chBitsAsc = ChBitsAsc.map((value, index) => {
+    let acc
+
+    if (value <= 8) {
+      acc = ChCodeAsc[index]
+
+      do {
+        state.asciiTable2C34[acc] = index
+        acc += 1 << value
+      } while (acc < 0x100)
+
+      return value
+    }
+
+    if (getLowestNBits(8, ChCodeAsc[index]) !== 0) {
+      acc = getLowestNBits(8, ChCodeAsc[index])
+      state.asciiTable2C34[acc] = 0xff
+
+      if (getLowestNBits(6, ChCodeAsc[index]) !== 0) {
+        acc = ChCodeAsc[index] >> 4
+
+        do {
+          state.asciiTable2D34[acc] = index
+          acc += 1 << (value - 4)
+        } while (acc < 0x100)
+
+        return value - 4
+      } else {
+        acc = ChCodeAsc[index] >> 6
+
+        do {
+          state.asciiTable2E34[acc] = index
+          acc += 1 << (value - 6)
+        } while (acc < 0x80)
+
+        return value - 6
+      }
+    }
+
+    acc = ChCodeAsc[index] >> 8
+
+    do {
+      state.asciiTable2EB4[acc] = index
+      acc += 1 << (value - 8)
+    } while (acc < 0x100)
+
+    return value - 8
+  })
+
+  return state
+}
 
 const parseFirstChunk = chunk => {
   return new Promise((resolve, reject) => {
-    const state = {}
+    let state = {}
 
     if (chunk.length <= 4) {
       reject(new Error(CMP_BAD_DATA))
@@ -36,8 +95,7 @@ const parseFirstChunk = chunk => {
         reject(new Error(CMP_INVALID_MODE))
         return
       }
-      state.chBitsAsc = clone(ChBitsAsc)
-      genAscTabs(state)
+      state = mergeRight(state, generateAsciiTables())
     }
 
     resolve(state)
@@ -47,12 +105,7 @@ const parseFirstChunk = chunk => {
 const explode = () => {
   let state = {
     isFirstChunk: true,
-    compressionType: null,
-    dictionarySizeBits: null,
-    dictionarySizeMask: null,
-    bitBuffer: null,
-
-    chBitsAsc: repeat(0, 0x100) // ???
+    chBitsAsc: repeat(0, 0x100) // DecodeLit and GenAscTabs uses this
   }
   return (chunk, encoding, callback) => {
     if (state.isFirstChunk) {
@@ -60,7 +113,6 @@ const explode = () => {
       parseFirstChunk(chunk)
         .then(newState => {
           state = mergeRight(state, newState)
-          console.log(state)
           callback(null, chunk)
         })
         .catch(e => {
@@ -74,4 +126,4 @@ const explode = () => {
 
 export default explode
 
-export { genAscTabs, parseFirstChunk }
+export { generateAsciiTables, parseFirstChunk }
