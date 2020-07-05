@@ -1,7 +1,7 @@
 /* global describe, it */
 
 import assert from 'assert'
-import explode, { parseFirstChunk, generateAsciiTables } from '../src/explode.mjs'
+import explode, { parseFirstChunk, generateAsciiTables, generateDecodeTables } from '../src/explode.mjs'
 import { CMP_BAD_DATA, CMP_INVALID_DICTSIZE } from '../src/common.mjs'
 import { isPromise } from './helpers.mjs'
 
@@ -33,5 +33,11 @@ describe('parseFirstChunk', () => {
 describe('generateAsciiTables', () => {
   it('is a function', () => {
     assert.equal(typeof generateAsciiTables, 'function')
+  })
+})
+
+describe('generateDecodeTables', () => {
+  it('is a function', () => {
+    assert.equal(typeof generateDecodeTables, 'function')
   })
 })

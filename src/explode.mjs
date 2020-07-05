@@ -1,4 +1,4 @@
-import { repeat, mergeRight } from '../node_modules/ramda/src/index.mjs'
+import { repeat, mergeRight, clone } from '../node_modules/ramda/src/index.mjs'
 import {
   CMP_BAD_DATA,
   CMP_INVALID_DICTSIZE,
@@ -6,7 +6,13 @@ import {
   ASCII_COMPRESSION,
   CMP_INVALID_MODE,
   ChCodeAsc,
-  ChBitsAsc
+  ChBitsAsc,
+  LenBits,
+  LenCode,
+  ExLenBits,
+  LenBase,
+  DistBits,
+  DistCode
 } from './common.mjs'
 import { isBetween, getLowestNBits } from './helpers.mjs'
 
@@ -70,6 +76,16 @@ const generateAsciiTables = () => {
   return state
 }
 
+const generateDecodeTables = (startIndexes, lengthBits) => {
+  return lengthBits.reduce((acc, lengthBit, i) => {
+    for (let index = startIndexes[i]; index < 0x100; index += 1 << lengthBit) {
+      acc[index] = i
+    }
+
+    return acc
+  }, repeat(0, 0x100))
+}
+
 const parseFirstChunk = chunk => {
   return new Promise((resolve, reject) => {
     let state = {}
@@ -105,8 +121,13 @@ const parseFirstChunk = chunk => {
 const explode = () => {
   let state = {
     isFirstChunk: true,
-    chBitsAsc: repeat(0, 0x100) // DecodeLit and GenAscTabs uses this
+    chBitsAsc: repeat(0, 0x100), // DecodeLit and GenAscTabs uses this
+    lenBase: clone(LenBase),
+    exLenBits: clone(ExLenBits),
+    lengthCodes: generateDecodeTables(LenCode, LenBits),
+    distPosCodes: generateDecodeTables(DistCode, DistBits)
   }
+
   return (chunk, encoding, callback) => {
     if (state.isFirstChunk) {
       state.isFirstChunk = false
@@ -126,4 +147,4 @@ const explode = () => {
 
 export default explode
 
-export { generateAsciiTables, parseFirstChunk }
+export { generateAsciiTables, parseFirstChunk, generateDecodeTables }
