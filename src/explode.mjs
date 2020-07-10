@@ -118,6 +118,13 @@ const parseFirstChunk = chunk => {
   })
 }
 
+const processChunkData = state => {
+  return new Promise((resolve, reject) => {
+    const outputBuffer = Buffer.from('dummy data')
+    resolve(outputBuffer)
+  })
+}
+
 const explode = () => {
   let state = {
     isFirstChunk: true,
@@ -134,13 +141,24 @@ const explode = () => {
       parseFirstChunk(chunk)
         .then(newState => {
           state = mergeRight(state, newState)
-          callback(null, chunk)
+          state.inputBuffer = chunk
+          return processChunkData(state)
+        })
+        .then(outputBuffer => {
+          callback(null, outputBuffer)
         })
         .catch(e => {
           callback(e)
         })
     } else {
-      callback(null, chunk)
+      state.inputBuffer = Buffer.concat([state.inputBuffer, chunk])
+      processChunkData(state)
+        .then(outputBuffer => {
+          callback(null, outputBuffer)
+        })
+        .catch(e => {
+          callback(e)
+        })
     }
   }
 }

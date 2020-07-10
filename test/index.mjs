@@ -1,15 +1,18 @@
 import fs from 'fs'
-// import { EOL } from 'os'
+import { EOL } from 'os'
 import { Transform } from 'stream'
 import { explode } from '../src/index.mjs'
 
-/*
-const toConsole = (chunk, encoding, callback) => {
+// https://stackoverflow.com/a/27641609/1806628
+const CHUNK_SIZE_IN_BYTES = 200
+
+const toConsole = () => (chunk, encoding, callback) => {
   process.stdout.write(chunk)
   process.stdout.write(Buffer.from(EOL))
   callback(null, chunk)
 }
 
+/*
 const turnEveryAtoZ = (chunk, encoding, callback) => {
   callback(null, Buffer.from(Array.from(chunk).map(char => (char === 97 ? 122 : char))))
 }
@@ -23,11 +26,11 @@ const through = handler => {
 
 const test = () => {
   return new Promise((resolve, reject) => {
-    fs.createReadStream('./test/files/large.ascii')
+    fs.createReadStream('./test/files/large.ascii', { highWaterMark: CHUNK_SIZE_IN_BYTES })
       // .pipe(through(toConsole))
       // .pipe(through(turnEveryAtoZ))
-      // .pipe(through(toConsole))
-      .pipe(through(explode()))
+      .pipe(through(explode()).on('error', reject))
+      .pipe(through(toConsole()))
       .on('finish', resolve)
       .on('error', reject)
   })
