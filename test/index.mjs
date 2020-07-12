@@ -31,6 +31,7 @@ const test = () => {
       // .pipe(through(turnEveryAtoZ))
       .pipe(through(explode()).on('error', reject))
       .pipe(through(toConsole()))
+      // .pipe(fs.createWriteStream('E:\\decompressed.txt'))
       .on('finish', resolve)
       .on('error', reject)
   })

@@ -14,8 +14,8 @@ import {
   ExLenBits,
   LenBase,
   DistBits,
-  DistCode,
-  CMP_ABORT
+  DistCode
+  // CMP_ABORT
 } from './common.mjs'
 import { isBetween, getLowestNBits, isBufferEmpty, appendByteToBuffer } from './helpers.mjs'
 
@@ -212,30 +212,53 @@ const decodeNextLiteral = state => {
 }
 
 // DecodeDist
-const decodeDistance = (state, repeatLength) => {}
+const decodeDistance = (state, repeatLength) => {
+  const distPosCode = state.distPosCodes[getLowestNBits(8, state.bitBuffer)]
+  const distPosBits = DistBits[distPosCode]
+  if (wasteBits(state, distPosBits) === PKDCL_STREAM_END) {
+    return 0
+  }
+
+  let distance
+
+  if (repeatLength === 2) {
+    distance = (distPosCode << 2) | getLowestNBits(2, state.bitBuffer)
+    if (wasteBits(state, 2) === PKDCL_STREAM_END) {
+      return 0
+    }
+  } else {
+    distance = (distPosCode << state.dictionarySizeBits) | (state.bitBuffer & state.dictionarySizeBits)
+    if (wasteBits(state, state.dictionarySizeBits) === PKDCL_STREAM_END) {
+      return 0
+    }
+  }
+
+  return distance + 1
+}
 
 // Expand
 const processChunkData = state => {
   return new Promise((resolve, reject) => {
     let nextLiteral
-    let outputBuffer = Buffer.from([])
 
     while ((nextLiteral = decodeNextLiteral(state)) < 0x305) {
       if (nextLiteral >= 0x100) {
         const repeatLength = nextLiteral - 0xfe
         const minusDistance = decodeDistance(state, repeatLength)
         if (minusDistance === 0) {
-          reject(new Error(CMP_ABORT))
+          // reject(new Error(CMP_ABORT))
           break
         }
 
-        // TODO: finish implementation
+        state.outputBuffer = Buffer.concat([state.outputBuffer, state.outputBuffer.slice(-minusDistance)])
       } else {
-        outputBuffer = appendByteToBuffer(nextLiteral, outputBuffer)
+        state.outputBuffer = appendByteToBuffer(nextLiteral, state.outputBuffer)
       }
     }
 
-    resolve(outputBuffer)
+    state.hasDataToOutput = true
+
+    resolve()
   })
 }
 
@@ -245,33 +268,42 @@ const explode = () => {
     chBitsAsc: repeat(0, 0x100), // DecodeLit and GenAscTabs uses this
     lengthCodes: generateDecodeTables(LenCode, LenBits),
     distPosCodes: generateDecodeTables(DistCode, DistBits),
-    extraBits: 0
+    extraBits: 0,
+    outputBuffer: Buffer.from([]),
+    onInputFinished: callback => {
+      callback(null, state.outputBuffer)
+    }
   }
 
-  return (chunk, encoding, callback) => {
+  return function (chunk, encoding, callback) {
+    let work
     if (state.isFirstChunk) {
       state.isFirstChunk = false
-      parseFirstChunk(chunk)
-        .then(newState => {
-          state = mergeRight(state, newState)
-          return processChunkData(state)
-        })
-        .then(outputBuffer => {
-          callback(null, outputBuffer)
-        })
-        .catch(e => {
-          callback(e)
-        })
+      this._flush = state.onInputFinished
+      work = parseFirstChunk(chunk).then(newState => {
+        state = mergeRight(state, newState)
+        return state
+      })
     } else {
       state.inputBuffer = Buffer.concat([state.inputBuffer, chunk])
-      processChunkData(state)
-        .then(outputBuffer => {
-          callback(null, outputBuffer)
-        })
-        .catch(e => {
-          callback(e)
-        })
+      work = Promise.resolve(state)
+      // work = Promise.reject(new Error('stop!'))
     }
+
+    work
+      .then(processChunkData)
+      .then(() => {
+        if (state.outputBuffer.length > 0x1000) {
+          const outputBuffer = state.outputBuffer.slice(0, 0x1000)
+          state.outputBuffer = state.outputBuffer.slice(0x1000)
+          callback(null, outputBuffer)
+        } else {
+          callback(null, Buffer.from([]))
+        }
+      })
+      .catch(e => {
+        callback(e)
+      })
   }
 }
 
