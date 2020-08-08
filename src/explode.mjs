@@ -5,6 +5,7 @@ import {
   BINARY_COMPRESSION,
   ASCII_COMPRESSION,
   CMP_INVALID_MODE,
+  CMP_ABORT,
   PKDCL_OK,
   PKDCL_STREAM_END,
   ChCodeAsc,
@@ -15,7 +16,6 @@ import {
   LenBase,
   DistBits,
   DistCode
-  // CMP_ABORT
 } from './common.mjs'
 import { isBetween, getLowestNBits, isBufferEmpty, appendByteToBuffer } from './helpers.mjs'
 
@@ -100,7 +100,7 @@ const parseFirstChunk = chunk => {
 
     state.compressionType = chunk.readUInt8(0)
     state.dictionarySizeBits = chunk.readUInt8(1)
-    state.bitBuffer = chunk.readUIntBE(2, 2)
+    state.bitBuffer = chunk.readUInt8(2)
 
     if (!isBetween(4, 6, state.dictionarySizeBits)) {
       reject(new Error(CMP_INVALID_DICTSIZE))
@@ -117,7 +117,7 @@ const parseFirstChunk = chunk => {
       state = mergeRight(state, generateAsciiTables())
     }
 
-    state.inputBuffer = chunk.slice(4)
+    state.inputBuffer = chunk.slice(3)
 
     resolve(state)
   })
@@ -143,7 +143,7 @@ const wasteBits = (state, numberOfBits) => {
 
   state.bitBuffer |= nextByte << 8
   state.bitBuffer >>= numberOfBits - state.extraBits
-  state.extraBits = state.extraBits - numberOfBits + 8
+  state.extraBits += 8 - numberOfBits
   return PKDCL_OK
 }
 
@@ -227,7 +227,7 @@ const decodeDistance = (state, repeatLength) => {
       return 0
     }
   } else {
-    distance = (distPosCode << state.dictionarySizeBits) | (state.bitBuffer & state.dictionarySizeBits)
+    distance = (distPosCode << state.dictionarySizeBits) | (state.bitBuffer & state.dictionarySizeMask)
     if (wasteBits(state, state.dictionarySizeBits) === PKDCL_STREAM_END) {
       return 0
     }
@@ -246,11 +246,17 @@ const processChunkData = state => {
         const repeatLength = nextLiteral - 0xfe
         const minusDistance = decodeDistance(state, repeatLength)
         if (minusDistance === 0) {
-          // reject(new Error(CMP_ABORT))
+          reject(new Error(CMP_ABORT))
           break
         }
 
-        state.outputBuffer = Buffer.concat([state.outputBuffer, state.outputBuffer.slice(-minusDistance)])
+        state.outputBuffer = Buffer.concat([
+          state.outputBuffer,
+          state.outputBuffer.slice(
+            state.outputBuffer.length - minusDistance,
+            state.outputBuffer.length - minusDistance + repeatLength
+          )
+        ])
       } else {
         state.outputBuffer = appendByteToBuffer(nextLiteral, state.outputBuffer)
       }
