@@ -251,13 +251,24 @@ const processChunkData = state => {
           break
         }
 
-        state.outputBuffer = Buffer.concat([
-          state.outputBuffer,
-          state.outputBuffer.slice(
+        if (repeatLength > minusDistance) {
+          const availableDataLength = repeatLength - (repeatLength - minusDistance)
+          const availableData = state.outputBuffer.slice(
             state.outputBuffer.length - minusDistance,
             state.outputBuffer.length - minusDistance + repeatLength
           )
-        ])
+          const repeatAmount = Math.ceil(repeatLength / availableDataLength)
+          const repeatedData = Buffer.concat(repeat(availableData, repeatAmount)).slice(0, repeatLength)
+          state.outputBuffer = Buffer.concat([state.outputBuffer, repeatedData])
+        } else {
+          state.outputBuffer = Buffer.concat([
+            state.outputBuffer,
+            state.outputBuffer.slice(
+              state.outputBuffer.length - minusDistance,
+              state.outputBuffer.length - minusDistance + repeatLength
+            )
+          ])
+        }
       } else {
         state.outputBuffer = appendByteToBuffer(nextLiteral, state.outputBuffer)
       }
