@@ -5,6 +5,7 @@ import {
   BINARY_COMPRESSION,
   ASCII_COMPRESSION,
   CMP_INVALID_MODE,
+  CMP_ABORT,
   PKDCL_OK,
   PKDCL_STREAM_END,
   ChCodeAsc,
@@ -238,15 +239,15 @@ const decodeDistance = (state, repeatLength) => {
 const processChunkData = state => {
   return new Promise((resolve, reject) => {
     let nextLiteral
-    let needModeInput = false
-    state.startTransaction()
+    state.needModeInput = false
+    state.backup()
 
     while ((nextLiteral = decodeNextLiteral(state)) < LITERAL_END_STREAM) {
       if (nextLiteral >= 0x100) {
         const repeatLength = nextLiteral - 0xfe
         const minusDistance = decodeDistance(state, repeatLength)
         if (minusDistance === 0) {
-          needModeInput = true
+          state.needModeInput = true
           break
         }
 
@@ -261,18 +262,16 @@ const processChunkData = state => {
         state.outputBuffer = appendByteToBuffer(nextLiteral, state.outputBuffer)
       }
 
-      state.startTransaction()
+      state.backup()
     }
 
     if (nextLiteral === LITERAL_STREAM_ABORTED) {
-      needModeInput = true
+      state.needModeInput = true
     }
 
-    if (needModeInput) {
-      state.rollback()
+    if (state.needModeInput) {
+      state.restore()
     }
-
-    state.hasDataToOutput = true
 
     resolve()
   })
@@ -283,33 +282,36 @@ const explode = () => {
 
   let state = {
     isFirstChunk: true,
+    needModeInput: false,
     chBitsAsc: repeat(0, 0x100), // DecodeLit and GenAscTabs uses this
     lengthCodes: generateDecodeTables(LenCode, LenBits),
     distPosCodes: generateDecodeTables(DistCode, DistBits),
     extraBits: 0,
     outputBuffer: Buffer.from([]),
     onInputFinished: callback => {
-      callback(null, state.outputBuffer)
+      if (state.needModeInput) {
+        callback(new Error(CMP_ABORT))
+      } else {
+        callback(null, state.outputBuffer)
+      }
     },
-    startTransaction: () => {
+    backup: () => {
       stateBackup.extraBits = state.extraBits
-      stateBackup.outputBuffer = Buffer.concat([state.outputBuffer])
-      stateBackup.dictionarySizeBits = state.dictionarySizeBits
-      stateBackup.dictionarySizeMask = state.dictionarySizeMask
       stateBackup.bitBuffer = state.bitBuffer
       stateBackup.inputBuffer = Buffer.concat([state.inputBuffer])
+      stateBackup.outputBuffer = Buffer.concat([state.outputBuffer])
     },
-    rollback: () => {
+    restore: () => {
       state.extraBits = stateBackup.extraBits
-      state.outputBuffer = stateBackup.outputBuffer
-      state.dictionarySizeBits = stateBackup.dictionarySizeBits
-      state.dictionarySizeMask = stateBackup.dictionarySizeMask
       state.bitBuffer = stateBackup.bitBuffer
       state.inputBuffer = stateBackup.inputBuffer
+      state.outputBuffer = stateBackup.outputBuffer
     }
   }
 
   return function (chunk, encoding, callback) {
+    state.needModeInput = false
+
     let work
     if (state.isFirstChunk) {
       state.isFirstChunk = false
@@ -321,7 +323,6 @@ const explode = () => {
     } else {
       state.inputBuffer = Buffer.concat([state.inputBuffer, chunk])
       work = Promise.resolve(state)
-      // work = Promise.reject(new Error('stop!'))
     }
 
     work
