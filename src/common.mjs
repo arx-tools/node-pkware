@@ -19,6 +19,9 @@ export const PKDCL_NEED_DICT = 'Need more data (dictionary) (2)'
 export const PKDCL_CONTINUE = 'Continue (internal flag) (10)'
 export const PKDCL_GET_INPUT = 'Get input (internal flag) (11)'
 
+export const LITERAL_END_STREAM = 0x305
+export const LITERAL_STREAM_ABORTED = 0x306
+
 // prettier-ignore
 export const DistCode = [
   0x03, 0x0D, 0x05, 0x19, 0x09, 0x11, 0x01, 0x3E, 0x1E, 0x2E, 0x0E, 0x36, 0x16, 0x26, 0x06, 0x3A,

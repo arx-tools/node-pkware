@@ -4,8 +4,8 @@ import { Transform } from 'stream'
 import { explode } from '../src/index.mjs'
 
 // https://stackoverflow.com/a/27641609/1806628
-// const CHUNK_SIZE_IN_BYTES = 199
-const CHUNK_SIZE_IN_BYTES = 0x1000
+const CHUNK_SIZE_IN_BYTES = 199
+// const CHUNK_SIZE_IN_BYTES = 0x1000
 
 const toConsole = () => (chunk, encoding, callback) => {
   process.stdout.write(chunk)

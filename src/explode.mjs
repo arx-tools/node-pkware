@@ -5,7 +5,6 @@ import {
   BINARY_COMPRESSION,
   ASCII_COMPRESSION,
   CMP_INVALID_MODE,
-  CMP_ABORT,
   PKDCL_OK,
   PKDCL_STREAM_END,
   ChCodeAsc,
@@ -15,7 +14,9 @@ import {
   ExLenBits,
   LenBase,
   DistBits,
-  DistCode
+  DistCode,
+  LITERAL_STREAM_ABORTED,
+  LITERAL_END_STREAM
 } from './common.mjs'
 import { isBetween, getLowestNBits, isBufferEmpty, appendByteToBuffer } from './helpers.mjs'
 
@@ -132,10 +133,7 @@ const wasteBits = (state, numberOfBits) => {
 
   state.bitBuffer >>= state.extraBits
   if (isBufferEmpty(state.inputBuffer)) {
-    // need more data for state.inputBuffer
-    // if (stream ended and no more bytes are coming) {
     return PKDCL_STREAM_END
-    // }
   }
 
   const nextByte = state.inputBuffer.readUInt8(0)
@@ -151,13 +149,13 @@ const wasteBits = (state, numberOfBits) => {
 const decodeNextLiteral = state => {
   if (state.bitBuffer & 1) {
     if (wasteBits(state, 1) === PKDCL_STREAM_END) {
-      return 0x306
+      return LITERAL_STREAM_ABORTED
     }
 
     let lengthCode = state.lengthCodes[getLowestNBits(8, state.bitBuffer)]
 
     if (wasteBits(state, LenBits[lengthCode]) === PKDCL_STREAM_END) {
-      return 0x306
+      return LITERAL_STREAM_ABORTED
     }
 
     const extraLenghtBits = ExLenBits[lengthCode]
@@ -166,7 +164,7 @@ const decodeNextLiteral = state => {
 
       if (wasteBits(state, extraLenghtBits) === PKDCL_STREAM_END) {
         if (lengthCode + extraLength !== 0x10e) {
-          return 0x306
+          return LITERAL_STREAM_ABORTED
         }
       }
 
@@ -177,12 +175,12 @@ const decodeNextLiteral = state => {
   }
 
   if (wasteBits(state, 1) === PKDCL_STREAM_END) {
-    return 0x306
+    return LITERAL_STREAM_ABORTED
   }
 
   if (state.compressionType === BINARY_COMPRESSION) {
     const uncompressedByte = getLowestNBits(8, state.bitBuffer)
-    return wasteBits(state, 8) === PKDCL_STREAM_END ? 0x306 : uncompressedByte
+    return wasteBits(state, 8) === PKDCL_STREAM_END ? LITERAL_STREAM_ABORTED : uncompressedByte
   }
 
   let value
@@ -191,24 +189,24 @@ const decodeNextLiteral = state => {
     if (value === 0xff) {
       if (getLowestNBits(6, state.bitBuffer)) {
         if (wasteBits(state, 4) === PKDCL_STREAM_END) {
-          return 0x306
+          return LITERAL_STREAM_ABORTED
         }
         value = state.asciiTable2D34[getLowestNBits(8, state.bitBuffer)]
       } else {
         if (wasteBits(state, 6) === PKDCL_STREAM_END) {
-          return 0x306
+          return LITERAL_STREAM_ABORTED
         }
         value = state.asciiTable2E34[getLowestNBits(7, state.bitBuffer)]
       }
     }
   } else {
     if (wasteBits(state, 8) === PKDCL_STREAM_END) {
-      return 0x306
+      return LITERAL_STREAM_ABORTED
     }
     value = state.asciiTable2EB4[getLowestNBits(8, state.bitBuffer)]
   }
 
-  return wasteBits(state, state.chBitsAsc[value]) === PKDCL_STREAM_END ? 0x306 : value
+  return wasteBits(state, state.chBitsAsc[value]) === PKDCL_STREAM_END ? LITERAL_STREAM_ABORTED : value
 }
 
 // DecodeDist
@@ -240,13 +238,15 @@ const decodeDistance = (state, repeatLength) => {
 const processChunkData = state => {
   return new Promise((resolve, reject) => {
     let nextLiteral
+    let needModeInput = false
+    state.startTransaction()
 
-    while ((nextLiteral = decodeNextLiteral(state)) < 0x305) {
+    while ((nextLiteral = decodeNextLiteral(state)) < LITERAL_END_STREAM) {
       if (nextLiteral >= 0x100) {
         const repeatLength = nextLiteral - 0xfe
         const minusDistance = decodeDistance(state, repeatLength)
         if (minusDistance === 0) {
-          reject(new Error(CMP_ABORT))
+          needModeInput = true
           break
         }
 
@@ -260,6 +260,16 @@ const processChunkData = state => {
       } else {
         state.outputBuffer = appendByteToBuffer(nextLiteral, state.outputBuffer)
       }
+
+      state.startTransaction()
+    }
+
+    if (nextLiteral === LITERAL_STREAM_ABORTED) {
+      needModeInput = true
+    }
+
+    if (needModeInput) {
+      state.rollback()
     }
 
     state.hasDataToOutput = true
@@ -269,6 +279,8 @@ const processChunkData = state => {
 }
 
 const explode = () => {
+  const stateBackup = {}
+
   let state = {
     isFirstChunk: true,
     chBitsAsc: repeat(0, 0x100), // DecodeLit and GenAscTabs uses this
@@ -278,6 +290,22 @@ const explode = () => {
     outputBuffer: Buffer.from([]),
     onInputFinished: callback => {
       callback(null, state.outputBuffer)
+    },
+    startTransaction: () => {
+      stateBackup.extraBits = state.extraBits
+      stateBackup.outputBuffer = Buffer.concat([state.outputBuffer])
+      stateBackup.dictionarySizeBits = state.dictionarySizeBits
+      stateBackup.dictionarySizeMask = state.dictionarySizeMask
+      stateBackup.bitBuffer = state.bitBuffer
+      stateBackup.inputBuffer = Buffer.concat([state.inputBuffer])
+    },
+    rollback: () => {
+      state.extraBits = stateBackup.extraBits
+      state.outputBuffer = stateBackup.outputBuffer
+      state.dictionarySizeBits = stateBackup.dictionarySizeBits
+      state.dictionarySizeMask = stateBackup.dictionarySizeMask
+      state.bitBuffer = stateBackup.bitBuffer
+      state.inputBuffer = stateBackup.inputBuffer
     }
   }
 
