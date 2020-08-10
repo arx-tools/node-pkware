@@ -93,16 +93,16 @@ const generateDecodeTables = (startIndexes, lengthBits) => {
 
 const parseFirstChunk = chunk => {
   return new Promise((resolve, reject) => {
-    let state = {}
-
     if (chunk.length <= 4) {
       reject(new Error(CMP_BAD_DATA))
       return
     }
 
-    state.compressionType = chunk.readUInt8(0)
-    state.dictionarySizeBits = chunk.readUInt8(1)
-    state.bitBuffer = chunk.readUInt8(2)
+    let state = {
+      compressionType: chunk.readUInt8(0),
+      dictionarySizeBits: chunk.readUInt8(1),
+      bitBuffer: chunk.readUInt8(2)
+    }
 
     if (!isBetween(4, 6, state.dictionarySizeBits)) {
       reject(new Error(CMP_INVALID_DICTSIZE))
@@ -132,7 +132,6 @@ const wasteBits = (state, numberOfBits) => {
     return PKDCL_OK
   }
 
-  state.bitBuffer >>= state.extraBits
   if (isBufferEmpty(state.inputBuffer)) {
     return PKDCL_STREAM_END
   }
@@ -140,13 +139,12 @@ const wasteBits = (state, numberOfBits) => {
   const nextByte = state.inputBuffer.readUInt8(0)
   state.inputBuffer = state.inputBuffer.slice(1)
 
-  state.bitBuffer |= nextByte << 8
-  state.bitBuffer >>= numberOfBits - state.extraBits
-  state.extraBits += 8 - numberOfBits
+  state.bitBuffer = ((state.bitBuffer >> state.extraBits) | (nextByte << 8)) >> (numberOfBits - state.extraBits)
+  state.extraBits = state.extraBits + 8 - numberOfBits
+
   return PKDCL_OK
 }
 
-// DecodeLit
 const decodeNextLiteral = state => {
   if (state.bitBuffer & 1) {
     if (wasteBits(state, 1) === PKDCL_STREAM_END) {
@@ -210,7 +208,6 @@ const decodeNextLiteral = state => {
   return wasteBits(state, state.chBitsAsc[value]) === PKDCL_STREAM_END ? LITERAL_STREAM_ABORTED : value
 }
 
-// DecodeDist
 const decodeDistance = (state, repeatLength) => {
   const distPosCode = state.distPosCodes[getLowestNBits(8, state.bitBuffer)]
   const distPosBits = DistBits[distPosCode]
@@ -235,7 +232,6 @@ const decodeDistance = (state, repeatLength) => {
   return distance + 1
 }
 
-// Expand
 const processChunkData = state => {
   return new Promise((resolve, reject) => {
     let nextLiteral

@@ -1,15 +1,10 @@
 /* global describe, it */
 
 import assert from 'assert'
+import fs from 'fs'
 import explode, { parseFirstChunk, generateAsciiTables, generateDecodeTables } from '../src/explode.mjs'
 import { CMP_BAD_DATA, CMP_INVALID_DICTSIZE } from '../src/common.mjs'
-import { isPromise } from './helpers.mjs'
-
-describe('explode', () => {
-  it('is a function', () => {
-    assert.equal(typeof explode, 'function')
-  })
-})
+import { isPromise, through } from './helpers.mjs'
 
 describe('parseFirstChunk', () => {
   it('is a function', () => {
@@ -39,5 +34,52 @@ describe('generateAsciiTables', () => {
 describe('generateDecodeTables', () => {
   it('is a function', () => {
     assert.equal(typeof generateDecodeTables, 'function')
+  })
+})
+
+describe('explode', () => {
+  it('is a function', () => {
+    assert.equal(typeof explode, 'function')
+  })
+  it('can decode in ascii mode', done => {
+    const CHUNK_SIZE_IN_BYTES = 300
+
+    const readControl = () => {
+      return new Promise((resolve, reject) => {
+        const chunks = []
+        fs.createReadStream('test/files/large.unpacked', { highWaterMark: CHUNK_SIZE_IN_BYTES })
+          .on('error', reject)
+          .on('data', chunk => {
+            chunks.push(chunk)
+          })
+          .on('end', function () {
+            resolve(Buffer.concat(chunks))
+          })
+      })
+    }
+
+    const readTest = () => {
+      return new Promise((resolve, reject) => {
+        const chunks = []
+        fs.createReadStream('./test/files/large.ascii', { highWaterMark: CHUNK_SIZE_IN_BYTES })
+          .pipe(
+            through(explode())
+              .on('error', reject)
+              .on('data', chunk => {
+                chunks.push(chunk)
+              })
+              .on('finish', function () {
+                resolve(Buffer.concat(chunks))
+              })
+          )
+          .on('error', reject)
+      })
+    }
+
+    Promise.all([readControl(), readTest()])
+      .then(([control, test]) => {
+        assert.ok(control.equals(test))
+      })
+      .then(done, done)
   })
 })
