@@ -67,7 +67,7 @@ describe('explode', () => {
       .then(done, done)
   })
   it('can decode files, which have been compressed with binary mode', done => {
-    Promise.all([readToBuffer('test/files/medium.unpacked'), decompressToBuffer('test/files/medium')])
+    Promise.all([readToBuffer('test/files/binary.unpacked'), decompressToBuffer('test/files/binary')])
       .then(([control, test]) => {
         assert.ok(control.equals(test))
       })
