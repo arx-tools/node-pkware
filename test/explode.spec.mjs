@@ -4,7 +4,25 @@ import assert from 'assert'
 import fs from 'fs'
 import explode, { parseFirstChunk, generateAsciiTables, generateDecodeTables } from '../src/explode.mjs'
 import { CMP_BAD_DATA, CMP_INVALID_DICTSIZE } from '../src/common.mjs'
-import { isPromise, through } from './helpers.mjs'
+import { isPromise, through, readToBuffer } from './helpers.mjs'
+
+const decompressToBuffer = (fileName, chunkSizeInBytes = 1024) => {
+  return new Promise((resolve, reject) => {
+    const chunks = []
+    fs.createReadStream(fileName, { highWaterMark: chunkSizeInBytes })
+      .pipe(
+        through(explode())
+          .on('error', reject)
+          .on('data', chunk => {
+            chunks.push(chunk)
+          })
+          .on('finish', function () {
+            resolve(Buffer.concat(chunks))
+          })
+      )
+      .on('error', reject)
+  })
+}
 
 describe('parseFirstChunk', () => {
   it('is a function', () => {
@@ -41,42 +59,15 @@ describe('explode', () => {
   it('is a function', () => {
     assert.equal(typeof explode, 'function')
   })
-  it('can decode in ascii mode', done => {
-    const CHUNK_SIZE_IN_BYTES = 300
-
-    const readControl = () => {
-      return new Promise((resolve, reject) => {
-        const chunks = []
-        fs.createReadStream('test/files/large.unpacked', { highWaterMark: CHUNK_SIZE_IN_BYTES })
-          .on('error', reject)
-          .on('data', chunk => {
-            chunks.push(chunk)
-          })
-          .on('end', function () {
-            resolve(Buffer.concat(chunks))
-          })
+  it('can decode files, which have been compressed with ascii mode', done => {
+    Promise.all([readToBuffer('test/files/large.unpacked'), decompressToBuffer('test/files/large.ascii')])
+      .then(([control, test]) => {
+        assert.ok(control.equals(test))
       })
-    }
-
-    const readTest = () => {
-      return new Promise((resolve, reject) => {
-        const chunks = []
-        fs.createReadStream('./test/files/large.ascii', { highWaterMark: CHUNK_SIZE_IN_BYTES })
-          .pipe(
-            through(explode())
-              .on('error', reject)
-              .on('data', chunk => {
-                chunks.push(chunk)
-              })
-              .on('finish', function () {
-                resolve(Buffer.concat(chunks))
-              })
-          )
-          .on('error', reject)
-      })
-    }
-
-    Promise.all([readControl(), readTest()])
+      .then(done, done)
+  })
+  it('can decode files, which have been compressed with binary mode', done => {
+    Promise.all([readToBuffer('test/files/medium.unpacked'), decompressToBuffer('test/files/medium')])
       .then(([control, test]) => {
         assert.ok(control.equals(test))
       })

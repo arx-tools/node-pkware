@@ -1,5 +1,6 @@
 import { Transform } from 'stream'
 import { EOL } from 'os'
+import fs from 'fs'
 
 const isPromise = promise => {
   return typeof promise === 'object' && promise.constructor.name === 'Promise'
@@ -17,4 +18,18 @@ const toConsole = () => (chunk, encoding, callback) => {
   callback(null, chunk)
 }
 
-export { isPromise, through, toConsole }
+const readToBuffer = (fileName, chunkSizeInBytes = 1024) => {
+  return new Promise((resolve, reject) => {
+    const chunks = []
+    fs.createReadStream(fileName, { highWaterMark: chunkSizeInBytes })
+      .on('error', reject)
+      .on('data', chunk => {
+        chunks.push(chunk)
+      })
+      .on('end', function () {
+        resolve(Buffer.concat(chunks))
+      })
+  })
+}
+
+export { isPromise, through, toConsole, readToBuffer }
