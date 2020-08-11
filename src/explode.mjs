@@ -1,4 +1,4 @@
-import { repeat, mergeRight } from '../node_modules/ramda/src/index.mjs'
+import { repeat, mergeRight, unfold, forEach } from '../node_modules/ramda/src/index.mjs'
 import {
   CMP_BAD_DATA,
   CMP_INVALID_DICTSIZE,
@@ -19,7 +19,24 @@ import {
   LITERAL_STREAM_ABORTED,
   LITERAL_END_STREAM
 } from './common.mjs'
-import { isBetween, getLowestNBits, isBufferEmpty, appendByteToBuffer } from './helpers.mjs'
+import { isBetween, getLowestNBits, isBufferEmpty } from './helpers.mjs'
+
+const populateAsciiTable = (value, index, bits, target, limit = 0x100) => {
+  const seed = n => {
+    if (n >= limit) {
+      return false
+    } else {
+      return [n, n + (1 << (value - bits))]
+    }
+  }
+  const idxs = unfold(seed, ChCodeAsc[index] >> bits)
+
+  forEach(idx => {
+    target[idx] = index
+  }, idxs)
+
+  return value - bits
+}
 
 const generateAsciiTables = () => {
   const state = {
@@ -30,52 +47,22 @@ const generateAsciiTables = () => {
   }
 
   state.chBitsAsc = ChBitsAsc.map((value, index) => {
-    let acc
-
     if (value <= 8) {
-      acc = ChCodeAsc[index]
-
-      do {
-        state.asciiTable2C34[acc] = index
-        acc += 1 << value
-      } while (acc < 0x100)
-
-      return value
+      return populateAsciiTable(value, index, 0, state.asciiTable2C34)
     }
 
-    if (getLowestNBits(8, ChCodeAsc[index]) !== 0) {
-      acc = getLowestNBits(8, ChCodeAsc[index])
+    const acc = getLowestNBits(8, ChCodeAsc[index])
+    if (acc !== 0) {
       state.asciiTable2C34[acc] = 0xff
 
-      if (getLowestNBits(6, ChCodeAsc[index]) !== 0) {
-        acc = ChCodeAsc[index] >> 4
-
-        do {
-          state.asciiTable2D34[acc] = index
-          acc += 1 << (value - 4)
-        } while (acc < 0x100)
-
-        return value - 4
+      if (getLowestNBits(6, ChCodeAsc[index]) === 0) {
+        return populateAsciiTable(value, index, 6, state.asciiTable2E34, 0x80)
       } else {
-        acc = ChCodeAsc[index] >> 6
-
-        do {
-          state.asciiTable2E34[acc] = index
-          acc += 1 << (value - 6)
-        } while (acc < 0x80)
-
-        return value - 6
+        return populateAsciiTable(value, index, 4, state.asciiTable2D34)
       }
     }
 
-    acc = ChCodeAsc[index] >> 8
-
-    do {
-      state.asciiTable2EB4[acc] = index
-      acc += 1 << (value - 8)
-    } while (acc < 0x100)
-
-    return value - 8
+    return populateAsciiTable(value, index, 8, state.asciiTable2EB4)
   })
 
   return state
@@ -239,6 +226,7 @@ const processChunkData = state => {
     state.backup()
 
     while ((nextLiteral = decodeNextLiteral(state)) < LITERAL_END_STREAM) {
+      let addition
       if (nextLiteral >= 0x100) {
         const repeatLength = nextLiteral - 0xfe
         const minusDistance = decodeDistance(state, repeatLength)
@@ -247,28 +235,22 @@ const processChunkData = state => {
           break
         }
 
+        const availableData = state.outputBuffer.slice(
+          state.outputBuffer.length - minusDistance,
+          state.outputBuffer.length - minusDistance + repeatLength
+        )
+
         if (repeatLength > minusDistance) {
-          const availableDataLength = repeatLength - (repeatLength - minusDistance)
-          const availableData = state.outputBuffer.slice(
-            state.outputBuffer.length - minusDistance,
-            state.outputBuffer.length - minusDistance + repeatLength
-          )
-          const repeatAmount = Math.ceil(repeatLength / availableDataLength)
-          const repeatedData = Buffer.concat(repeat(availableData, repeatAmount)).slice(0, repeatLength)
-          state.outputBuffer = Buffer.concat([state.outputBuffer, repeatedData])
+          const multipliedData = repeat(availableData, Math.ceil(repeatLength / availableData.length))
+          addition = Buffer.concat(multipliedData).slice(0, repeatLength)
         } else {
-          state.outputBuffer = Buffer.concat([
-            state.outputBuffer,
-            state.outputBuffer.slice(
-              state.outputBuffer.length - minusDistance,
-              state.outputBuffer.length - minusDistance + repeatLength
-            )
-          ])
+          addition = availableData
         }
       } else {
-        state.outputBuffer = appendByteToBuffer(nextLiteral, state.outputBuffer)
+        addition = Buffer.from([nextLiteral])
       }
 
+      state.outputBuffer = Buffer.concat([state.outputBuffer, addition])
       state.backup()
     }
 
@@ -305,8 +287,8 @@ const explode = () => {
     backup: () => {
       stateBackup.extraBits = state.extraBits
       stateBackup.bitBuffer = state.bitBuffer
-      stateBackup.inputBuffer = Buffer.concat([state.inputBuffer])
-      stateBackup.outputBuffer = Buffer.concat([state.outputBuffer])
+      stateBackup.inputBuffer = state.inputBuffer.slice(0)
+      stateBackup.outputBuffer = state.outputBuffer.slice(0)
     },
     restore: () => {
       state.extraBits = stateBackup.extraBits
