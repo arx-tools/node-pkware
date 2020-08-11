@@ -1,11 +1,11 @@
 export const BINARY_COMPRESSION = 0
 export const ASCII_COMPRESSION = 1
 
-export const CMP_NO_ERROR = 'OK (0)'
-export const CMP_INVALID_DICTSIZE = 'Invalid dictionary size (1)'
-export const CMP_INVALID_MODE = 'Invalid mode (2)'
-export const CMP_BAD_DATA = 'Bad data (3)'
-export const CMP_ABORT = 'Aborted (4)'
+export const CMP_NO_ERROR = 'OK'
+export const CMP_INVALID_DICTSIZE = 'Invalid dictionary size'
+export const CMP_INVALID_MODE = 'Invalid mode'
+export const CMP_BAD_DATA = 'Bad data'
+export const CMP_ABORT = 'Aborted'
 
 export const CMP_IMPLODE_DICT_SIZE1 = 0x0400
 export const CMP_IMPLODE_DICT_SIZE2 = 0x0800
@@ -13,11 +13,11 @@ export const CMP_IMPLODE_DICT_SIZE3 = 0x1000
 
 export const MAX_REP_LENGTH = 0x204
 
-export const PKDCL_OK = 'OK (0)'
-export const PKDCL_STREAM_END = 'All data from the input stream is read (1)'
-export const PKDCL_NEED_DICT = 'Need more data (dictionary) (2)'
-export const PKDCL_CONTINUE = 'Continue (internal flag) (10)'
-export const PKDCL_GET_INPUT = 'Get input (internal flag) (11)'
+export const PKDCL_OK = 'OK'
+export const PKDCL_STREAM_END = 'All data from the input stream is read'
+export const PKDCL_NEED_DICT = 'Need more data (dictionary)'
+export const PKDCL_CONTINUE = 'Continue (internal flag)'
+export const PKDCL_GET_INPUT = 'Get input (internal flag)'
 
 export const LITERAL_END_STREAM = 0x305
 export const LITERAL_STREAM_ABORTED = 0x306
