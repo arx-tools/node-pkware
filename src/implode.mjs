@@ -3,11 +3,11 @@ import {
   DICTIONARY_SIZE1,
   DICTIONARY_SIZE2,
   DICTIONARY_SIZE3,
-  CMP_INVALID_DICTSIZE,
+  ERROR_INVALID_DICTIONARY_SIZE,
   BINARY_COMPRESSION,
   ASCII_COMPRESSION,
-  CMP_INVALID_MODE,
-  CMP_ABORT,
+  ERROR_INVALID_COMPRESSION_TYPE,
+  ERROR_ABORTED,
   ChBitsAsc,
   ChCodeAsc,
   ExLenBits,
@@ -36,7 +36,7 @@ const setup = (compressionType, dictionarySize) => {
         state.dictionarySizeMask = 0x0f
         break
       default:
-        reject(new Error(CMP_INVALID_DICTSIZE))
+        reject(new Error(ERROR_INVALID_DICTIONARY_SIZE))
         return
     }
 
@@ -55,7 +55,7 @@ const setup = (compressionType, dictionarySize) => {
         }
         break
       default:
-        reject(new Error(CMP_INVALID_MODE))
+        reject(new Error(ERROR_INVALID_COMPRESSION_TYPE))
         return
     }
 
@@ -88,7 +88,7 @@ const implode = (compressionType, dictionarySize) => {
     outputBuffer: Buffer.from([]),
     onInputFinished: callback => {
       if (state.needMoreInput) {
-        callback(new Error(CMP_ABORT))
+        callback(new Error(ERROR_ABORTED))
       } else {
         callback(null, state.outputBuffer)
       }

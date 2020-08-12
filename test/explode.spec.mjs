@@ -3,7 +3,7 @@
 import assert from 'assert'
 import fs from 'fs'
 import explode, { parseFirstChunk, generateAsciiTables, generateDecodeTables } from '../src/explode.mjs'
-import { CMP_BAD_DATA, CMP_INVALID_DICTSIZE } from '../src/common.mjs'
+import { ERROR_INVALID_DATA, ERROR_INVALID_DICTIONARY_SIZE } from '../src/common.mjs'
 import { isPromise, through, readToBuffer } from './helpers.mjs'
 
 const decompressToBuffer = (fileName, chunkSizeInBytes = 1024) => {
@@ -33,13 +33,13 @@ describe('parseFirstChunk', () => {
     assert.ok(isPromise(parseFirstChunk(Buffer.from([]))))
   })
 
-  it('rejects with CPM_BAD_DATA, when given buffer is shorter, than 5', async () => {
-    await assert.rejects(parseFirstChunk(Buffer.from([0, 0, 0, 0])), new Error(CMP_BAD_DATA))
+  it('rejects with ERROR_INVALID_DATA, when given buffer is shorter, than 5', async () => {
+    await assert.rejects(parseFirstChunk(Buffer.from([0, 0, 0, 0])), new Error(ERROR_INVALID_DATA))
   })
 
-  it('rejects with CMP_INVALID_DICTSIZE, when 2nd byte is not between 4 and 6', async () => {
-    await assert.rejects(parseFirstChunk(Buffer.from([0, 2, 0, 0, 0])), new Error(CMP_INVALID_DICTSIZE))
-    await assert.rejects(parseFirstChunk(Buffer.from([0, 8, 0, 0, 0])), new Error(CMP_INVALID_DICTSIZE))
+  it('rejects with ERROR_INVALID_DICTIONARY_SIZE, when 2nd byte is not between 4 and 6', async () => {
+    await assert.rejects(parseFirstChunk(Buffer.from([0, 2, 0, 0, 0])), new Error(ERROR_INVALID_DICTIONARY_SIZE))
+    await assert.rejects(parseFirstChunk(Buffer.from([0, 8, 0, 0, 0])), new Error(ERROR_INVALID_DICTIONARY_SIZE))
   })
 })
 

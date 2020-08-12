@@ -1,11 +1,11 @@
 import { repeat, mergeRight, unfold, forEach } from '../node_modules/ramda/src/index.mjs'
 import {
-  CMP_BAD_DATA,
-  CMP_INVALID_DICTSIZE,
+  ERROR_INVALID_DATA,
+  ERROR_INVALID_DICTIONARY_SIZE,
   BINARY_COMPRESSION,
   ASCII_COMPRESSION,
-  CMP_INVALID_MODE,
-  CMP_ABORT,
+  ERROR_INVALID_COMPRESSION_TYPE,
+  ERROR_ABORTED,
   PKDCL_OK,
   PKDCL_STREAM_END,
   ChCodeAsc,
@@ -81,7 +81,7 @@ const generateDecodeTables = (startIndexes, lengthBits) => {
 const parseFirstChunk = chunk => {
   return new Promise((resolve, reject) => {
     if (chunk.length <= 4) {
-      reject(new Error(CMP_BAD_DATA))
+      reject(new Error(ERROR_INVALID_DATA))
       return
     }
 
@@ -92,7 +92,7 @@ const parseFirstChunk = chunk => {
     }
 
     if (!isBetween(4, 6, state.dictionarySizeBits)) {
-      reject(new Error(CMP_INVALID_DICTSIZE))
+      reject(new Error(ERROR_INVALID_DICTIONARY_SIZE))
       return
     }
 
@@ -100,7 +100,7 @@ const parseFirstChunk = chunk => {
 
     if (state.compressionType !== BINARY_COMPRESSION) {
       if (state.compressionType !== ASCII_COMPRESSION) {
-        reject(new Error(CMP_INVALID_MODE))
+        reject(new Error(ERROR_INVALID_COMPRESSION_TYPE))
         return
       }
       state = mergeRight(state, generateAsciiTables())
@@ -279,7 +279,7 @@ const explode = () => {
     outputBuffer: Buffer.from([]),
     onInputFinished: callback => {
       if (state.needMoreInput) {
-        callback(new Error(CMP_ABORT))
+        callback(new Error(ERROR_ABORTED))
       } else {
         callback(null, state.outputBuffer)
       }

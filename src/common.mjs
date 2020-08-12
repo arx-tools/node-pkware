@@ -1,11 +1,10 @@
 export const BINARY_COMPRESSION = 0
 export const ASCII_COMPRESSION = 1
 
-export const CMP_NO_ERROR = 'OK'
-export const CMP_INVALID_DICTSIZE = 'Invalid dictionary size'
-export const CMP_INVALID_MODE = 'Invalid compression type'
-export const CMP_BAD_DATA = 'Bad data'
-export const CMP_ABORT = 'Aborted'
+export const ERROR_INVALID_DICTIONARY_SIZE = 'Invalid dictionary size'
+export const ERROR_INVALID_COMPRESSION_TYPE = 'Invalid compression type'
+export const ERROR_INVALID_DATA = 'Invalid data'
+export const ERROR_ABORTED = 'Aborted'
 
 export const DICTIONARY_SIZE1 = 0x0400
 export const DICTIONARY_SIZE2 = 0x0800
