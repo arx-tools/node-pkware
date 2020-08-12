@@ -1,7 +1,7 @@
 import fs from 'fs'
 import { EOL } from 'os'
 import { Transform } from 'stream'
-import { explode } from '../src/index.mjs'
+import { implode, ASCII_COMPRESSION, DICTIONARY_SIZE1 } from '../src/index.mjs'
 
 // https://stackoverflow.com/a/27641609/1806628
 const CHUNK_SIZE_IN_BYTES = 199
@@ -27,12 +27,12 @@ const through = handler => {
 
 const test = () => {
   return new Promise((resolve, reject) => {
-    fs.createReadStream('./test/files/large.ascii', { highWaterMark: CHUNK_SIZE_IN_BYTES })
+    fs.createReadStream('./test/files/large.unpacked', { highWaterMark: CHUNK_SIZE_IN_BYTES })
       // .pipe(through(toConsole))
       // .pipe(through(turnEveryAtoZ))
-      .pipe(through(explode()).on('error', reject))
+      .pipe(through(implode(ASCII_COMPRESSION, DICTIONARY_SIZE1)).on('error', reject))
       .pipe(through(toConsole()))
-      // .pipe(fs.createWriteStream('E:\\decompressed.txt'))
+      // .pipe(fs.createWriteStream('E:\\compressed.txt'))
       .on('finish', resolve)
       .on('error', reject)
   })
