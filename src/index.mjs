@@ -1,10 +1,25 @@
 import implode from './implode.mjs'
 import explode from './explode.mjs'
+import {
+  BINARY_COMPRESSION,
+  ASCII_COMPRESSION,
+  DICTIONARY_SIZE1,
+  DICTIONARY_SIZE2,
+  DICTIONARY_SIZE3
+} from './common.mjs'
 
 // aliases
 const compress = implode
 const decompress = explode
 
-// TODO: expose error constants
-
-export { implode, explode, compress, decompress }
+export {
+  implode,
+  explode,
+  compress,
+  decompress,
+  BINARY_COMPRESSION,
+  ASCII_COMPRESSION,
+  DICTIONARY_SIZE1,
+  DICTIONARY_SIZE2,
+  DICTIONARY_SIZE3
+}

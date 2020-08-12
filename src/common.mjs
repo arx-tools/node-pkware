@@ -3,13 +3,13 @@ export const ASCII_COMPRESSION = 1
 
 export const CMP_NO_ERROR = 'OK'
 export const CMP_INVALID_DICTSIZE = 'Invalid dictionary size'
-export const CMP_INVALID_MODE = 'Invalid mode'
+export const CMP_INVALID_MODE = 'Invalid compression type'
 export const CMP_BAD_DATA = 'Bad data'
 export const CMP_ABORT = 'Aborted'
 
-export const CMP_IMPLODE_DICT_SIZE1 = 0x0400
-export const CMP_IMPLODE_DICT_SIZE2 = 0x0800
-export const CMP_IMPLODE_DICT_SIZE3 = 0x1000
+export const DICTIONARY_SIZE1 = 0x0400
+export const DICTIONARY_SIZE2 = 0x0800
+export const DICTIONARY_SIZE3 = 0x1000
 
 export const MAX_REP_LENGTH = 0x204
 

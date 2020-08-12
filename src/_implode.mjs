@@ -7,9 +7,9 @@ import {
   CMP_NO_ERROR,
   CMP_INVALID_DICTSIZE,
   CMP_INVALID_MODE,
-  CMP_IMPLODE_DICT_SIZE1,
-  CMP_IMPLODE_DICT_SIZE2,
-  CMP_IMPLODE_DICT_SIZE3,
+  DICTIONARY_SIZE1,
+  DICTIONARY_SIZE2,
+  DICTIONARY_SIZE3,
   MAX_REP_LENGTH,
   DistCode,
   DistBits,
@@ -573,15 +573,15 @@ const implode = (read_buf, write_buf, type, dsize) => {
   let nCount
 
   switch (getValueFromPointer(dsize)) {
-    case CMP_IMPLODE_DICT_SIZE3:
+    case DICTIONARY_SIZE3:
       pWork.dsize_bits += 2
       pWork.dsize_mask |= 0x30
       break
-    case CMP_IMPLODE_DICT_SIZE2:
+    case DICTIONARY_SIZE2:
       pWork.dsize_bits++
       pWork.dsize_mask |= 0x10
       break
-    case CMP_IMPLODE_DICT_SIZE1:
+    case DICTIONARY_SIZE1:
       break
     default:
       return CMP_INVALID_DICTSIZE

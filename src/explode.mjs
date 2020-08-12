@@ -222,7 +222,7 @@ const decodeDistance = (state, repeatLength) => {
 const processChunkData = state => {
   return new Promise((resolve, reject) => {
     let nextLiteral
-    state.needModeInput = false
+    state.needMoreInput = false
     state.backup()
 
     while ((nextLiteral = decodeNextLiteral(state)) < LITERAL_END_STREAM) {
@@ -231,7 +231,7 @@ const processChunkData = state => {
         const repeatLength = nextLiteral - 0xfe
         const minusDistance = decodeDistance(state, repeatLength)
         if (minusDistance === 0) {
-          state.needModeInput = true
+          state.needMoreInput = true
           break
         }
 
@@ -255,10 +255,10 @@ const processChunkData = state => {
     }
 
     if (nextLiteral === LITERAL_STREAM_ABORTED) {
-      state.needModeInput = true
+      state.needMoreInput = true
     }
 
-    if (state.needModeInput) {
+    if (state.needMoreInput) {
       state.restore()
     }
 
@@ -271,14 +271,14 @@ const explode = () => {
 
   let state = {
     isFirstChunk: true,
-    needModeInput: false,
+    needMoreInput: false,
     chBitsAsc: repeat(0, 0x100), // DecodeLit and GenAscTabs uses this
     lengthCodes: generateDecodeTables(LenCode, LenBits),
     distPosCodes: generateDecodeTables(DistCode, DistBits),
     extraBits: 0,
     outputBuffer: Buffer.from([]),
     onInputFinished: callback => {
-      if (state.needModeInput) {
+      if (state.needMoreInput) {
         callback(new Error(CMP_ABORT))
       } else {
         callback(null, state.outputBuffer)
@@ -299,7 +299,7 @@ const explode = () => {
   }
 
   return function (chunk, encoding, callback) {
-    state.needModeInput = false
+    state.needMoreInput = false
 
     let work
     if (state.isFirstChunk) {
