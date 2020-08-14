@@ -1,4 +1,4 @@
-import { repeat, mergeRight, clone } from '../node_modules/ramda/src/index.mjs'
+import { repeat, mergeRight, clone, last } from '../node_modules/ramda/src/index.mjs'
 import {
   DICTIONARY_SIZE1,
   DICTIONARY_SIZE2,
@@ -15,7 +15,7 @@ import {
   DistCode,
   DistBits
 } from './common.mjs'
-import { nBitsOfOnes } from './helpers.mjs'
+import { nBitsOfOnes, isBufferEmpty, appendByteToBuffer } from './helpers.mjs'
 
 const setup = (compressionType, dictionarySize) => {
   return new Promise((resolve, reject) => {
@@ -71,15 +71,45 @@ const setup = (compressionType, dictionarySize) => {
     }
 
     state.outputBuffer = Buffer.from([state.compressionType, state.dictionarySizeBits])
+    state.outBits = 0
 
     resolve(state)
   })
+}
+
+const outputBits = (state, nBits, bitBuffer) => {
+  if (nBits > 8) {
+    outputBits(state, 8, bitBuffer)
+    bitBuffer >>= 8
+    nBits -= 8
+  }
+
+  const outBits = state.outBits
+  // in the original code bitBuffer is long, but cast to char
+  state.outputBuffer[state.outputBuffer.length - 1] |= bitBuffer << outBits
+  state.outBits += nBits
+
+  if (state.outBits > 8) {
+    bitBuffer >>= 8 - outBits
+    // in the original code bitBuffer is long, but cast to char
+    state.outputBuffer = appendByteToBuffer(bitBuffer, state.outputBuffer)
+    state.outBits &= 7
+  } else {
+    state.outBits &= 7
+    if (state.outBits === 0) {
+      state.outputBuffer = appendByteToBuffer(0, state.outputBuffer)
+    }
+  }
 }
 
 const processChunkData = state => {
   return new Promise((resolve, reject) => {
     if (state.inputBuffer.length > 0x1000 || state.streamEnded) {
       state.needMoreInput = false
+
+      if (state.streamEnded && isBufferEmpty(state.inputBuffer)) {
+        // need to wrap up writing bytes, just add final literal
+      }
 
       console.log(
         `we have some data (${state.inputBuffer.length}/${0x1000} bytes) to process and ${
@@ -90,7 +120,9 @@ const processChunkData = state => {
       state.inputBuffer = Buffer.from([])
     }
 
-    if (!state.streamEnded) {
+    if (state.streamEnded) {
+      outputBits(state, last(state.nChBits), last(state.nChCodes))
+    } else {
       state.needMoreInput = true
     }
 
@@ -113,7 +145,12 @@ const implode = (compressionType, dictionarySize) => {
       state.streamEnded = true
       processChunkData(state)
         .then(() => {
-          callback(null, state.outputBuffer)
+          if (state.outputBuffer.length >= 0x800) {
+            // TODO: dump output
+            callback(null, Buffer.from([]))
+          } else {
+            callback(null, Buffer.from([]))
+          }
         })
         .catch(e => {
           callback(e)
@@ -139,11 +176,9 @@ const implode = (compressionType, dictionarySize) => {
     work
       .then(processChunkData)
       .then(() => {
-        const bufferSize = 10
-        if (state.outputBuffer.length > bufferSize) {
-          const outputBuffer = state.outputBuffer.slice(0, bufferSize)
-          state.outputBuffer = state.outputBuffer.slice(bufferSize)
-          callback(null, outputBuffer)
+        if (state.outputBuffer.length >= 0x800) {
+          // TODO: dump output
+          callback(null, Buffer.from([]))
         } else {
           callback(null, Buffer.from([]))
         }

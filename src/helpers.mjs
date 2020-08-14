@@ -18,4 +18,10 @@ const isBufferEmpty = buffer => {
   return buffer.length === 0
 }
 
-export { isBetween, nBitsOfOnes, getLowestNBits, isBufferEmpty }
+const appendByteToBuffer = (byte, buffer) => {
+  const nextByte = Buffer.alloc(1)
+  nextByte.writeUInt8(byte, 0)
+  return Buffer.concat([buffer, nextByte])
+}
+
+export { isBetween, nBitsOfOnes, getLowestNBits, isBufferEmpty, appendByteToBuffer }
