@@ -71,12 +71,23 @@ const setup = (compressionType, dictionarySize) => {
       }
     }
 
+    state.outputBuffer = Buffer.from([state.compressionType, state.dictionarySizeBits])
+
     resolve(state)
   })
 }
 
 const processChunkData = state => {
   return new Promise((resolve, reject) => {
+    state.needMoreInput = false
+    state.backup()
+
+    // process input data
+
+    if (state.needMoreInput) {
+      state.restore()
+    }
+
     resolve()
   })
 }
@@ -96,7 +107,9 @@ const implode = (compressionType, dictionarySize) => {
       } else {
         callback(null, state.outputBuffer)
       }
-    }
+    },
+    backup: () => {},
+    restore: () => {}
   }
 
   return function (chunk, encoding, callback) {
@@ -119,7 +132,14 @@ const implode = (compressionType, dictionarySize) => {
     work
       .then(processChunkData)
       .then(() => {
-        callback(null, Buffer.from([]))
+        const bufferSize = 10
+        if (state.outputBuffer.length > bufferSize) {
+          const outputBuffer = state.outputBuffer.slice(0, bufferSize)
+          state.outputBuffer = state.outputBuffer.slice(bufferSize)
+          callback(null, outputBuffer)
+        } else {
+          callback(null, Buffer.from([]))
+        }
       })
       .catch(e => {
         callback(e)

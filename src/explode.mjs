@@ -317,9 +317,10 @@ const explode = () => {
     work
       .then(processChunkData)
       .then(() => {
-        if (state.outputBuffer.length > 0x1000) {
-          const outputBuffer = state.outputBuffer.slice(0, 0x1000)
-          state.outputBuffer = state.outputBuffer.slice(0x1000)
+        const bufferSize = 0x1000
+        if (state.outputBuffer.length > bufferSize) {
+          const outputBuffer = state.outputBuffer.slice(0, bufferSize)
+          state.outputBuffer = state.outputBuffer.slice(bufferSize)
           callback(null, outputBuffer)
         } else {
           callback(null, Buffer.from([]))
