@@ -62,12 +62,10 @@ const setup = (compressionType, dictionarySize) => {
 
     let nCount = 0x100
     for (let i = 0; i < 0x10; i++) {
-      if (1 << ExLenBits[i]) {
-        for (let nCount2 = 0; nCount2 < 1 << ExLenBits[i]; nCount2++) {
-          state.nChBits[nCount] = ExLenBits[i] + LenBits[i] + 1
-          state.nChCodes[nCount] = (nCount2 << (LenBits[i] + 1)) | ((LenCode[i] & 0xffff00ff) * 2) | 1
-          nCount++
-        }
+      for (let nCount2 = 0; nCount2 < 1 << ExLenBits[i]; nCount2++) {
+        state.nChBits[nCount] = ExLenBits[i] + LenBits[i] + 1
+        state.nChCodes[nCount] = (nCount2 << (LenBits[i] + 1)) | ((LenCode[i] & 0xffff00ff) * 2) | 1
+        nCount++
       }
     }
 
