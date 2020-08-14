@@ -7,7 +7,6 @@ import {
   BINARY_COMPRESSION,
   ASCII_COMPRESSION,
   ERROR_INVALID_COMPRESSION_TYPE,
-  ERROR_ABORTED,
   ChBitsAsc,
   ChCodeAsc,
   ExLenBits,
@@ -79,13 +78,20 @@ const setup = (compressionType, dictionarySize) => {
 
 const processChunkData = state => {
   return new Promise((resolve, reject) => {
-    state.needMoreInput = false
-    state.backup()
+    if (state.inputBuffer.length > 0x1000 || state.streamEnded) {
+      state.needMoreInput = false
 
-    // process input data
+      console.log(
+        `we have some data (${state.inputBuffer.length}/${0x1000} bytes) to process and ${
+          state.streamEnded ? 'the stream ended' : 'we have more data to come'
+        }`
+      )
 
-    if (state.needMoreInput) {
-      state.restore()
+      state.inputBuffer = Buffer.from([])
+    }
+
+    if (!state.streamEnded) {
+      state.needMoreInput = true
     }
 
     resolve()
@@ -95,6 +101,8 @@ const processChunkData = state => {
 const implode = (compressionType, dictionarySize) => {
   let state = {
     isFirstChunk: true,
+    needMoreInput: true, // not sure, if we need this flag
+    streamEnded: false,
     compressionType: compressionType,
     dictionarySizeBytes: dictionarySize,
     distCodes: clone(DistCode),
@@ -102,19 +110,18 @@ const implode = (compressionType, dictionarySize) => {
     inputBuffer: Buffer.from([]),
     outputBuffer: Buffer.from([]),
     onInputFinished: callback => {
-      if (state.needMoreInput) {
-        callback(new Error(ERROR_ABORTED))
-      } else {
-        callback(null, state.outputBuffer)
-      }
-    },
-    backup: () => {},
-    restore: () => {}
+      state.streamEnded = true
+      processChunkData(state)
+        .then(() => {
+          callback(null, state.outputBuffer)
+        })
+        .catch(e => {
+          callback(e)
+        })
+    }
   }
 
   return function (chunk, encoding, callback) {
-    state.needMoreInput = false
-
     let work
     if (state.isFirstChunk) {
       state.isFirstChunk = false
