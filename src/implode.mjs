@@ -1,4 +1,4 @@
-import { repeat, mergeRight } from '../node_modules/ramda/src/index.mjs'
+import { repeat, mergeRight, clone } from '../node_modules/ramda/src/index.mjs'
 import {
   DICTIONARY_SIZE1,
   DICTIONARY_SIZE2,
@@ -12,7 +12,9 @@ import {
   ChCodeAsc,
   ExLenBits,
   LenBits,
-  LenCode
+  LenCode,
+  DistCode,
+  DistBits
 } from './common.mjs'
 import { nBitsOfOnes } from './helpers.mjs'
 
@@ -84,6 +86,8 @@ const implode = (compressionType, dictionarySize) => {
     isFirstChunk: true,
     compressionType: compressionType,
     dictionarySizeBytes: dictionarySize,
+    distCodes: clone(DistCode),
+    distBits: clone(DistBits),
     inputBuffer: Buffer.from([]),
     outputBuffer: Buffer.from([]),
     onInputFinished: callback => {
