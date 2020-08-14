@@ -14,6 +14,7 @@ import {
   LenBits,
   LenCode
 } from './common.mjs'
+import { nBitsOfOnes } from './helpers.mjs'
 
 const setup = (compressionType, dictionarySize) => {
   return new Promise((resolve, reject) => {
@@ -25,15 +26,15 @@ const setup = (compressionType, dictionarySize) => {
     switch (dictionarySize) {
       case DICTIONARY_SIZE3:
         state.dictionarySizeBits = 6
-        state.dictionarySizeMask = 0x3f
+        state.dictionarySizeMask = nBitsOfOnes(6)
         break
       case DICTIONARY_SIZE2:
         state.dictionarySizeBits = 5
-        state.dictionarySizeMask = 0x1f
+        state.dictionarySizeMask = nBitsOfOnes(5)
         break
       case DICTIONARY_SIZE1:
         state.dictionarySizeBits = 4
-        state.dictionarySizeMask = 0x0f
+        state.dictionarySizeMask = nBitsOfOnes(4)
         break
       default:
         reject(new Error(ERROR_INVALID_DICTIONARY_SIZE))
@@ -83,8 +84,9 @@ const processChunkData = state => {
 const implode = (compressionType, dictionarySize) => {
   let state = {
     isFirstChunk: true,
-    dictionarySizeBytes: dictionarySize,
     compressionType: compressionType,
+    dictionarySizeBytes: dictionarySize,
+    inputBuffer: Buffer.from([]),
     outputBuffer: Buffer.from([]),
     onInputFinished: callback => {
       if (state.needMoreInput) {
