@@ -73,4 +73,25 @@ describe('explode', () => {
       })
       .then(done, done)
   })
+  it('can decode files, which have been compressed with small dictionary size', done => {
+    Promise.all([readToBuffer('test/files/small.unpacked'), decompressToBuffer('test/files/small')])
+      .then(([control, test]) => {
+        assert.ok(control.equals(test))
+      })
+      .then(done, done)
+  })
+  it('can decode files, which have been compressed with medium dictionary size', done => {
+    Promise.all([readToBuffer('test/files/medium.unpacked'), decompressToBuffer('test/files/medium')])
+      .then(([control, test]) => {
+        assert.ok(control.equals(test))
+      })
+      .then(done, done)
+  })
+  it('can decode files, which have been compressed with large dictionary size', done => {
+    Promise.all([readToBuffer('test/files/large.unpacked'), decompressToBuffer('test/files/large')])
+      .then(([control, test]) => {
+        assert.ok(control.equals(test))
+      })
+      .then(done, done)
+  })
 })
