@@ -19,7 +19,7 @@ import {
   LITERAL_STREAM_ABORTED,
   LITERAL_END_STREAM
 } from './common.mjs'
-import { isBetween, getLowestNBits, isBufferEmpty } from './helpers.mjs'
+import { isBetween, getLowestNBits, isBufferEmpty, nBitsOfOnes } from './helpers.mjs'
 
 const populateAsciiTable = (value, index, bits, target, limit = 0x100) => {
   const seed = n => {
@@ -96,7 +96,7 @@ const parseFirstChunk = chunk => {
       return
     }
 
-    state.dictionarySizeMask = 0xffff >> (0x10 - state.dictionarySizeBits)
+    state.dictionarySizeMask = nBitsOfOnes(state.dictionarySizeBits)
 
     if (state.compressionType !== BINARY_COMPRESSION) {
       if (state.compressionType !== ASCII_COMPRESSION) {

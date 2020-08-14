@@ -4,8 +4,12 @@ const isBetween = curry((min, max, num) => {
   return num >= min && num <= max
 })
 
+const nBitsOfOnes = numberOfBits => {
+  return (1 << numberOfBits) - 1
+}
+
 const getLowestNBits = curry((numberOfBits, number) => {
-  return number & ((1 << numberOfBits) - 1)
+  return number & nBitsOfOnes(numberOfBits)
 })
 
 // Ramda.isEmpty not working with Buffers
@@ -14,4 +18,4 @@ const isBufferEmpty = buffer => {
   return buffer.length === 0
 }
 
-export { isBetween, getLowestNBits, isBufferEmpty }
+export { isBetween, nBitsOfOnes, getLowestNBits, isBufferEmpty }
