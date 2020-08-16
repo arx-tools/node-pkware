@@ -24,8 +24,11 @@ const through = handler => {
   })
 }
 
+// TODO: implement --offset
+// https://www.alxolr.com/articles/how-to-fork-a-nodejs-stream-into-many-streams
+// explode --input=test/files/fast.fts --output=E:/fast.fts.decompressed --offset=1816
+
 const decompress = (input, output, offset) => {
-  // TODO: implement offset: fast.fts has an offset of 0x718
   return new Promise((resolve, reject) => {
     fs.createReadStream(input)
       .pipe(through(explode()).on('error', reject))
