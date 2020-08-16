@@ -1,5 +1,5 @@
 import fs from 'fs'
-import { EOL } from 'os'
+// import { EOL } from 'os'
 import { Transform } from 'stream'
 import { implode, ASCII_COMPRESSION, DICTIONARY_SIZE1 } from '../src/index.mjs'
 
@@ -7,11 +7,13 @@ import { implode, ASCII_COMPRESSION, DICTIONARY_SIZE1 } from '../src/index.mjs'
 const CHUNK_SIZE_IN_BYTES = 199
 // const CHUNK_SIZE_IN_BYTES = 0x1000
 
+/*
 const toConsole = () => (chunk, encoding, callback) => {
   process.stdout.write(chunk)
   process.stdout.write(Buffer.from(EOL))
   callback(null, chunk)
 }
+*/
 
 /*
 const turnEveryAtoZ = (chunk, encoding, callback) => {
@@ -27,12 +29,12 @@ const through = handler => {
 
 const test = () => {
   return new Promise((resolve, reject) => {
-    fs.createReadStream('./test/files/large.unpacked', { highWaterMark: CHUNK_SIZE_IN_BYTES })
+    fs.createReadStream('./test/files/very-tiny.unpacked', { highWaterMark: CHUNK_SIZE_IN_BYTES })
       // .pipe(through(toConsole))
       // .pipe(through(turnEveryAtoZ))
       .pipe(through(implode(ASCII_COMPRESSION, DICTIONARY_SIZE1)).on('error', reject))
-      .pipe(through(toConsole()))
-      // .pipe(fs.createWriteStream('E:\\compressed.txt'))
+      // .pipe(through(toConsole()))
+      .pipe(fs.createWriteStream('E:\\compressed.txt'))
       .on('finish', resolve)
       .on('error', reject)
   })

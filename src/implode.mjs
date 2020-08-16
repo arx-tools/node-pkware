@@ -160,6 +160,7 @@ const implode = (compressionType, dictionarySize) => {
       state.streamEnded = true
       processChunkData(state)
         .then(() => {
+          console.log(state.outputBuffer)
           callback(null, state.outputBuffer)
         })
         .catch(e => {

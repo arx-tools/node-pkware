@@ -4,8 +4,8 @@
   "description": "The nodejs implementation of StormLib's pkware compressor/de-compressor",
   "main": "src/index.mjs",
   "bin": {
-    "implode": "bin/implode.js",
-    "explode": "bin/explode.js"
+    "implode": "bin/implode.mjs",
+    "explode": "bin/explode.mjs"
   },
   "scripts": {
     "test": "node --experimental-modules --no-warnings test/index.mjs",
@@ -27,6 +27,7 @@
   "author": "Lajos Meszaros <m_lajos@hotmail.com>",
   "license": "GPL-3.0-or-later",
   "dependencies": {
+    "minimist": "^1.2.5",
     "ramda": "^0.27.1"
   },
   "devDependencies": {

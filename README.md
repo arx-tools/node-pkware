@@ -14,9 +14,11 @@ tested in node version 12.7.0
 
 ## command line interface
 
-`implode` - compresses file
+`implode --filename=<path to uncompressed file>` - compresses file. output will be placed next to
+the given file and named as `<filename>.compressed`
 
-`explode` - decompresses file
+`explode --filename=<path to compressed file>` - decompresses file. output will be placed next to
+the given file and names as `<filename>.decompressed`
 
 ## sources:
 
