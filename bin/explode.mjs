@@ -44,7 +44,7 @@ const decompress = (input, output, offset) => {
 
 decompress(args.input, args.output)
   .then(() => {
-    console.log('OK')
+    console.log('done')
     process.exit(0)
   })
   .catch(e => {
