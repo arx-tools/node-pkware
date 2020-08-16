@@ -1,7 +1,6 @@
 #!/usr/bin/env node --experimental-modules --no-warnings
 
 import fs from 'fs'
-import { Transform } from 'stream'
 import minimist from 'minimist'
 import {
   implode,
@@ -12,10 +11,9 @@ import {
   DICTIONARY_SIZE3
 } from '../src/index.mjs'
 import { isBetween } from '../src/helpers.mjs'
+import { through, fileExists, getPackageVersion } from './helpers.mjs'
 
-const { version } = JSON.parse(fs.readFileSync('./package.json'))
-
-console.log(`node-pkware v.${version}`)
+console.log(`node-pkware v.${getPackageVersion()}`)
 
 const args = minimist(process.argv.slice(2), {
   string: ['input', 'output'],
@@ -27,6 +25,8 @@ let hasErrors = false
 if (!args.input) {
   console.error('error: --input not specified')
   hasErrors = true
+} else if (!fileExists(args.input)) {
+  console.error()
 }
 
 if (args.ascii && args.binary) {
@@ -45,23 +45,19 @@ if (!args.level) {
   hasErrors = true
 }
 
-// TODO: check if file exists
-
 if (hasErrors) {
   process.exit(1)
 }
 
-const through = handler => {
-  return new Transform({
-    transform: handler
-  })
+if (!args.output) {
+  console.warn(`warning: --output not specified, output will be generated to "${args.input}.compressed"`)
 }
 
 const decompress = (input, output, compressionType, dictionarySize) => {
   return new Promise((resolve, reject) => {
     fs.createReadStream(input)
       .pipe(through(implode(compressionType, dictionarySize)).on('error', reject))
-      .pipe(fs.createWriteStream(output || `${input}.compressed`)) // TODO: add log message on the output
+      .pipe(fs.createWriteStream(output || `${input}.compressed`))
       .on('finish', resolve)
       .on('error', reject)
   })
@@ -71,7 +67,7 @@ const compressionType = args.ascii ? ASCII_COMPRESSION : BINARY_COMPRESSION
 const dictionarySize = args.level === 1 ? DICTIONARY_SIZE1 : args.level === 2 ? DICTIONARY_SIZE2 : DICTIONARY_SIZE3
 decompress(args.input, args.output, compressionType, dictionarySize)
   .then(() => {
-    console.log('OK')
+    console.log('done')
     process.exit(0)
   })
   .catch(e => {

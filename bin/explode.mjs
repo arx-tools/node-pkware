@@ -1,29 +1,31 @@
 #!/usr/bin/env node --experimental-modules --no-warnings
 
 import fs from 'fs'
-import { Transform } from 'stream'
 import minimist from 'minimist'
 import { explode } from '../src/index.mjs'
+import { through, fileExists, getPackageVersion } from './helpers.mjs'
 
-const { version } = JSON.parse(fs.readFileSync('./package.json'))
-
-console.log(`node-pkware v.${version}`)
+console.log(`node-pkware v.${getPackageVersion()}`)
 
 const args = minimist(process.argv.slice(2), {
   string: ['input', 'output']
 })
 
+let hasErrors = false
+
 if (!args.input) {
   console.error('error: --input not specified')
+  hasErrors = true
+} else if (!fileExists(args.input)) {
+  console.error()
+}
+
+if (hasErrors) {
   process.exit(1)
 }
 
-// TODO: check if file exists
-
-const through = handler => {
-  return new Transform({
-    transform: handler
-  })
+if (!args.output) {
+  console.warn(`warning: --output not specified, output will be generated to "${args.input}.compressed"`)
 }
 
 // TODO: implement --offset
@@ -34,7 +36,7 @@ const decompress = (input, output, offset) => {
   return new Promise((resolve, reject) => {
     fs.createReadStream(input)
       .pipe(through(explode()).on('error', reject))
-      .pipe(fs.createWriteStream(output || `${input}.decompressed`)) // TODO: add log message on the output
+      .pipe(fs.createWriteStream(output || `${input}.decompressed`))
       .on('finish', resolve)
       .on('error', reject)
   })
