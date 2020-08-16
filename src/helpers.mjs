@@ -12,6 +12,8 @@ const getLowestNBits = curry((numberOfBits, number) => {
   return number & nBitsOfOnes(numberOfBits)
 })
 
+const getLowestByte = getLowestNBits(8)
+
 // Ramda.isEmpty not working with Buffers
 // source: https://github.com/ramda/ramda/issues/2799
 const isBufferEmpty = buffer => {
@@ -24,4 +26,4 @@ const appendByteToBuffer = (byte, buffer) => {
   return Buffer.concat([buffer, nextByte])
 }
 
-export { isBetween, nBitsOfOnes, getLowestNBits, isBufferEmpty, appendByteToBuffer }
+export { isBetween, nBitsOfOnes, getLowestNBits, getLowestByte, isBufferEmpty, appendByteToBuffer }

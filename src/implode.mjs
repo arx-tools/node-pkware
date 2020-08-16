@@ -15,7 +15,7 @@ import {
   DistCode,
   DistBits
 } from './common.mjs'
-import { nBitsOfOnes, isBufferEmpty, appendByteToBuffer } from './helpers.mjs'
+import { nBitsOfOnes, isBufferEmpty, appendByteToBuffer, getLowestByte, getLowestNBits } from './helpers.mjs'
 
 const setup = (compressionType, dictionarySize) => {
   return new Promise((resolve, reject) => {
@@ -70,7 +70,7 @@ const setup = (compressionType, dictionarySize) => {
       }
     }
 
-    state.outputBuffer = Buffer.from([state.compressionType, state.dictionarySizeBits])
+    state.outputBuffer = Buffer.from([state.compressionType, state.dictionarySizeBits, 0])
     state.outBits = 0
 
     resolve(state)
@@ -80,22 +80,22 @@ const setup = (compressionType, dictionarySize) => {
 const outputBits = (state, nBits, bitBuffer) => {
   if (nBits > 8) {
     outputBits(state, 8, bitBuffer)
-    bitBuffer >>= 8
-    nBits -= 8
+    bitBuffer = bitBuffer >> 8
+    nBits = nBits - 8
   }
 
   const outBits = state.outBits
+
   // in the original code bitBuffer is long, but cast to char
-  state.outputBuffer[state.outputBuffer.length - 1] |= bitBuffer << outBits
-  state.outBits += nBits
+  state.outputBuffer[state.outputBuffer.length - 1] |= getLowestByte(bitBuffer << outBits)
+  state.outBits = state.outBits + nBits
 
   if (state.outBits > 8) {
-    bitBuffer >>= 8 - outBits
-    // in the original code bitBuffer is long, but cast to char
-    state.outputBuffer = appendByteToBuffer(bitBuffer, state.outputBuffer)
-    state.outBits &= 7
+    bitBuffer = bitBuffer >> (8 - outBits)
+    state.outputBuffer = appendByteToBuffer(getLowestByte(bitBuffer), state.outputBuffer)
+    state.outBits = getLowestNBits(3, state.outBits)
   } else {
-    state.outBits &= 7
+    state.outBits = getLowestNBits(3, state.outBits)
     if (state.outBits === 0) {
       state.outputBuffer = appendByteToBuffer(0, state.outputBuffer)
     }
@@ -122,6 +122,10 @@ const processChunkData = state => {
 
     if (state.streamEnded) {
       outputBits(state, last(state.nChBits), last(state.nChCodes))
+      if (state.outBits !== 0) {
+        // TODO: this might be another thing, that is unnecessary and can be deleted
+        state.outputBuffer = appendByteToBuffer(0, state.outputBuffer)
+      }
     } else {
       state.needMoreInput = true
     }
@@ -130,10 +134,21 @@ const processChunkData = state => {
   })
 }
 
+const flushBuffer = state => {
+  if (state.outputBuffer.length >= 0x800) {
+    const output = state.outputBuffer.slice(0, 0x800)
+    state.outputBuffer = state.outputBuffer.slice(0x800)
+
+    return output
+  } else {
+    return Buffer.from([])
+  }
+}
+
 const implode = (compressionType, dictionarySize) => {
   let state = {
     isFirstChunk: true,
-    needMoreInput: true, // not sure, if we need this flag
+    needMoreInput: true, // TODO: not sure, if we need this flag
     streamEnded: false,
     compressionType: compressionType,
     dictionarySizeBytes: dictionarySize,
@@ -145,12 +160,7 @@ const implode = (compressionType, dictionarySize) => {
       state.streamEnded = true
       processChunkData(state)
         .then(() => {
-          if (state.outputBuffer.length >= 0x800) {
-            // TODO: dump output
-            callback(null, Buffer.from([]))
-          } else {
-            callback(null, Buffer.from([]))
-          }
+          callback(null, state.outputBuffer)
         })
         .catch(e => {
           callback(e)
@@ -176,12 +186,7 @@ const implode = (compressionType, dictionarySize) => {
     work
       .then(processChunkData)
       .then(() => {
-        if (state.outputBuffer.length >= 0x800) {
-          // TODO: dump output
-          callback(null, Buffer.from([]))
-        } else {
-          callback(null, Buffer.from([]))
-        }
+        callback(null, flushBuffer(state))
       })
       .catch(e => {
         callback(e)

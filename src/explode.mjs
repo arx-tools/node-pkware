@@ -114,8 +114,8 @@ const parseFirstChunk = chunk => {
 
 const wasteBits = (state, numberOfBits) => {
   if (numberOfBits <= state.extraBits) {
-    state.extraBits -= numberOfBits
-    state.bitBuffer >>= numberOfBits
+    state.extraBits = state.extraBits - numberOfBits
+    state.bitBuffer = state.bitBuffer >> numberOfBits
     return PKDCL_OK
   }
 
