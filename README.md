@@ -14,11 +14,13 @@ tested in node version 12.7.0
 
 ## command line interface
 
-`implode --filename=<path to uncompressed file>` - compresses file. output will be placed next to
-the given file and named as `<filename>.compressed`
+`implode --input=<filename> --output=<filename> --ascii|--binary --level=1|2|3` - decompresses file.
+if `--output` is omitted, then output will be placed next to input and names as `<filename>.compressed`
 
-`explode --filename=<path to compressed file>` - decompresses file. output will be placed next to
-the given file and names as `<filename>.decompressed`
+`explode --input=<filename> --output=<filename>` - decompresses file. if `--output` is omitted, then
+output will be placed next to input and names as `<filename>.decompressed`. optionally you can
+specify an offset from which the compressed data starts with the `--offset <byte>`, which is useful
+for mixed files, such as the fts files of Arx Fatalis
 
 ## sources:
 

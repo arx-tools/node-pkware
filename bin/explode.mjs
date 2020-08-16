@@ -10,11 +10,11 @@ const { version } = JSON.parse(fs.readFileSync('./package.json'))
 console.log(`node-pkware v.${version}`)
 
 const args = minimist(process.argv.slice(2), {
-  string: ['filename']
+  string: ['input', 'output']
 })
 
-if (!args.filename) {
-  console.error('--filename not specified')
+if (!args.input) {
+  console.error('error: --input not specified')
   process.exit(1)
 }
 
@@ -24,17 +24,18 @@ const through = handler => {
   })
 }
 
-const decompress = filename => {
+const decompress = (input, output, offset) => {
+  // TODO: implement offset: fast.fts has an offset of 0x718
   return new Promise((resolve, reject) => {
-    fs.createReadStream(filename)
+    fs.createReadStream(input)
       .pipe(through(explode()).on('error', reject))
-      .pipe(fs.createWriteStream(`${filename}.decompressed`))
+      .pipe(fs.createWriteStream(output || `${input}.decompressed`))
       .on('finish', resolve)
       .on('error', reject)
   })
 }
 
-decompress(args.filename)
+decompress(args.input, args.output)
   .then(() => {
     console.log('OK')
     process.exit(0)
