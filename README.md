@@ -8,6 +8,10 @@ it was the de-facto compression for games from around Y2K, like Arx Fatalis
 
 `npm i -g node-pkware`
 
+recommended node version: 8.5+
+
+tested in node version 12.7.0
+
 ## command line interface
 
 `implode` - compresses file
