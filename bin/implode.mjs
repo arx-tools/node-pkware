@@ -45,6 +45,8 @@ if (!args.level) {
   hasErrors = true
 }
 
+// TODO: check if file exists
+
 if (hasErrors) {
   process.exit(1)
 }
@@ -59,7 +61,7 @@ const decompress = (input, output, compressionType, dictionarySize) => {
   return new Promise((resolve, reject) => {
     fs.createReadStream(input)
       .pipe(through(implode(compressionType, dictionarySize)).on('error', reject))
-      .pipe(fs.createWriteStream(output || `${input}.compressed`))
+      .pipe(fs.createWriteStream(output || `${input}.compressed`)) // TODO: add log message on the output
       .on('finish', resolve)
       .on('error', reject)
   })

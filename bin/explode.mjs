@@ -18,6 +18,8 @@ if (!args.input) {
   process.exit(1)
 }
 
+// TODO: check if file exists
+
 const through = handler => {
   return new Transform({
     transform: handler
@@ -32,7 +34,7 @@ const decompress = (input, output, offset) => {
   return new Promise((resolve, reject) => {
     fs.createReadStream(input)
       .pipe(through(explode()).on('error', reject))
-      .pipe(fs.createWriteStream(output || `${input}.decompressed`))
+      .pipe(fs.createWriteStream(output || `${input}.decompressed`)) // TODO: add log message on the output
       .on('finish', resolve)
       .on('error', reject)
   })
