@@ -117,9 +117,9 @@ const processChunkData = state => {
         }`
       )
 
-      outputBits(state, state.nChBits[state.inputBuffer[0]], state.nChCodes[state.inputBuffer[0]])
-      outputBits(state, state.nChBits[state.inputBuffer[1]], state.nChCodes[state.inputBuffer[1]])
-      outputBits(state, state.nChBits[state.inputBuffer[2]], state.nChCodes[state.inputBuffer[2]])
+      Array.from(state.inputBuffer).forEach(char => {
+        outputBits(state, state.nChBits[char], state.nChCodes[char])
+      })
 
       state.inputBuffer = Buffer.from([])
     }
