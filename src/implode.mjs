@@ -131,11 +131,6 @@ const processChunkData = state => {
 
     if (state.streamEnded) {
       outputBits(state, last(state.nChBits), last(state.nChCodes))
-      if (state.outBits !== 0) {
-        console.log('---------', state.outBits)
-        // TODO: this might be another thing, that is unnecessary and can be deleted
-        // state.outputBuffer = appendByteToBuffer(0, state.outputBuffer)
-      }
     } else {
       state.needMoreInput = true
     }
