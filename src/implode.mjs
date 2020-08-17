@@ -70,7 +70,7 @@ const setup = (compressionType, dictionarySize) => {
       }
     }
 
-    state.outputBuffer = Buffer.from([state.compressionType, state.dictionarySizeBits, 0])
+    state.outputBuffer = Buffer.from([compressionType, state.dictionarySizeBits, 0])
     state.outBits = 0
 
     resolve(state)
@@ -117,14 +117,19 @@ const processChunkData = state => {
         }`
       )
 
+      outputBits(state, state.nChBits[state.inputBuffer[0]], state.nChCodes[state.inputBuffer[0]])
+      outputBits(state, state.nChBits[state.inputBuffer[1]], state.nChCodes[state.inputBuffer[1]])
+      outputBits(state, state.nChBits[state.inputBuffer[2]], state.nChCodes[state.inputBuffer[2]])
+
       state.inputBuffer = Buffer.from([])
     }
 
     if (state.streamEnded) {
       outputBits(state, last(state.nChBits), last(state.nChCodes))
       if (state.outBits !== 0) {
+        console.log('---------', state.outBits)
         // TODO: this might be another thing, that is unnecessary and can be deleted
-        state.outputBuffer = appendByteToBuffer(0, state.outputBuffer)
+        // state.outputBuffer = appendByteToBuffer(0, state.outputBuffer)
       }
     } else {
       state.needMoreInput = true
@@ -139,6 +144,10 @@ const flushBuffer = state => {
     const output = state.outputBuffer.slice(0, 0x800)
     state.outputBuffer = state.outputBuffer.slice(0x800)
 
+    if (state.outBits === 0) {
+      state.outputBuffer[state.outputBuffer.length - 1] = 0
+    }
+
     return output
   } else {
     return Buffer.from([])
@@ -150,6 +159,7 @@ const implode = (compressionType, dictionarySize) => {
     isFirstChunk: true,
     needMoreInput: true, // TODO: not sure, if we need this flag
     streamEnded: false,
+    phase: 0,
     compressionType: compressionType,
     dictionarySizeBytes: dictionarySize,
     distCodes: clone(DistCode),
