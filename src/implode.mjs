@@ -17,6 +17,8 @@ import {
 } from './common.mjs'
 import { nBitsOfOnes, isBufferEmpty, appendByteToBuffer, getLowestByte, getLowestNBits } from './helpers.mjs'
 
+// const LONGEST_ALLOWED_REPETITION = 0x204
+
 const setup = (compressionType, dictionarySize) => {
   return new Promise((resolve, reject) => {
     const state = {
@@ -102,6 +104,10 @@ const outputBits = (state, nBits, bitBuffer) => {
   }
 }
 
+const findRepetitions = state => {
+  return 0
+}
+
 const processChunkData = state => {
   return new Promise((resolve, reject) => {
     if (state.inputBuffer.length > 0x1000 || state.streamEnded) {
@@ -117,12 +123,20 @@ const processChunkData = state => {
         }`
       )
 
+      let bytesToSkip = 0
       const inputBytes = Array.from(state.inputBuffer.slice(0, 0x1000))
-      inputBytes.forEach(char => {
+      inputBytes.forEach(byte => {
+        if (bytesToSkip-- > 0) {
+          return
+        }
+
         const foundRepetition = false
 
+        const repetitionSize = findRepetitions(state)
+        bytesToSkip += repetitionSize
+
         if (!foundRepetition) {
-          outputBits(state, state.nChBits[char], state.nChCodes[char])
+          outputBits(state, state.nChBits[byte], state.nChCodes[byte])
         }
       })
 
