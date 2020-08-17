@@ -117,11 +117,16 @@ const processChunkData = state => {
         }`
       )
 
-      Array.from(state.inputBuffer).forEach(char => {
-        outputBits(state, state.nChBits[char], state.nChCodes[char])
+      const inputBytes = Array.from(state.inputBuffer.slice(0, 0x1000))
+      inputBytes.forEach(char => {
+        const foundRepetition = false
+
+        if (!foundRepetition) {
+          outputBits(state, state.nChBits[char], state.nChCodes[char])
+        }
       })
 
-      state.inputBuffer = Buffer.from([])
+      state.inputBuffer = state.inputBuffer.slice(inputBytes.length)
     }
 
     if (state.streamEnded) {
