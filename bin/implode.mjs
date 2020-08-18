@@ -10,8 +10,8 @@ import {
   DICTIONARY_SIZE2,
   DICTIONARY_SIZE3
 } from '../src/index.mjs'
-import { isBetween } from '../src/helpers.mjs'
-import { through, fileExists, getPackageVersion } from './helpers.mjs'
+import { isBetween, through } from '../src/helpers.mjs'
+import { fileExists, getPackageVersion } from './helpers.mjs'
 
 console.log(`node-pkware v.${getPackageVersion()}`)
 

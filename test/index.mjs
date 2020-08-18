@@ -1,7 +1,7 @@
 import fs from 'fs'
 // import { EOL } from 'os'
-import { Transform } from 'stream'
 import { implode, ASCII_COMPRESSION, DICTIONARY_SIZE1 } from '../src/index.mjs'
+import { through } from '../src/helpers.mjs'
 
 // https://stackoverflow.com/a/27641609/1806628
 const CHUNK_SIZE_IN_BYTES = 199
@@ -20,12 +20,6 @@ const turnEveryAtoZ = (chunk, encoding, callback) => {
   callback(null, Buffer.from(Array.from(chunk).map(char => (char === 97 ? 122 : char))))
 }
 */
-
-const through = handler => {
-  return new Transform({
-    transform: handler
-  })
-}
 
 const test = () => {
   return new Promise((resolve, reject) => {

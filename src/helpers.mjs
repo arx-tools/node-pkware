@@ -1,3 +1,4 @@
+import { Transform } from 'stream'
 import { curry } from '../node_modules/ramda/src/index.mjs'
 
 const isBetween = curry((min, max, num) => {
@@ -26,4 +27,10 @@ const appendByteToBuffer = (byte, buffer) => {
   return Buffer.concat([buffer, nextByte])
 }
 
-export { isBetween, nBitsOfOnes, getLowestNBits, getLowestByte, isBufferEmpty, appendByteToBuffer }
+const through = handler => {
+  return new Transform({
+    transform: handler
+  })
+}
+
+export { isBetween, nBitsOfOnes, getLowestNBits, getLowestByte, isBufferEmpty, appendByteToBuffer, through }

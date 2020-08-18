@@ -1,15 +1,9 @@
-import { Transform } from 'stream'
 import { EOL } from 'os'
 import fs from 'fs'
+import { through } from '../src/helpers.mjs'
 
 const isPromise = promise => {
   return typeof promise === 'object' && promise.constructor.name === 'Promise'
-}
-
-const through = handler => {
-  return new Transform({
-    transform: handler
-  })
 }
 
 const toConsole = () => (chunk, encoding, callback) => {
