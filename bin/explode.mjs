@@ -27,7 +27,7 @@ if (hasErrors) {
 }
 
 if (!args.output) {
-  console.warn(`warning: --output not specified, output will be generated to "${args.input}.compressed"`)
+  console.warn(`warning: --output not specified, output will be generated to "${args.input}.decompressed"`)
 }
 
 const decompress = (input, output, offset) => {
