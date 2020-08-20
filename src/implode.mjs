@@ -118,29 +118,35 @@ const processChunkData = state => {
       }
 
       console.log(
-        `we have some data (${state.inputBuffer.length}/${0x1000} bytes) to process and ${
+        `we have some data (0x${state.inputBuffer.length.toString(16)}/0x1000 bytes) to process and ${
           state.streamEnded ? 'the stream ended' : 'we have more data to come'
         }`
       )
 
-      let bytesToSkip = 0
-      const inputBytes = Array.from(state.inputBuffer.slice(0, 0x1000))
-      inputBytes.forEach(byte => {
-        if (bytesToSkip-- > 0) {
-          return
-        }
+      let limit = 1000
 
-        const foundRepetition = false
+      // TODO: not the best place to have the while loop, since we're not pushing "compressed" data
+      // but instead accumulate it into state.outputBuffer
+      while (limit-- > 0 && (state.inputBuffer.length > 0 || !state.streamEnded)) {
+        let bytesToSkip = 0
+        const inputBytes = Array.from(state.inputBuffer.slice(0, 0x1000))
+        inputBytes.forEach(byte => {
+          if (bytesToSkip-- > 0) {
+            return
+          }
 
-        const repetitionSize = findRepetitions(state)
-        bytesToSkip += repetitionSize
+          const foundRepetition = false
 
-        if (!foundRepetition) {
-          outputBits(state, state.nChBits[byte], state.nChCodes[byte])
-        }
-      })
+          const repetitionSize = findRepetitions(state)
+          bytesToSkip += repetitionSize
 
-      state.inputBuffer = state.inputBuffer.slice(inputBytes.length)
+          if (!foundRepetition) {
+            outputBits(state, state.nChBits[byte], state.nChCodes[byte])
+          }
+        })
+
+        state.inputBuffer = state.inputBuffer.slice(inputBytes.length)
+      }
     }
 
     if (state.streamEnded) {
@@ -207,6 +213,8 @@ const implode = (compressionType, dictionarySize) => {
       state.inputBuffer = Buffer.concat([state.inputBuffer, chunk])
       work = Promise.resolve(state)
     }
+
+    console.log(state.inputBuffer.length.toString(16))
 
     work
       .then(processChunkData)
