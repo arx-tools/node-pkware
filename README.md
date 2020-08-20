@@ -22,6 +22,10 @@ output will be placed next to input and names as `<filename>.decompressed`. opti
 specify an offset from which the compressed data starts with the `--offset <byte>`, which is useful
 for mixed files, such as the fts files of Arx Fatalis
 
+## example
+
+`explode --input=test/files/fast.fts --output=E:/fast.fts.decompressed --offset=1816`
+
 ## sources:
 
 * https://github.com/ladislav-zezula/StormLib/tree/master/src/pklib

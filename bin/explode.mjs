@@ -30,10 +30,6 @@ if (!args.output) {
   console.warn(`warning: --output not specified, output will be generated to "${args.input}.compressed"`)
 }
 
-// TODO: implement --offset
-// https://www.alxolr.com/articles/how-to-fork-a-nodejs-stream-into-many-streams
-// explode --input=test/files/fast.fts --output=E:/fast.fts.decompressed --offset=1816
-
 const decompress = (input, output, offset) => {
   const handler = isNil(offset) ? explode() : transformSplitByIdx(offset, transformIdentity(), explode())
 
