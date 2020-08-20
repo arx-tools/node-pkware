@@ -15,7 +15,7 @@ import {
   DistCode,
   DistBits
 } from './common.mjs'
-import { nBitsOfOnes, isBufferEmpty, appendByteToBuffer, getLowestByte, getLowestNBits } from './helpers.mjs'
+import { nBitsOfOnes, isBufferEmpty, appendByteToBuffer, getLowestNBits } from './helpers.mjs'
 
 // const LONGEST_ALLOWED_REPETITION = 0x204
 
@@ -89,12 +89,12 @@ const outputBits = (state, nBits, bitBuffer) => {
   const outBits = state.outBits
 
   // in the original code bitBuffer is long, but cast to char
-  state.outputBuffer[state.outputBuffer.length - 1] |= getLowestByte(bitBuffer << outBits)
+  state.outputBuffer[state.outputBuffer.length - 1] |= getLowestNBits(8, bitBuffer << outBits)
   state.outBits = state.outBits + nBits
 
   if (state.outBits > 8) {
     bitBuffer = bitBuffer >> (8 - outBits)
-    state.outputBuffer = appendByteToBuffer(getLowestByte(bitBuffer), state.outputBuffer)
+    state.outputBuffer = appendByteToBuffer(getLowestNBits(8, bitBuffer), state.outputBuffer)
     state.outBits = getLowestNBits(3, state.outBits)
   } else {
     state.outBits = getLowestNBits(3, state.outBits)

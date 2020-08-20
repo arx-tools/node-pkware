@@ -1,20 +1,17 @@
 import { Transform } from 'stream'
 import { promisify } from 'util'
-import { curry } from '../node_modules/ramda/src/index.mjs'
 
-const isBetween = curry((min, max, num) => {
+const isBetween = (min, max, num) => {
   return num >= min && num <= max
-})
+}
 
 const nBitsOfOnes = numberOfBits => {
   return (1 << numberOfBits) - 1
 }
 
-const getLowestNBits = curry((numberOfBits, number) => {
+const getLowestNBits = (numberOfBits, number) => {
   return number & nBitsOfOnes(numberOfBits)
-})
-
-const getLowestByte = getLowestNBits(8)
+}
 
 // Ramda.isEmpty not working with Buffers
 // source: https://github.com/ramda/ramda/issues/2799
@@ -71,7 +68,6 @@ export {
   isBetween,
   nBitsOfOnes,
   getLowestNBits,
-  getLowestByte,
   isBufferEmpty,
   appendByteToBuffer,
   through,
