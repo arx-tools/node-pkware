@@ -10,7 +10,8 @@ import {
   DICTIONARY_SIZE2,
   DICTIONARY_SIZE3
 } from '../src/index.mjs'
-import { isBetween, through } from '../src/helpers.mjs'
+import { isBetween, through, transformSplitByIdx, transformIdentity } from '../src/helpers.mjs'
+import { isNil } from '../node_modules/ramda/src/index.mjs'
 import { fileExists, getPackageVersion } from './helpers.mjs'
 
 console.log(`node-pkware v.${getPackageVersion()}`)
@@ -53,10 +54,14 @@ if (!args.output) {
   console.warn(`warning: --output not specified, output will be generated to "${args.input}.compressed"`)
 }
 
-const decompress = (input, output, compressionType, dictionarySize) => {
+const decompress = (input, output, offset, compressionType, dictionarySize) => {
+  const handler = isNil(offset)
+    ? implode(compressionType, dictionarySize)
+    : transformSplitByIdx(offset, transformIdentity(), implode(compressionType, dictionarySize))
+
   return new Promise((resolve, reject) => {
     fs.createReadStream(input)
-      .pipe(through(implode(compressionType, dictionarySize)).on('error', reject))
+      .pipe(through(handler).on('error', reject))
       .pipe(fs.createWriteStream(output || `${input}.compressed`))
       .on('finish', resolve)
       .on('error', reject)
@@ -65,7 +70,7 @@ const decompress = (input, output, compressionType, dictionarySize) => {
 
 const compressionType = args.ascii ? ASCII_COMPRESSION : BINARY_COMPRESSION
 const dictionarySize = args.level === 1 ? DICTIONARY_SIZE1 : args.level === 2 ? DICTIONARY_SIZE2 : DICTIONARY_SIZE3
-decompress(args.input, args.output, compressionType, dictionarySize)
+decompress(args.input, args.output, args.offset, compressionType, dictionarySize)
   .then(() => {
     console.log('done')
     process.exit(0)
