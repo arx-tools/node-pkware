@@ -1,6 +1,6 @@
 # node-pkware
 
-nodejs implementation of StormLib compression/decompression algorhythms
+nodejs implementation of StormLib compression/decompression algorithm
 
 it was the de-facto compression for games from around Y2K, like Arx Fatalis
 
