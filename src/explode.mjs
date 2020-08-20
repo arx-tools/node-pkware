@@ -276,6 +276,7 @@ const explode = () => {
     lengthCodes: generateDecodeTables(LenCode, LenBits),
     distPosCodes: generateDecodeTables(DistCode, DistBits),
     extraBits: 0,
+    inputBuffer: Buffer.from([]),
     outputBuffer: Buffer.from([]),
     onInputFinished: callback => {
       if (state.needMoreInput) {
@@ -313,6 +314,8 @@ const explode = () => {
       state.inputBuffer = Buffer.concat([state.inputBuffer, chunk])
       work = Promise.resolve(state)
     }
+
+    console.log('got another chunk', state.inputBuffer.length)
 
     work
       .then(processChunkData)
