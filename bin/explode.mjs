@@ -3,7 +3,9 @@
 import fs from 'fs'
 import minimist from 'minimist'
 import { explode } from '../src/index.mjs'
-import { through, fileExists, getPackageVersion } from './helpers.mjs'
+import { isNil } from '../node_modules/ramda/src/index.mjs'
+import { transformSplitByIdx, transformIdentity, through } from '../src/helpers.mjs'
+import { fileExists, getPackageVersion } from './helpers.mjs'
 
 console.log(`node-pkware v.${getPackageVersion()}`)
 
@@ -33,16 +35,18 @@ if (!args.output) {
 // explode --input=test/files/fast.fts --output=E:/fast.fts.decompressed --offset=1816
 
 const decompress = (input, output, offset) => {
+  const handler = isNil(offset) ? explode() : transformSplitByIdx(offset, transformIdentity(), explode())
+
   return new Promise((resolve, reject) => {
     fs.createReadStream(input)
-      .pipe(through(explode()).on('error', reject))
+      .pipe(through(handler).on('error', reject))
       .pipe(fs.createWriteStream(output || `${input}.decompressed`))
       .on('finish', resolve)
       .on('error', reject)
   })
 }
 
-decompress(args.input, args.output)
+decompress(args.input, args.output, args.offset)
   .then(() => {
     console.log('done')
     process.exit(0)

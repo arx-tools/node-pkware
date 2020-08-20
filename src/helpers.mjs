@@ -33,4 +33,63 @@ const through = handler => {
   })
 }
 
-export { isBetween, nBitsOfOnes, getLowestNBits, getLowestByte, isBufferEmpty, appendByteToBuffer, through }
+const transformSplitByIdx = (splitAt, handleFirstPart, handleSecondPart) => {
+  let idx = 0
+
+  return function (chunk, encoding, callback) {
+    if (idx + chunk.length <= splitAt) {
+      handleFirstPart.call(this, chunk, encoding, callback)
+    } else if (idx > splitAt) {
+      handleSecondPart.call(this, chunk, encoding, callback)
+    } else {
+      const firstPart = chunk.slice(0, splitAt - idx)
+      const secondPart = chunk.slice(splitAt - idx)
+
+      Promise.all([
+        new Promise((resolve, reject) => {
+          handleFirstPart.call(this, firstPart, encoding, (err, processedFirstPart) => {
+            if (err) {
+              reject(err)
+            } else {
+              resolve(processedFirstPart)
+            }
+          })
+        }),
+        new Promise((resolve, reject) => {
+          handleSecondPart.call(this, secondPart, encoding, (err, processedSecondPart) => {
+            if (err) {
+              reject(err)
+            } else {
+              resolve(processedSecondPart)
+            }
+          })
+        })
+      ])
+        .then(buffers => {
+          callback(null, Buffer.concat(buffers))
+        })
+        .catch(err => {
+          callback(err)
+        })
+    }
+    idx = idx + chunk.length
+  }
+}
+
+const transformIdentity = () => {
+  return function (chunk, encoding, callback) {
+    callback(null, chunk)
+  }
+}
+
+export {
+  isBetween,
+  nBitsOfOnes,
+  getLowestNBits,
+  getLowestByte,
+  isBufferEmpty,
+  appendByteToBuffer,
+  through,
+  transformSplitByIdx,
+  transformIdentity
+}
