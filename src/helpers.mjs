@@ -1,4 +1,5 @@
 import { Transform } from 'stream'
+import { promisify } from 'util'
 import { curry } from '../node_modules/ramda/src/index.mjs'
 
 const isBetween = curry((min, max, num) => {
@@ -46,24 +47,8 @@ const transformSplitByIdx = (splitAt, handleFirstPart, handleSecondPart) => {
       const secondPart = chunk.slice(splitAt - idx)
 
       Promise.all([
-        new Promise((resolve, reject) => {
-          handleFirstPart.call(this, firstPart, encoding, (err, processedFirstPart) => {
-            if (err) {
-              reject(err)
-            } else {
-              resolve(processedFirstPart)
-            }
-          })
-        }),
-        new Promise((resolve, reject) => {
-          handleSecondPart.call(this, secondPart, encoding, (err, processedSecondPart) => {
-            if (err) {
-              reject(err)
-            } else {
-              resolve(processedSecondPart)
-            }
-          })
-        })
+        promisify(handleFirstPart).call(this, firstPart, encoding),
+        promisify(handleSecondPart).call(this, secondPart, encoding)
       ])
         .then(buffers => {
           callback(null, Buffer.concat(buffers))
