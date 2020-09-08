@@ -64,6 +64,10 @@ const transformIdentity = () => {
   }
 }
 
+const toHex = (num, bytes = 0) => {
+  return `0x${num.toString(16).padStart(bytes, '0')}`
+}
+
 export {
   isBetween,
   nBitsOfOnes,
@@ -72,5 +76,6 @@ export {
   appendByteToBuffer,
   through,
   transformSplitByIdx,
-  transformIdentity
+  transformIdentity,
+  toHex
 }
