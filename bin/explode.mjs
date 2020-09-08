@@ -7,7 +7,7 @@ import { isNil } from '../node_modules/ramda/src/index.mjs'
 import { transformSplitByIdx, transformIdentity, through } from '../src/helpers.mjs'
 import { fileExists, getPackageVersion } from './helpers.mjs'
 
-console.log(`node-pkware v.${getPackageVersion()}`)
+console.log(`node-pkware v${getPackageVersion()}`)
 
 const args = minimist(process.argv.slice(2), {
   string: ['input', 'output']

@@ -88,7 +88,7 @@ const outputBits = (state, nBits, bitBuffer) => {
 
   const outBits = state.outBits
 
-  // in the original code bitBuffer is long, but cast to char
+  // in the original code bitBuffer is long, but is cast to char
   state.outputBuffer[state.outputBuffer.length - 1] |= getLowestNBits(8, bitBuffer << outBits)
   state.outBits = state.outBits + nBits
 
@@ -118,16 +118,19 @@ const processChunkData = state => {
       }
 
       console.log(
-        `we have some data (0x${state.inputBuffer.length.toString(16)}/0x1000 bytes) to process and ${
-          state.streamEnded ? 'the stream ended' : 'we have more data to come'
+        `reading 0x${state.inputBuffer.length.toString(16)} bytes${
+          state.streamEnded ? ' and the stream have ended' : ''
         }`
       )
 
-      let limit = 1000
+      // to prevent infinite loops:
+      // depending on the length of chunks we get the inputBuffer can be over 0x1000 multiple times
+      // we will try reading the input buffer in 0x1000 chunks, but bail out after 1000 cycles
+      let maxCycles = 1000
 
       // TODO: not the best place to have the while loop, since we're not pushing "compressed" data
       // but instead accumulate it into state.outputBuffer
-      while (limit-- > 0 && (state.inputBuffer.length > 0 || !state.streamEnded)) {
+      while (maxCycles-- > 0 && (state.inputBuffer.length > 0 || !state.streamEnded)) {
         let bytesToSkip = 0
         const inputBytes = Array.from(state.inputBuffer.slice(0, 0x1000))
         inputBytes.forEach(byte => {
@@ -170,7 +173,7 @@ const flushBuffer = state => {
 
     return output
   } else {
-    return Buffer.from([])
+    return false
   }
 }
 
@@ -190,7 +193,7 @@ const implode = (compressionType, dictionarySize) => {
       state.streamEnded = true
       processChunkData(state)
         .then(() => {
-          console.log(state.outputBuffer)
+          console.log(`writing remaining 0x${state.outputBuffer.length.toString(16)} bytes`)
           callback(null, state.outputBuffer)
         })
         .catch(e => {
@@ -214,12 +217,20 @@ const implode = (compressionType, dictionarySize) => {
       work = Promise.resolve(state)
     }
 
-    console.log(state.inputBuffer.length.toString(16))
+    // console.log(`input buffer length = 0x${state.inputBuffer.length.toString(16).padStart(4, '0')}`)
 
     work
       .then(processChunkData)
       .then(() => {
-        callback(null, flushBuffer(state))
+        const buffers = []
+        let buffer
+        while ((buffer = flushBuffer(state)) !== false) {
+          buffers.push(buffer)
+        }
+
+        const output = Buffer.concat(buffers)
+        console.log(`writing 0x${output.length.toString(16)} bytes`)
+        callback(null, output)
       })
       .catch(e => {
         callback(e)
