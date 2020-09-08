@@ -4,7 +4,7 @@ nodejs implementation of StormLib compression/decompression algorithm
 
 it was the de-facto compression for games from around Y2K, like Arx Fatalis
 
-## installation
+## installation / update existing version
 
 `npm i -g node-pkware`
 
@@ -24,9 +24,11 @@ output will be placed next to input and names as `<filename>.decompressed`. opti
 specify an offset from which the compressed data starts with the `--offset <byte>`, which is useful
 for mixed files, such as the fts files of Arx Fatalis
 
-## example
+## examples
 
-`explode --input=test/files/fast.fts --output=E:/fast.fts.decompressed --offset=1816`
+`explode --input=test/files/fast.fts --output=C:/fast.fts.decompressed --offset=1816`
+
+`implode --input=test/files/fast.fts.unpacked --output=C:/fast.fts --binary --level=3 --offset=1816`
 
 ## sources:
 
