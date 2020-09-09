@@ -3,7 +3,7 @@
 import assert from 'assert'
 import fs from 'fs'
 import explode, { parseFirstChunk, generateAsciiTables, generateDecodeTables } from '../src/explode.mjs'
-import { ERROR_INVALID_DATA, ERROR_INVALID_DICTIONARY_SIZE } from '../src/common.mjs'
+import { ERROR_INVALID_DATA, ERROR_INVALID_DICTIONARY_SIZE } from '../src/constants.mjs'
 import { isPromise, through, readToBuffer } from './helpers.mjs'
 
 const decompressToBuffer = (fileName, chunkSizeInBytes = 1024) => {

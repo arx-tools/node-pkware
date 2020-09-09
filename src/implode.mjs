@@ -14,8 +14,9 @@ import {
   LenCode,
   DistCode,
   DistBits
-} from './common.mjs'
+} from './constants.mjs'
 import { nBitsOfOnes, isBufferEmpty, appendByteToBuffer, getLowestNBits, toHex } from './helpers.mjs'
+import { flushBuffer } from './common.mjs'
 
 // const LONGEST_ALLOWED_REPETITION = 0x204
 
@@ -158,26 +159,6 @@ const processChunkData = state => {
   })
 }
 
-const flushBuffer = state => {
-  const chunkSize = 0x800
-
-  if (state.outputBuffer.length >= chunkSize) {
-    const outputSize = state.outputBuffer.length - (state.outputBuffer.length % chunkSize)
-    const output = state.outputBuffer.slice(0, outputSize)
-    state.outputBuffer = state.outputBuffer.slice(outputSize)
-
-    console.log(`writing ${toHex(output.length)} bytes`)
-
-    if (state.outBits === 0) {
-      state.outputBuffer[state.outputBuffer.length - 1] = 0
-    }
-
-    return output
-  } else {
-    return Buffer.from([])
-  }
-}
-
 const implode = (compressionType, dictionarySize) => {
   let state = {
     isFirstChunk: true,
@@ -221,7 +202,11 @@ const implode = (compressionType, dictionarySize) => {
     work
       .then(processChunkData)
       .then(() => {
-        callback(null, flushBuffer(state))
+        const output = flushBuffer(0x800, state)
+        if (state.outBits === 0) {
+          state.outputBuffer[state.outputBuffer.length - 1] = 0
+        }
+        callback(null, output)
       })
       .catch(e => {
         callback(e)

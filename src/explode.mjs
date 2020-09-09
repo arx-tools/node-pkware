@@ -18,8 +18,9 @@ import {
   DistCode,
   LITERAL_STREAM_ABORTED,
   LITERAL_END_STREAM
-} from './common.mjs'
-import { isBetween, getLowestNBits, isBufferEmpty, nBitsOfOnes } from './helpers.mjs'
+} from './constants.mjs'
+import { isBetween, getLowestNBits, isBufferEmpty, nBitsOfOnes, toHex } from './helpers.mjs'
+import { flushBuffer } from './common.mjs'
 
 const populateAsciiTable = (value, index, bits, target, limit = 0x100) => {
   const seed = n => {
@@ -318,17 +319,12 @@ const explode = () => {
       work = Promise.resolve(state)
     }
 
+    console.log(`reading ${toHex(chunk.length)} bytes`)
+
     work
       .then(processChunkData)
       .then(() => {
-        const bufferSize = 0x1000
-        if (state.outputBuffer.length > bufferSize) {
-          const outputBuffer = state.outputBuffer.slice(0, bufferSize)
-          state.outputBuffer = state.outputBuffer.slice(bufferSize)
-          callback(null, outputBuffer)
-        } else {
-          callback(null, Buffer.from([]))
-        }
+        callback(null, flushBuffer(0x1000, state))
       })
       .catch(e => {
         callback(e)

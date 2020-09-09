@@ -6,7 +6,7 @@ import {
   DICTIONARY_SIZE1,
   DICTIONARY_SIZE2,
   DICTIONARY_SIZE3
-} from './common.mjs'
+} from './constants.mjs'
 
 // aliases
 const compress = implode

@@ -1,3 +1,5 @@
+// immutable functions
+
 import { Transform } from 'stream'
 import { promisify } from 'util'
 
