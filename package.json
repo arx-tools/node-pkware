@@ -8,11 +8,11 @@
     "explode": "bin/explode.mjs"
   },
   "scripts": {
-    "test": "node --experimental-modules --no-warnings test/index.mjs",
-    "test:watch": "nodemon --experimental-modules --no-warnings test/index.mjs --ext .mjs",
+    "test": "node --experimental-modules test/index.mjs",
+    "test:watch": "nodemon --experimental-modules test/index.mjs --ext .mjs",
     "lint": "eslint \"src/**/*.+(js|mjs)\"",
     "lint:fix": "npm run lint -- --fix",
-    "unit": "mocha --experimental-modules --no-warnings test/**/*.spec.mjs --timeout 5000",
+    "unit": "mocha --experimental-modules test/**/*.spec.mjs --timeout 5000",
     "unit:watch": "nodemon --exec \"npm run unit\" --watch test --watch src",
     "lint:staged": "lint-staged"
   },

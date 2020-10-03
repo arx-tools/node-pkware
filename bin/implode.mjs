@@ -1,4 +1,4 @@
-#!/usr/bin/env node --experimental-modules --no-warnings
+#!/usr/bin/env node --experimental-modules
 
 import fs from 'fs'
 import minimist from 'minimist'
@@ -14,20 +14,26 @@ import { isBetween, through, transformSplitByIdx, transformIdentity } from '../s
 import { isNil } from '../node_modules/ramda/src/index.mjs'
 import { fileExists, getPackageVersion } from './helpers.mjs'
 
-console.log(`node-pkware v${getPackageVersion()}`)
-
 const args = minimist(process.argv.slice(2), {
-  string: ['input', 'output'],
-  boolean: ['binary', 'ascii']
+  string: ['output'],
+  boolean: ['version', 'binary', 'ascii']
 })
+
+if (args.version) {
+  console.log(getPackageVersion())
+  process.exit(0)
+}
+
+const input = args._[0]
 
 let hasErrors = false
 
-if (!args.input) {
+if (!input) {
   console.error('error: --input not specified')
   hasErrors = true
-} else if (!fileExists(args.input)) {
-  console.error()
+} else if (!fileExists(input)) {
+  console.error('error: given file does not exist')
+  hasErrors = true
 }
 
 if (args.ascii && args.binary) {
@@ -51,7 +57,7 @@ if (hasErrors) {
 }
 
 if (!args.output) {
-  console.warn(`warning: --output not specified, output will be generated to "${args.input}.compressed"`)
+  console.warn(`warning: --output not specified, output will be generated to "${input}.compressed"`)
 }
 
 const decompress = (input, output, offset, compressionType, dictionarySize) => {
@@ -70,7 +76,7 @@ const decompress = (input, output, offset, compressionType, dictionarySize) => {
 
 const compressionType = args.ascii ? ASCII_COMPRESSION : BINARY_COMPRESSION
 const dictionarySize = args.level === 1 ? DICTIONARY_SIZE1 : args.level === 2 ? DICTIONARY_SIZE2 : DICTIONARY_SIZE3
-decompress(args.input, args.output, args.offset, compressionType, dictionarySize)
+decompress(input, args.output, args.offset, compressionType, dictionarySize)
   .then(() => {
     console.log('done')
     process.exit(0)

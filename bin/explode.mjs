@@ -1,4 +1,4 @@
-#!/usr/bin/env node --experimental-modules --no-warnings
+#!/usr/bin/env node --experimental-modules
 
 import fs from 'fs'
 import minimist from 'minimist'
@@ -7,19 +7,26 @@ import { isNil } from '../node_modules/ramda/src/index.mjs'
 import { transformSplitByIdx, transformIdentity, through } from '../src/helpers.mjs'
 import { fileExists, getPackageVersion } from './helpers.mjs'
 
-console.log(`node-pkware v${getPackageVersion()}`)
-
 const args = minimist(process.argv.slice(2), {
-  string: ['input', 'output']
+  string: ['output'],
+  boolean: ['version']
 })
+
+if (args.version) {
+  console.log(getPackageVersion())
+  process.exit(0)
+}
+
+const input = args._[0]
 
 let hasErrors = false
 
-if (!args.input) {
+if (!input) {
   console.error('error: --input not specified')
   hasErrors = true
-} else if (!fileExists(args.input)) {
-  console.error()
+} else if (!fileExists(input)) {
+  console.error('error: given file does not exist')
+  hasErrors = true
 }
 
 if (hasErrors) {
@@ -27,7 +34,7 @@ if (hasErrors) {
 }
 
 if (!args.output) {
-  console.warn(`warning: --output not specified, output will be generated to "${args.input}.decompressed"`)
+  console.warn(`warning: --output not specified, output will be generated to "${input}.decompressed"`)
 }
 
 const decompress = (input, output, offset) => {
@@ -42,7 +49,7 @@ const decompress = (input, output, offset) => {
   })
 }
 
-decompress(args.input, args.output, args.offset)
+decompress(input, args.output, args.offset)
   .then(() => {
     console.log('done')
     process.exit(0)
