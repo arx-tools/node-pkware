@@ -26,10 +26,10 @@ const decompressToBuffer = (fileName, chunkSizeInBytes = 1024) => {
 
 describe('parseFirstChunk', () => {
   it('is a function', () => {
-    assert.equal(typeof parseFirstChunk, 'function')
+    assert.strictEqual(typeof parseFirstChunk, 'function')
   })
 
-  it('takes a buffer and returns a promise', () => {
+  it('takes a buffer and returns a promise as a result', () => {
     assert.ok(isPromise(parseFirstChunk(Buffer.from([]))))
   })
 
@@ -45,19 +45,19 @@ describe('parseFirstChunk', () => {
 
 describe('generateAsciiTables', () => {
   it('is a function', () => {
-    assert.equal(typeof generateAsciiTables, 'function')
+    assert.strictEqual(typeof generateAsciiTables, 'function')
   })
 })
 
 describe('generateDecodeTables', () => {
   it('is a function', () => {
-    assert.equal(typeof generateDecodeTables, 'function')
+    assert.strictEqual(typeof generateDecodeTables, 'function')
   })
 })
 
 describe('explode', () => {
   it('is a function', () => {
-    assert.equal(typeof explode, 'function')
+    assert.strictEqual(typeof explode, 'function')
   })
   it('can decode files, which have been compressed with ascii mode', done => {
     Promise.all([readToBuffer('test/files/large.unpacked'), decompressToBuffer('test/files/large.ascii')])

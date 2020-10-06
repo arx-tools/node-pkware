@@ -5,6 +5,6 @@ import implode from '../src/implode.mjs'
 
 describe('implode', () => {
   it('is a function', () => {
-    assert.equal(typeof implode, 'function')
+    assert.strictEqual(typeof implode, 'function')
   })
 })
