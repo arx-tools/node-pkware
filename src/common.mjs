@@ -1,6 +1,6 @@
 // mutable functions
 
-import { toHex } from './helpers.mjs'
+// import { toHex } from './helpers.mjs'
 
 const flushBuffer = (chunkSize, state) => {
   if (state.outputBuffer.length >= chunkSize) {
@@ -8,7 +8,7 @@ const flushBuffer = (chunkSize, state) => {
     const output = state.outputBuffer.slice(0, outputSize)
     state.outputBuffer = state.outputBuffer.slice(outputSize)
 
-    console.log(`writing ${toHex(output.length)} bytes`)
+    // console.log(`writing ${toHex(output.length)} bytes`)
 
     return output
   } else {

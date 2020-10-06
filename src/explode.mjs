@@ -19,7 +19,7 @@ import {
   LITERAL_STREAM_ABORTED,
   LITERAL_END_STREAM
 } from './constants.mjs'
-import { isBetween, getLowestNBits, isBufferEmpty, nBitsOfOnes, toHex } from './helpers.mjs'
+import { isBetween, getLowestNBits, isBufferEmpty, nBitsOfOnes /*, toHex */ } from './helpers.mjs'
 import { flushBuffer } from './common.mjs'
 
 const populateAsciiTable = (value, index, bits, target, limit = 0x100) => {
@@ -107,8 +107,8 @@ const parseFirstChunk = chunk => {
       state = mergeRight(state, generateAsciiTables())
     }
 
-    console.log(`compression type: ${state.compressionType === BINARY_COMPRESSION ? 'binary' : 'ascii'}`)
-    console.log(`compression level: ${state.dictionarySizeBits === 4 ? 1 : state.dictionarySizeBits === 5 ? 2 : 3}`)
+    // console.log(`compression type: ${state.compressionType === BINARY_COMPRESSION ? 'binary' : 'ascii'}`)
+    // console.log(`compression level: ${state.dictionarySizeBits === 4 ? 1 : state.dictionarySizeBits === 5 ? 2 : 3}`)
 
     state.inputBuffer = chunk.slice(3)
 
@@ -319,7 +319,7 @@ const explode = () => {
       work = Promise.resolve(state)
     }
 
-    console.log(`reading ${toHex(chunk.length)} bytes`)
+    // console.log(`reading ${toHex(chunk.length)} bytes`)
 
     work
       .then(processChunkData)

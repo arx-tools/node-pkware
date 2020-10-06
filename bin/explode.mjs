@@ -7,6 +7,14 @@ import { isNil } from '../node_modules/ramda/src/index.mjs'
 import { transformSplitByIdx, transformIdentity, through } from '../src/helpers.mjs'
 import { fileExists, getPackageVersion } from './helpers.mjs'
 
+const decompress = (input, output, offset) => {
+  const handler = isNil(offset) ? explode() : transformSplitByIdx(offset, transformIdentity(), explode())
+
+  return new Promise((resolve, reject) => {
+    input.pipe(through(handler).on('error', reject)).pipe(output).on('finish', resolve).on('error', reject)
+  })
+}
+
 const args = minimist(process.argv.slice(2), {
   string: ['output'],
   boolean: ['version']
@@ -17,41 +25,34 @@ if (args.version) {
   process.exit(0)
 }
 
-const input = args._[0]
+let input = args._[0]
+let output = args.output
 
 let hasErrors = false
 
-if (!input) {
-  console.error('error: --input not specified')
-  hasErrors = true
-} else if (!fileExists(input)) {
-  console.error('error: given file does not exist')
-  hasErrors = true
+if (input) {
+  if (fileExists(input)) {
+    input = fs.createReadStream(input)
+  } else {
+    console.error('error: input file does not exist')
+    hasErrors = true
+  }
+} else {
+  input = process.openStdin()
+}
+
+if (output) {
+  output = fs.createWriteStream(output)
+} else {
+  output = process.stdout
 }
 
 if (hasErrors) {
   process.exit(1)
 }
 
-if (!args.output) {
-  console.warn(`warning: --output not specified, output will be generated to "${input}.decompressed"`)
-}
-
-const decompress = (input, output, offset) => {
-  const handler = isNil(offset) ? explode() : transformSplitByIdx(offset, transformIdentity(), explode())
-
-  return new Promise((resolve, reject) => {
-    fs.createReadStream(input)
-      .pipe(through(handler).on('error', reject))
-      .pipe(fs.createWriteStream(output || `${input}.decompressed`))
-      .on('finish', resolve)
-      .on('error', reject)
-  })
-}
-
-decompress(input, args.output, args.offset)
+decompress(input, output, args.offset)
   .then(() => {
-    console.log('done')
     process.exit(0)
   })
   .catch(e => {

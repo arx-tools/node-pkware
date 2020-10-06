@@ -30,6 +30,23 @@ for mixed files, such as the fts files of Arx Fatalis
 
 `implode test/files/fast.fts.unpacked --output=C:/fast.fts --binary --level=3 --offset=1816`
 
+### piping also works
+
+_( from 0.1.0 )_
+
+`cat c:/arx/level8.llf | explode > c:/arx/level8.llf.unpacked`
+
+`explode c:/arx/level8.llf > c:/arx/level8.llf.unpacked`
+
+`cat c:/arx/level8.llf | explode --output=c:/arx/level8.llf.unpacked`
+
+
+`cat e:/piping/level8.llf.unpacked | implode --binary --level=3 > e:/piping/level8.llf.comp2`
+
+`implode e:/piping/level8.llf.unpacked --binary --level=3 > e:/piping/level8.llf.comp`
+
+`cat e:/piping/level8.llf.unpacked | implode --binary --level=3 --output="e:/piping/level8.llf.comp2"`
+
 ## sources:
 
 * https://github.com/ladislav-zezula/StormLib/tree/master/src/pklib

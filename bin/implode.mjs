@@ -14,6 +14,16 @@ import { isBetween, through, transformSplitByIdx, transformIdentity } from '../s
 import { isNil } from '../node_modules/ramda/src/index.mjs'
 import { fileExists, getPackageVersion } from './helpers.mjs'
 
+const decompress = (input, output, offset, compressionType, dictionarySize) => {
+  const handler = isNil(offset)
+    ? implode(compressionType, dictionarySize)
+    : transformSplitByIdx(offset, transformIdentity(), implode(compressionType, dictionarySize))
+
+  return new Promise((resolve, reject) => {
+    input.pipe(through(handler).on('error', reject)).pipe(output).on('finish', resolve).on('error', reject)
+  })
+}
+
 const args = minimist(process.argv.slice(2), {
   string: ['output'],
   boolean: ['version', 'binary', 'ascii']
@@ -24,16 +34,20 @@ if (args.version) {
   process.exit(0)
 }
 
-const input = args._[0]
+let input = args._[0]
+let output = args.output
 
 let hasErrors = false
 
-if (!input) {
-  console.error('error: --input not specified')
-  hasErrors = true
-} else if (!fileExists(input)) {
-  console.error('error: given file does not exist')
-  hasErrors = true
+if (input) {
+  if (fileExists(input)) {
+    input = fs.createReadStream(input)
+  } else {
+    console.error('error: given file does not exist')
+    hasErrors = true
+  }
+} else {
+  input = process.openStdin()
 }
 
 if (args.ascii && args.binary) {
@@ -52,33 +66,20 @@ if (!args.level) {
   hasErrors = true
 }
 
+if (output) {
+  output = fs.createWriteStream(output)
+} else {
+  output = process.stdout
+}
+
 if (hasErrors) {
   process.exit(1)
 }
 
-if (!args.output) {
-  console.warn(`warning: --output not specified, output will be generated to "${input}.compressed"`)
-}
-
-const decompress = (input, output, offset, compressionType, dictionarySize) => {
-  const handler = isNil(offset)
-    ? implode(compressionType, dictionarySize)
-    : transformSplitByIdx(offset, transformIdentity(), implode(compressionType, dictionarySize))
-
-  return new Promise((resolve, reject) => {
-    fs.createReadStream(input)
-      .pipe(through(handler).on('error', reject))
-      .pipe(fs.createWriteStream(output || `${input}.compressed`))
-      .on('finish', resolve)
-      .on('error', reject)
-  })
-}
-
 const compressionType = args.ascii ? ASCII_COMPRESSION : BINARY_COMPRESSION
 const dictionarySize = args.level === 1 ? DICTIONARY_SIZE1 : args.level === 2 ? DICTIONARY_SIZE2 : DICTIONARY_SIZE3
-decompress(input, args.output, args.offset, compressionType, dictionarySize)
+decompress(input, output, args.offset, compressionType, dictionarySize)
   .then(() => {
-    console.log('done')
     process.exit(0)
   })
   .catch(e => {

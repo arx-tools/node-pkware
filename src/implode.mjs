@@ -15,7 +15,7 @@ import {
   DistCode,
   DistBits
 } from './constants.mjs'
-import { nBitsOfOnes, isBufferEmpty, appendByteToBuffer, getLowestNBits, toHex } from './helpers.mjs'
+import { nBitsOfOnes, isBufferEmpty, appendByteToBuffer, getLowestNBits /*, toHex */ } from './helpers.mjs'
 import { flushBuffer } from './common.mjs'
 
 // const LONGEST_ALLOWED_REPETITION = 0x204
@@ -118,9 +118,9 @@ const processChunkData = state => {
         // need to wrap up writing bytes, just add final literal
       }
 
-      console.log(
-        `reading ${toHex(state.inputBuffer.length)} bytes${state.streamEnded ? ' and the stream have ended' : ''}`
-      )
+      // console.log(
+      //   `reading ${toHex(state.inputBuffer.length)} bytes${state.streamEnded ? ' and the stream have ended' : ''}`
+      // )
 
       // to prevent infinite loops:
       // depending on the length of chunks we get the inputBuffer can be over 0x1000 multiple times
@@ -175,7 +175,7 @@ const implode = (compressionType, dictionarySize) => {
       state.streamEnded = true
       processChunkData(state)
         .then(() => {
-          console.log(`writing remaining ${toHex(state.outputBuffer.length)} bytes`)
+          // console.log(`writing remaining ${toHex(state.outputBuffer.length)} bytes`)
           callback(null, state.outputBuffer)
         })
         .catch(e => {
