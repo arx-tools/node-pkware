@@ -12,7 +12,7 @@ import {
 } from '../src/index.mjs'
 import { isBetween, through, transformSplitByIdx, transformIdentity } from '../src/helpers.mjs'
 import { isNil } from '../node_modules/ramda/src/index.mjs'
-import { fileExists, getPackageVersion } from './helpers.mjs'
+import { fileExists, getPackageVersion, isDecimalString, isHexadecimalString } from './helpers.mjs'
 
 const decompress = (input, output, offset, compressionType, dictionarySize) => {
   const handler = isNil(offset)
@@ -76,9 +76,18 @@ if (hasErrors) {
   process.exit(1)
 }
 
+let offset = args.offset
+if (isDecimalString(offset)) {
+  offset = parseInt(offset)
+} else if (isHexadecimalString(offset)) {
+  offset = parseInt(offset.replace(/^0x/, ''), 16)
+} else {
+  offset = 0
+}
+
 const compressionType = args.ascii ? ASCII_COMPRESSION : BINARY_COMPRESSION
 const dictionarySize = args.level === 1 ? DICTIONARY_SIZE1 : args.level === 2 ? DICTIONARY_SIZE2 : DICTIONARY_SIZE3
-decompress(input, output, args.offset, compressionType, dictionarySize)
+decompress(input, output, offset, compressionType, dictionarySize)
   .then(() => {
     process.exit(0)
   })
