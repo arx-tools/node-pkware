@@ -10,14 +10,18 @@ import {
   DICTIONARY_SIZE2,
   DICTIONARY_SIZE3
 } from '../src/index.mjs'
-import { isBetween, through, transformSplitByIdx, transformIdentity } from '../src/helpers.mjs'
+import { isBetween, through, transformSplitByIdx, transformIdentity, transformEmpty } from '../src/helpers.mjs'
 import { isNil } from '../node_modules/ramda/src/index.mjs'
 import { fileExists, getPackageVersion, isDecimalString, isHexadecimalString } from './helpers.mjs'
 
-const decompress = (input, output, offset, compressionType, dictionarySize) => {
+const decompress = (input, output, offset, keepHeader, compressionType, dictionarySize) => {
   const handler = isNil(offset)
     ? implode(compressionType, dictionarySize)
-    : transformSplitByIdx(offset, transformIdentity(), implode(compressionType, dictionarySize))
+    : transformSplitByIdx(
+        offset,
+        keepHeader ? transformIdentity() : transformEmpty(),
+        implode(compressionType, dictionarySize)
+      )
 
   return new Promise((resolve, reject) => {
     input.pipe(through(handler).on('error', reject)).pipe(output).on('finish', resolve).on('error', reject)
@@ -26,7 +30,7 @@ const decompress = (input, output, offset, compressionType, dictionarySize) => {
 
 const args = minimist(process.argv.slice(2), {
   string: ['output'],
-  boolean: ['version', 'binary', 'ascii']
+  boolean: ['version', 'binary', 'ascii', 'keep-header']
 })
 
 if (args.version) {
@@ -85,9 +89,11 @@ if (isDecimalString(offset)) {
   offset = 0
 }
 
+const keepHeader = args['keep-header']
+
 const compressionType = args.ascii ? ASCII_COMPRESSION : BINARY_COMPRESSION
 const dictionarySize = args.level === 1 ? DICTIONARY_SIZE1 : args.level === 2 ? DICTIONARY_SIZE2 : DICTIONARY_SIZE3
-decompress(input, output, offset, compressionType, dictionarySize)
+decompress(input, output, offset, keepHeader, compressionType, dictionarySize)
   .then(() => {
     process.exit(0)
   })

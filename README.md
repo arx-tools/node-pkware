@@ -14,38 +14,41 @@ tested in node version 12.7.0
 
 ## command line interface
 
-`implode <filename> --output=<filename> --ascii|--binary --level=1|2|3` - compresses file.
+`implode <filename> --output=<filename> --keep-header --ascii|--binary --level=1|2|3` - compresses file.
 if `--output` is omitted, then output will be placed next to input and names as `<filename>.compressed`.
-optionally you can specify an offset from which the compressed data starts with the `--offset <byte>`,
+optionally you can specify an offset from which the compressed data starts with the `--offset=<int|hex>`,
 which is useful for mixed files, such as the fts files of Arx Fatalis
 
-`explode <filename> --output=<filename>` - decompresses file. if `--output` is omitted, then
+`explode <filename> --output=<filename> --keep-header` - decompresses file. if `--output` is omitted, then
 output will be placed next to input and names as `<filename>.decompressed`. optionally you can
-specify an offset from which the compressed data starts with the `--offset <byte>`, which is useful
+specify an offset from which the compressed data starts with the `--offset=<int|hex>`, which is useful
 for mixed files, such as the fts files of Arx Fatalis
+
+The `--keep-header` flag tells node-pkware to keep the portion before `--offset` and attach it to the
+output file.
 
 ## examples
 
-`explode test/files/fast.fts --output=C:/fast.fts.decompressed --offset=1816`
+`explode test/files/fast.fts --output=C:/fast.fts.decompressed --offset=1816 --keep-header`
 
-`explode test/files/fast.fts --output=C:/fast.fts.decompressed --offset=0x718`
+`explode test/files/fast.fts --output=C:/fast.fts.decompressed --offset=0x718 --keep-header`
 
-`implode test/files/fast.fts.unpacked --output=C:/fast.fts --binary --level=3 --offset=1816`
+`implode test/files/fast.fts.unpacked --output=C:/fast.fts --binary --level=3 --offset=1816 --keep-header`
 
 ### piping also works
 
-`cat c:/arx/level8.llf | explode > c:/arx/level8.llf.unpacked`
+`cat c:/arx/level8.llf | explode > c:/arx/level8.llf.unpacked --keep-header`
 
-`explode c:/arx/level8.llf > c:/arx/level8.llf.unpacked`
+`explode c:/arx/level8.llf > c:/arx/level8.llf.unpacked --keep-header`
 
-`cat c:/arx/level8.llf | explode --output=c:/arx/level8.llf.unpacked`
+`cat c:/arx/level8.llf | explode --output=c:/arx/level8.llf.unpacked --keep-header`
 
 
-`cat e:/piping/level8.llf.unpacked | implode --binary --level=3 > e:/piping/level8.llf.comp2`
+`cat e:/piping/level8.llf.unpacked | implode --binary --level=3 > e:/piping/level8.llf.comp2 --keep-header`
 
-`implode e:/piping/level8.llf.unpacked --binary --level=3 > e:/piping/level8.llf.comp`
+`implode e:/piping/level8.llf.unpacked --binary --level=3 > e:/piping/level8.llf.comp --keep-header`
 
-`cat e:/piping/level8.llf.unpacked | implode --binary --level=3 --output="e:/piping/level8.llf.comp2"`
+`cat e:/piping/level8.llf.unpacked | implode --binary --level=3 --output="e:/piping/level8.llf.comp2" --keep-header`
 
 ## sources:
 

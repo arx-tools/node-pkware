@@ -70,6 +70,12 @@ const toHex = (num, bytes = 0) => {
   return `0x${num.toString(16).padStart(bytes, '0')}`
 }
 
+const transformEmpty = () => {
+  return function (chunk, encoding, callback) {
+    callback(null, Buffer.from([]))
+  }
+}
+
 export {
   isBetween,
   nBitsOfOnes,
@@ -79,5 +85,6 @@ export {
   through,
   transformSplitByIdx,
   transformIdentity,
-  toHex
+  toHex,
+  transformEmpty
 }

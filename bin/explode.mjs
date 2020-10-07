@@ -4,11 +4,13 @@ import fs from 'fs'
 import minimist from 'minimist'
 import { explode } from '../src/index.mjs'
 import { isNil } from '../node_modules/ramda/src/index.mjs'
-import { transformSplitByIdx, transformIdentity, through } from '../src/helpers.mjs'
+import { transformSplitByIdx, transformIdentity, through, transformEmpty } from '../src/helpers.mjs'
 import { fileExists, getPackageVersion, isDecimalString, isHexadecimalString } from './helpers.mjs'
 
-const decompress = (input, output, offset) => {
-  const handler = isNil(offset) ? explode() : transformSplitByIdx(offset, transformIdentity(), explode())
+const decompress = (input, output, offset, keepHeader) => {
+  const handler = isNil(offset)
+    ? explode()
+    : transformSplitByIdx(offset, keepHeader ? transformIdentity() : transformEmpty(), explode())
 
   return new Promise((resolve, reject) => {
     input.pipe(through(handler).on('error', reject)).pipe(output).on('finish', resolve).on('error', reject)
@@ -17,7 +19,7 @@ const decompress = (input, output, offset) => {
 
 const args = minimist(process.argv.slice(2), {
   string: ['output', 'offset'],
-  boolean: ['version']
+  boolean: ['version', 'keep-header']
 })
 
 if (args.version) {
@@ -60,7 +62,9 @@ if (isDecimalString(offset)) {
   offset = 0
 }
 
-decompress(input, output, offset)
+const keepHeader = args['keep-header']
+
+decompress(input, output, offset, keepHeader)
   .then(() => {
     process.exit(0)
   })
