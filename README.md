@@ -28,11 +28,11 @@ for mixed files, such as the fts files of Arx Fatalis
 
 `explode test/files/fast.fts --output=C:/fast.fts.decompressed --offset=1816`
 
+`explode test/files/fast.fts --output=C:/fast.fts.decompressed --offset=0x718`
+
 `implode test/files/fast.fts.unpacked --output=C:/fast.fts --binary --level=3 --offset=1816`
 
 ### piping also works
-
-_( from 0.1.0 )_
 
 `cat c:/arx/level8.llf | explode > c:/arx/level8.llf.unpacked`
 
