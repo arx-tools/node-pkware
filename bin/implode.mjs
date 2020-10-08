@@ -30,7 +30,7 @@ const decompress = (input, output, offset, keepHeader, compressionType, dictiona
 
 const args = minimist(process.argv.slice(2), {
   string: ['output'],
-  boolean: ['version', 'binary', 'ascii', 'keep-header']
+  boolean: ['version', 'binary', 'ascii', 'drop-before-offset']
 })
 
 if (args.version) {
@@ -89,7 +89,7 @@ if (isDecimalString(offset)) {
   offset = 0
 }
 
-const keepHeader = args['keep-header']
+const keepHeader = !args['drop-before-offset']
 
 const compressionType = args.ascii ? ASCII_COMPRESSION : BINARY_COMPRESSION
 const dictionarySize = args.level === 1 ? DICTIONARY_SIZE1 : args.level === 2 ? DICTIONARY_SIZE2 : DICTIONARY_SIZE3

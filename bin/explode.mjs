@@ -19,7 +19,7 @@ const decompress = (input, output, offset, keepHeader) => {
 
 const args = minimist(process.argv.slice(2), {
   string: ['output', 'offset'],
-  boolean: ['version', 'keep-header']
+  boolean: ['version', 'drop-before-offset']
 })
 
 if (args.version) {
@@ -62,7 +62,7 @@ if (isDecimalString(offset)) {
   offset = 0
 }
 
-const keepHeader = args['keep-header']
+const keepHeader = !args['drop-before-offset']
 
 decompress(input, output, offset, keepHeader)
   .then(() => {
