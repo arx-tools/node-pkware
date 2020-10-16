@@ -4,7 +4,8 @@ import assert from 'assert'
 import fs from 'fs'
 import explode, { parseFirstChunk, generateAsciiTables, generateDecodeTables } from '../src/explode.mjs'
 import { ERROR_INVALID_DATA, ERROR_INVALID_DICTIONARY_SIZE } from '../src/constants.mjs'
-import { isPromise, through, readToBuffer } from './helpers.mjs'
+import { through } from '../src/helpers.mjs'
+import { readToBuffer } from './helpers.mjs'
 
 const decompressToBuffer = (fileName, chunkSizeInBytes = 1024) => {
   return new Promise((resolve, reject) => {
@@ -27,10 +28,6 @@ const decompressToBuffer = (fileName, chunkSizeInBytes = 1024) => {
 describe('parseFirstChunk', () => {
   it('is a function', () => {
     assert.strictEqual(typeof parseFirstChunk, 'function')
-  })
-
-  it('takes a buffer and returns a promise as a result', () => {
-    assert.ok(isPromise(parseFirstChunk(Buffer.from([]))))
   })
 
   it('rejects with ERROR_INVALID_DATA, when given buffer is shorter, than 5', async () => {

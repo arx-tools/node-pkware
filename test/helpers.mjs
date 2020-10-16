@@ -1,18 +1,17 @@
 import { EOL } from 'os'
 import fs from 'fs'
-import { through } from '../src/helpers.mjs'
 
-const isPromise = promise => {
+export const isPromise = promise => {
   return typeof promise === 'object' && promise.constructor.name === 'Promise'
 }
 
-const toConsole = () => (chunk, encoding, callback) => {
+export const toConsole = () => (chunk, encoding, callback) => {
   process.stdout.write(chunk)
   process.stdout.write(Buffer.from(EOL))
   callback(null, chunk)
 }
 
-const readToBuffer = (fileName, chunkSizeInBytes = 1024) => {
+export const readToBuffer = (fileName, chunkSizeInBytes = 1024) => {
   return new Promise((resolve, reject) => {
     const chunks = []
     fs.createReadStream(fileName, { highWaterMark: chunkSizeInBytes })
@@ -26,4 +25,15 @@ const readToBuffer = (fileName, chunkSizeInBytes = 1024) => {
   })
 }
 
-export { isPromise, through, toConsole, readToBuffer }
+// source: https://stackoverflow.com/a/43197340/1806628
+export const isClass = obj => {
+  const isCtorClass = obj.constructor && obj.constructor.toString().substring(0, 5) === 'class'
+  if (obj.prototype === undefined) {
+    return isCtorClass
+  }
+  const isPrototypeCtorClass =
+    obj.prototype.constructor &&
+    obj.prototype.constructor.toString &&
+    obj.prototype.constructor.toString().substring(0, 5) === 'class'
+  return isCtorClass || isPrototypeCtorClass
+}

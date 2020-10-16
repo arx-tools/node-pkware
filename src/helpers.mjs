@@ -3,37 +3,37 @@
 import { Transform } from 'stream'
 import { promisify } from 'util'
 
-const isBetween = (min, max, num) => {
+export const isBetween = (min, max, num) => {
   return num >= min && num <= max
 }
 
-const nBitsOfOnes = numberOfBits => {
+export const nBitsOfOnes = numberOfBits => {
   return (1 << numberOfBits) - 1
 }
 
-const getLowestNBits = (numberOfBits, number) => {
+export const getLowestNBits = (numberOfBits, number) => {
   return number & nBitsOfOnes(numberOfBits)
 }
 
 // Ramda.isEmpty not working with Buffers
 // source: https://github.com/ramda/ramda/issues/2799
-const isBufferEmpty = buffer => {
+export const isBufferEmpty = buffer => {
   return buffer.length === 0
 }
 
-const appendByteToBuffer = (byte, buffer) => {
+export const appendByteToBuffer = (byte, buffer) => {
   const nextByte = Buffer.alloc(1)
   nextByte.writeUInt8(byte, 0)
   return Buffer.concat([buffer, nextByte])
 }
 
-const through = handler => {
+export const through = handler => {
   return new Transform({
     transform: handler
   })
 }
 
-const transformSplitByIdx = (splitAt, handleFirstPart, handleSecondPart) => {
+export const transformSplitByIdx = (splitAt, handleFirstPart, handleSecondPart) => {
   let idx = 0
 
   return function (chunk, encoding, callback) {
@@ -60,31 +60,18 @@ const transformSplitByIdx = (splitAt, handleFirstPart, handleSecondPart) => {
   }
 }
 
-const transformIdentity = () => {
+export const transformIdentity = () => {
   return function (chunk, encoding, callback) {
     callback(null, chunk)
   }
 }
 
-const toHex = (num, bytes = 0) => {
+export const toHex = (num, bytes = 0) => {
   return `0x${num.toString(16).padStart(bytes, '0')}`
 }
 
-const transformEmpty = () => {
+export const transformEmpty = () => {
   return function (chunk, encoding, callback) {
     callback(null, Buffer.from([]))
   }
-}
-
-export {
-  isBetween,
-  nBitsOfOnes,
-  getLowestNBits,
-  isBufferEmpty,
-  appendByteToBuffer,
-  through,
-  transformSplitByIdx,
-  transformIdentity,
-  toHex,
-  transformEmpty
 }
