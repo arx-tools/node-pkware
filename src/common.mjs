@@ -1,5 +1,3 @@
-// mutable functions
-
 // import { toHex } from './helpers.mjs'
 
 const flushBuffer = (chunkSize, state) => {
