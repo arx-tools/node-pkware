@@ -11,7 +11,7 @@ const bufferToString = buffer => {
   return `<Buffer ${hexString}>`
 }
 
-const compareBuffers = (expected, result) => {
+const buffersShouldEqual = (expected, result) => {
   assert.ok(expected.equals(result), `${bufferToString(expected)} !== ${bufferToString(result)}`)
 }
 
@@ -35,32 +35,32 @@ describe('QuasiImmutableBuffer', () => {
   it('returns an empty buffer when reading without any stored data', () => {
     const expected = Buffer.from([])
     const result = buffer.read()
-    compareBuffers(expected, result)
+    buffersShouldEqual(expected, result)
   })
   it('returns appended data', () => {
     buffer.append(Buffer.from([1, 2, 3]))
     const expected = Buffer.from([1, 2, 3])
     const result = buffer.read()
-    compareBuffers(expected, result)
+    buffersShouldEqual(expected, result)
   })
   it('returns a slice of the stored data when read receives an offset and a limit', () => {
     buffer.append(Buffer.from([1, 2, 3, 4, 5]))
     const expected = Buffer.from([1, 2, 3])
     const result = buffer.read(0, 3)
-    compareBuffers(expected, result)
+    buffersShouldEqual(expected, result)
   })
   it('returns the whole internally stored data, when read gets a limit larger, than the size of internal data', () => {
     buffer.append(Buffer.from([1, 2, 3, 4, 5]))
     const expected = Buffer.from([1, 2, 3, 4, 5])
     const result = buffer.read(0, 50)
-    compareBuffers(expected, result)
+    buffersShouldEqual(expected, result)
   })
   it('allows flushing a fix amount of bytes from the start of the internally stored data via flushStart', () => {
     buffer.append(Buffer.from([1, 2, 3, 4, 5]))
     buffer.flushStart(3)
     const expected = Buffer.from([4, 5])
     const result = buffer.read()
-    compareBuffers(expected, result)
+    buffersShouldEqual(expected, result)
   })
   it('has the heapSize method for reading the size of the internal buffer', () => {
     buffer.append(Buffer.from([1, 2, 3, 4]))
@@ -71,7 +71,7 @@ describe('QuasiImmutableBuffer', () => {
     buffer.append(Buffer.from([3, 4]))
     const expected = Buffer.from([1, 2, 3, 4])
     const result = buffer.read()
-    compareBuffers(expected, result)
+    buffersShouldEqual(expected, result)
     assert.strictEqual(expected.length, buffer.size())
   })
   it('keeps the heapSize unchanged after flushing', () => {
@@ -106,6 +106,40 @@ describe('QuasiImmutableBuffer', () => {
     buffer.flushStart(2)
     const expected = Buffer.from([5])
     const result = buffer.read(2, 2)
-    compareBuffers(expected, result)
+    buffersShouldEqual(expected, result)
+  })
+  it('pre-allocates internally stored data with N bytes when constructor recieves a non zero number', () => {
+    const buffer = new QuasiImmutableBuffer(100)
+    assert.strictEqual(buffer.heapSize(), 100)
+  })
+  it('returns an empty buffer, when reading from a negative offset', () => {
+    buffer.append(Buffer.from([1, 2, 3, 4]))
+    const expected = Buffer.from([])
+    const result = buffer.read(-7)
+    buffersShouldEqual(expected, result)
+  })
+  it('returns an empty buffer, when reading with a limit less than 1', () => {
+    buffer.append(Buffer.from([1, 2, 3, 4]))
+    const expected = Buffer.from([])
+    const result = buffer.read(2, -5)
+    buffersShouldEqual(expected, result)
+  })
+  it('does nothing, when flushing 0 or less bytes', () => {
+    buffer.append(Buffer.from([1, 2, 3, 4]))
+    const buffer1 = buffer.getHeap()
+    buffer.flushStart(-4)
+    const buffer2 = buffer.getHeap()
+    assert.ok(
+      buffer1 === buffer2,
+      `reference of ${bufferToString(buffer1)} !== reference of ${bufferToString(buffer2)}`
+    )
+  })
+  it('clears the internally stored data, when flushing an amount bigger, than heapSize', () => {
+    buffer.append(Buffer.from([1, 2, 3, 4, 5, 6]))
+    buffer.flushStart(700)
+    const expected = Buffer.from([0, 0, 0, 0, 0, 0])
+    const result = buffer.getHeap()
+    buffersShouldEqual(expected, result)
+    assert.strictEqual(0, buffer.size())
   })
 })
