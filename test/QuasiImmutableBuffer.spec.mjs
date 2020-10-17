@@ -101,4 +101,11 @@ describe('QuasiImmutableBuffer', () => {
       `reference of ${bufferToString(buffer1)} !== reference of ${bufferToString(buffer2)}`
     )
   })
+  it('makes sure to only allow reading data below size and not from the heap', () => {
+    buffer.append(Buffer.from([1, 2, 3, 4, 5]))
+    buffer.flushStart(2)
+    const expected = Buffer.from([5])
+    const result = buffer.read(2, 2)
+    compareBuffers(expected, result)
+  })
 })
