@@ -1,5 +1,6 @@
 import { EOL } from 'os'
 import fs from 'fs'
+import assert from 'assert'
 
 export const isPromise = promise => {
   return typeof promise === 'object' && promise.constructor.name === 'Promise'
@@ -36,4 +37,17 @@ export const isClass = obj => {
     obj.prototype.constructor.toString &&
     obj.prototype.constructor.toString().substring(0, 5) === 'class'
   return isCtorClass || isPrototypeCtorClass
+}
+
+// https://stackoverflow.com/a/48845122/1806628
+export const bufferToString = buffer => {
+  const limit = 20
+  const ellipsisNecessary = buffer.length > limit
+  let hexString = buffer.slice(0, limit).toString('hex')
+  hexString = hexString.length > 2 ? hexString.match(/../g).join(' ') : hexString
+  return `<Buffer ${hexString}${ellipsisNecessary ? '...' : ''}>`
+}
+
+export const buffersShouldEqual = (expected, result) => {
+  assert.ok(expected.equals(result), `${bufferToString(expected)} !== ${bufferToString(result)}`)
 }

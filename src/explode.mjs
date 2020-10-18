@@ -19,8 +19,8 @@ import {
   LITERAL_STREAM_ABORTED,
   LITERAL_END_STREAM
 } from './constants.mjs'
-import { isBetween, getLowestNBits, isBufferEmpty, nBitsOfOnes /*, toHex */ } from './helpers.mjs'
-import { flushBuffer } from './common.mjs'
+import { isBetween, getLowestNBits, nBitsOfOnes, toHex } from './helpers.mjs'
+import QuasiImmutableBuffer from './QuasiImmutableBuffer.mjs'
 
 const populateAsciiTable = (value, index, bits, target, limit = 0x100) => {
   const seed = n => {
@@ -79,7 +79,7 @@ const generateDecodeTables = (startIndexes, lengthBits) => {
   }, repeat(0, 0x100))
 }
 
-const parseFirstChunk = chunk => {
+const parseFirstChunk = (chunk, debug = false) => {
   return new Promise((resolve, reject) => {
     if (chunk.length <= 4) {
       reject(new Error(ERROR_INVALID_DATA))
@@ -107,10 +107,12 @@ const parseFirstChunk = chunk => {
       state = mergeRight(state, generateAsciiTables())
     }
 
-    // console.log(`compression type: ${state.compressionType === BINARY_COMPRESSION ? 'binary' : 'ascii'}`)
-    // console.log(`compression level: ${state.dictionarySizeBits === 4 ? 1 : state.dictionarySizeBits === 5 ? 2 : 3}`)
+    if (debug) {
+      console.log(`compression type: ${state.compressionType === BINARY_COMPRESSION ? 'binary' : 'ascii'}`)
+      console.log(`compression level: ${state.dictionarySizeBits === 4 ? 1 : state.dictionarySizeBits === 5 ? 2 : 3}`)
+    }
 
-    state.inputBuffer = chunk.slice(3)
+    state.chunk = chunk.slice(3)
 
     resolve(state)
   })
@@ -123,12 +125,12 @@ const wasteBits = (state, numberOfBits) => {
     return PKDCL_OK
   }
 
-  if (isBufferEmpty(state.inputBuffer)) {
+  if (state.inputBuffer.size() === 0) {
     return PKDCL_STREAM_END
   }
 
-  const nextByte = state.inputBuffer.readUInt8(0)
-  state.inputBuffer = state.inputBuffer.slice(1)
+  const nextByte = state.inputBuffer.read(0, 1)
+  state.inputBuffer.dropStart(1)
 
   state.bitBuffer = ((state.bitBuffer >> state.extraBits) | (nextByte << 8)) >> (numberOfBits - state.extraBits)
   state.extraBits = state.extraBits + 8 - numberOfBits
@@ -239,10 +241,7 @@ const processChunkData = state => {
           break
         }
 
-        const availableData = state.outputBuffer.slice(
-          state.outputBuffer.length - minusDistance,
-          state.outputBuffer.length - minusDistance + repeatLength
-        )
+        const availableData = state.outputBuffer.read(state.outputBuffer.size() - minusDistance, repeatLength)
 
         if (repeatLength > minusDistance) {
           const multipliedData = repeat(availableData, Math.ceil(repeatLength / availableData.length))
@@ -254,7 +253,7 @@ const processChunkData = state => {
         addition = Buffer.from([nextLiteral])
       }
 
-      state.outputBuffer = Buffer.concat([state.outputBuffer, addition])
+      state.outputBuffer.append(addition)
       state.backup()
     }
 
@@ -270,8 +269,11 @@ const processChunkData = state => {
   })
 }
 
-const explode = () => {
-  const stateBackup = {}
+const explode = (debug = false) => {
+  const stateBackup = {
+    extraBits: null,
+    bitBuffer: null
+  }
 
   let state = {
     isFirstChunk: true,
@@ -280,26 +282,31 @@ const explode = () => {
     lengthCodes: generateDecodeTables(LenCode, LenBits),
     distPosCodes: generateDecodeTables(DistCode, DistBits),
     extraBits: 0,
-    inputBuffer: Buffer.from([]),
-    outputBuffer: Buffer.from([]),
+    inputBuffer: new QuasiImmutableBuffer(0x10000),
+    outputBuffer: new QuasiImmutableBuffer(0x40000),
     onInputFinished: callback => {
+      if (debug) {
+        console.log('inputBuffer heap size', toHex(state.inputBuffer.heapSize()))
+        console.log('outputBuffer heap size', toHex(state.outputBuffer.heapSize()))
+      }
+
       if (state.needMoreInput) {
         callback(new Error(ERROR_ABORTED))
       } else {
-        callback(null, state.outputBuffer)
+        callback(null, state.outputBuffer.read())
       }
     },
     backup: () => {
       stateBackup.extraBits = state.extraBits
       stateBackup.bitBuffer = state.bitBuffer
-      stateBackup.inputBuffer = state.inputBuffer.slice(0)
-      stateBackup.outputBuffer = state.outputBuffer.slice(0)
+      state.inputBuffer.backup()
+      state.outputBuffer.backup()
     },
     restore: () => {
       state.extraBits = stateBackup.extraBits
       state.bitBuffer = stateBackup.bitBuffer
-      state.inputBuffer = stateBackup.inputBuffer
-      state.outputBuffer = stateBackup.outputBuffer
+      state.inputBuffer.restore()
+      state.outputBuffer.restore()
     }
   }
 
@@ -310,21 +317,28 @@ const explode = () => {
     if (state.isFirstChunk) {
       state.isFirstChunk = false
       this._flush = state.onInputFinished
-      work = parseFirstChunk(chunk).then(newState => {
+      work = parseFirstChunk(chunk, debug).then(({ chunk, ...newState }) => {
         state = mergeRight(state, newState)
+        state.inputBuffer.append(chunk)
         return state
       })
     } else {
-      state.inputBuffer = Buffer.concat([state.inputBuffer, chunk])
+      state.inputBuffer.append(chunk)
       work = Promise.resolve(state)
     }
 
-    // console.log(`reading ${toHex(chunk.length)} bytes`)
+    if (debug) {
+      console.log(`reading ${toHex(chunk.length)} bytes`)
+    }
 
     work
       .then(processChunkData)
       .then(() => {
-        callback(null, flushBuffer(0x1000, state))
+        const chunkSize = 0x1000
+        const numberOfBytes = Math.floor(state.outputBuffer.size() / chunkSize) * chunkSize
+        const output = Buffer.from(state.outputBuffer.read(0, numberOfBytes))
+        state.outputBuffer.flushStart(numberOfBytes)
+        callback(null, output)
       })
       .catch(e => {
         callback(e)

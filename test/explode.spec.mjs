@@ -5,7 +5,7 @@ import fs from 'fs'
 import explode, { parseFirstChunk, generateAsciiTables, generateDecodeTables } from '../src/explode.mjs'
 import { ERROR_INVALID_DATA, ERROR_INVALID_DICTIONARY_SIZE } from '../src/constants.mjs'
 import { through } from '../src/helpers.mjs'
-import { readToBuffer } from './helpers.mjs'
+import { readToBuffer, buffersShouldEqual } from './helpers.mjs'
 
 const decompressToBuffer = (fileName, chunkSizeInBytes = 1024) => {
   return new Promise((resolve, reject) => {
@@ -58,36 +58,36 @@ describe('explode', () => {
   })
   it('can decode files, which have been compressed with ascii mode', done => {
     Promise.all([readToBuffer('test/files/large.unpacked'), decompressToBuffer('test/files/large.ascii')])
-      .then(([control, test]) => {
-        assert.ok(control.equals(test))
+      .then(([expected, result]) => {
+        buffersShouldEqual(expected, result)
       })
       .then(done, done)
   })
   it('can decode files, which have been compressed with binary mode', done => {
     Promise.all([readToBuffer('test/files/binary.unpacked'), decompressToBuffer('test/files/binary')])
-      .then(([control, test]) => {
-        assert.ok(control.equals(test))
+      .then(([expected, result]) => {
+        buffersShouldEqual(expected, result)
       })
       .then(done, done)
   })
   it('can decode files, which have been compressed with small dictionary size', done => {
     Promise.all([readToBuffer('test/files/small.unpacked'), decompressToBuffer('test/files/small')])
-      .then(([control, test]) => {
-        assert.ok(control.equals(test))
+      .then(([expected, result]) => {
+        buffersShouldEqual(expected, result)
       })
       .then(done, done)
   })
   it('can decode files, which have been compressed with medium dictionary size', done => {
     Promise.all([readToBuffer('test/files/medium.unpacked'), decompressToBuffer('test/files/medium')])
-      .then(([control, test]) => {
-        assert.ok(control.equals(test))
+      .then(([expected, result]) => {
+        buffersShouldEqual(expected, result)
       })
       .then(done, done)
   })
   it('can decode files, which have been compressed with large dictionary size', done => {
     Promise.all([readToBuffer('test/files/large.unpacked'), decompressToBuffer('test/files/large')])
-      .then(([control, test]) => {
-        assert.ok(control.equals(test))
+      .then(([expected, result]) => {
+        buffersShouldEqual(expected, result)
       })
       .then(done, done)
   })

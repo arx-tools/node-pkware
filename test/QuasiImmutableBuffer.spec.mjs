@@ -2,18 +2,7 @@
 
 import assert from 'assert'
 import QuasiImmutableBuffer from '../src/QuasiImmutableBuffer.mjs'
-import { isClass } from './helpers.mjs'
-
-// https://stackoverflow.com/a/48845122/1806628
-const bufferToString = buffer => {
-  let hexString = buffer.toString('hex')
-  hexString = hexString.length > 2 ? hexString.match(/../g).join(' ') : hexString
-  return `<Buffer ${hexString}>`
-}
-
-const buffersShouldEqual = (expected, result) => {
-  assert.ok(expected.equals(result), `${bufferToString(expected)} !== ${bufferToString(result)}`)
-}
+import { isClass, buffersShouldEqual, bufferToString } from './helpers.mjs'
 
 describe('QuasiImmutableBuffer', () => {
   let buffer
@@ -137,9 +126,35 @@ describe('QuasiImmutableBuffer', () => {
   it('clears the internally stored data, when flushing an amount bigger, than heapSize', () => {
     buffer.append(Buffer.from([1, 2, 3, 4, 5, 6]))
     buffer.flushStart(700)
-    const expected = Buffer.from([0, 0, 0, 0, 0, 0])
-    const result = buffer.getHeap()
+    const expected = Buffer.from([])
+    const result = buffer.read()
     buffersShouldEqual(expected, result)
     assert.strictEqual(0, buffer.size())
+  })
+  it('clears the internally stored data, when clear is called', () => {
+    buffer.append(Buffer.from([1, 2, 3, 4, 5, 6]))
+    buffer.clear()
+    const expected = Buffer.from([])
+    const result = buffer.read()
+    buffersShouldEqual(expected, result)
+    assert.strictEqual(0, buffer.size())
+  })
+  it('leaves the internal storage intact, when dropStart is called', () => {
+    buffer.append(Buffer.from([1, 2, 3, 4, 5, 6]))
+    buffer.dropStart(3)
+    const expected = Buffer.from([1, 2, 3, 4, 5, 6])
+    const result = buffer.getHeap()
+    buffersShouldEqual(expected, result)
+  })
+  it('makes dropStart behave the same as flushStart by it changing the stored data', () => {
+    buffer.append(Buffer.from([1, 2, 3, 4, 5, 6]))
+    buffer.dropStart(3)
+    const expected = Buffer.from([4, 5, 6])
+    const result = buffer.read()
+    buffersShouldEqual(expected, result)
+  })
+  it('returns a single byte when read is called with limit = 1', () => {
+    buffer.append(Buffer.from([1, 2, 3]))
+    assert.strictEqual(2, buffer.read(1, 1))
   })
 })

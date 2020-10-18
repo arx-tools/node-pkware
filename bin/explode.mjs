@@ -7,10 +7,10 @@ import { isNil } from '../node_modules/ramda/src/index.mjs'
 import { transformSplitByIdx, transformIdentity, through, transformEmpty } from '../src/helpers.mjs'
 import { fileExists, getPackageVersion, isDecimalString, isHexadecimalString } from './helpers.mjs'
 
-const decompress = (input, output, offset, keepHeader) => {
+const decompress = (input, output, offset, keepHeader, debug = false) => {
   const handler = isNil(offset)
-    ? explode()
-    : transformSplitByIdx(offset, keepHeader ? transformIdentity() : transformEmpty(), explode())
+    ? explode(debug)
+    : transformSplitByIdx(offset, keepHeader ? transformIdentity() : transformEmpty(), explode(debug))
 
   return new Promise((resolve, reject) => {
     input.pipe(through(handler).on('error', reject)).pipe(output).on('finish', resolve).on('error', reject)
@@ -19,7 +19,7 @@ const decompress = (input, output, offset, keepHeader) => {
 
 const args = minimist(process.argv.slice(2), {
   string: ['output', 'offset'],
-  boolean: ['version', 'drop-before-offset']
+  boolean: ['version', 'drop-before-offset', 'debug']
 })
 
 ;(async () => {
@@ -65,7 +65,7 @@ const args = minimist(process.argv.slice(2), {
 
   const keepHeader = !args['drop-before-offset']
 
-  decompress(input, output, offset, keepHeader)
+  decompress(input, output, offset, keepHeader, args.debug)
     .then(() => {
       process.exit(0)
     })
