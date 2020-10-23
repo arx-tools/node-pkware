@@ -91,4 +91,11 @@ describe('explode', () => {
       })
       .then(done, done)
   })
+  it('can decode files, which span over multiple chunks', done => {
+    Promise.all([readToBuffer('test/files/large.unpacked'), decompressToBuffer('test/files/large', 97)])
+      .then(([expected, result]) => {
+        buffersShouldEqual(expected, result)
+      })
+      .then(done, done)
+  })
 })

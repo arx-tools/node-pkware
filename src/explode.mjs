@@ -119,21 +119,20 @@ const parseFirstChunk = (chunk, debug = false) => {
 }
 
 const wasteBits = (state, numberOfBits) => {
-  if (numberOfBits <= state.extraBits) {
-    state.extraBits = state.extraBits - numberOfBits
-    state.bitBuffer = state.bitBuffer >> numberOfBits
-    return PKDCL_OK
-  }
-
-  if (state.inputBuffer.size() === 0) {
+  if (numberOfBits > state.extraBits && state.inputBuffer.size() === 0) {
     return PKDCL_STREAM_END
   }
 
-  const nextByte = state.inputBuffer.read(0, 1)
-  state.inputBuffer.dropStart(1)
+  if (numberOfBits <= state.extraBits) {
+    state.bitBuffer = state.bitBuffer >> numberOfBits
+    state.extraBits = state.extraBits - numberOfBits
+  } else {
+    const nextByte = state.inputBuffer.read(0, 1)
+    state.inputBuffer.dropStart(1)
 
-  state.bitBuffer = ((state.bitBuffer >> state.extraBits) | (nextByte << 8)) >> (numberOfBits - state.extraBits)
-  state.extraBits = state.extraBits + 8 - numberOfBits
+    state.bitBuffer = ((state.bitBuffer >> state.extraBits) | (nextByte << 8)) >> (numberOfBits - state.extraBits)
+    state.extraBits = state.extraBits + 8 - numberOfBits
+  }
 
   return PKDCL_OK
 }
@@ -226,47 +225,47 @@ const decodeDistance = (state, repeatLength) => {
 }
 
 const processChunkData = state => {
-  return new Promise((resolve, reject) => {
-    let nextLiteral
-    state.needMoreInput = false
-    state.backup()
+  let nextLiteral
+  state.needMoreInput = false
 
-    while ((nextLiteral = decodeNextLiteral(state)) < LITERAL_END_STREAM) {
-      let addition
-      if (nextLiteral >= 0x100) {
-        const repeatLength = nextLiteral - 0xfe
-        const minusDistance = decodeDistance(state, repeatLength)
-        if (minusDistance === 0) {
-          state.needMoreInput = true
-          break
-        }
+  state.backup()
+  nextLiteral = decodeNextLiteral(state)
 
-        const availableData = state.outputBuffer.read(state.outputBuffer.size() - minusDistance, repeatLength)
-
-        if (repeatLength > minusDistance) {
-          const multipliedData = repeat(availableData, Math.ceil(repeatLength / availableData.length))
-          addition = Buffer.concat(multipliedData).slice(0, repeatLength)
-        } else {
-          addition = availableData
-        }
-      } else {
-        addition = Buffer.from([nextLiteral])
+  while (nextLiteral !== LITERAL_END_STREAM && nextLiteral !== LITERAL_STREAM_ABORTED) {
+    let addition
+    if (nextLiteral >= 0x100) {
+      const repeatLength = nextLiteral - 0xfe
+      const minusDistance = decodeDistance(state, repeatLength)
+      if (minusDistance === 0) {
+        state.needMoreInput = true
+        break
       }
 
-      state.outputBuffer.append(addition)
-      state.backup()
+      const availableData = state.outputBuffer.read(state.outputBuffer.size() - minusDistance, repeatLength)
+
+      if (repeatLength > minusDistance) {
+        const multipliedData = repeat(availableData, Math.ceil(repeatLength / availableData.length))
+        addition = Buffer.concat(multipliedData).slice(0, repeatLength)
+      } else {
+        addition = availableData
+      }
+    } else {
+      addition = Buffer.from([nextLiteral])
     }
 
-    if (nextLiteral === LITERAL_STREAM_ABORTED) {
-      state.needMoreInput = true
-    }
+    state.outputBuffer.append(addition)
 
-    if (state.needMoreInput) {
-      state.restore()
-    }
+    state.backup()
+    nextLiteral = decodeNextLiteral(state)
+  }
 
-    resolve()
-  })
+  if (nextLiteral === LITERAL_STREAM_ABORTED) {
+    state.needMoreInput = true
+  }
+
+  if (state.needMoreInput) {
+    state.restore()
+  }
 }
 
 const explode = (debug = false) => {
@@ -286,6 +285,7 @@ const explode = (debug = false) => {
     outputBuffer: new QuasiImmutableBuffer(0x40000),
     onInputFinished: callback => {
       if (debug) {
+        console.log('total number of chunks read:', state.stats.chunkCounter)
         console.log('inputBuffer heap size', toHex(state.inputBuffer.heapSize()))
         console.log('outputBuffer heap size', toHex(state.outputBuffer.heapSize()))
       }
@@ -300,13 +300,16 @@ const explode = (debug = false) => {
       stateBackup.extraBits = state.extraBits
       stateBackup.bitBuffer = state.bitBuffer
       state.inputBuffer.backup()
-      state.outputBuffer.backup()
+      // state.outputBuffer.backup()
     },
     restore: () => {
       state.extraBits = stateBackup.extraBits
       state.bitBuffer = stateBackup.bitBuffer
       state.inputBuffer.restore()
-      state.outputBuffer.restore()
+      // state.outputBuffer.restore()
+    },
+    stats: {
+      chunkCounter: 0
     }
   }
 
@@ -327,15 +330,17 @@ const explode = (debug = false) => {
       work = Promise.resolve(state)
     }
 
+    state.stats.chunkCounter++
+
     if (debug) {
-      console.log(`reading ${toHex(chunk.length)} bytes`)
+      console.log(`reading ${toHex(chunk.length)} bytes from chunk #${state.stats.chunkCounter}`)
     }
 
     work
       .then(processChunkData)
       .then(() => {
-        const chunkSize = 0x1000
-        const numberOfBytes = Math.floor(state.outputBuffer.size() / chunkSize) * chunkSize
+        const blockSize = 0x1000
+        const numberOfBytes = Math.floor(state.outputBuffer.size() / blockSize) * blockSize
         const output = Buffer.from(state.outputBuffer.read(0, numberOfBytes))
         state.outputBuffer.flushStart(numberOfBytes)
         callback(null, output)

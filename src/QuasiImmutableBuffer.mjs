@@ -5,10 +5,9 @@ export default class QuasiImmutableBuffer {
     this._heap = Buffer.allocUnsafe(numberOfBytes)
     this._startIndex = 0
     this._endIndex = 0
+
     this._backup = {
-      _heap: null,
-      _startIndex: 0,
-      _endIndex: 0
+      _heap: null
     }
   }
 
