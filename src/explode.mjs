@@ -270,7 +270,7 @@ const processChunkData = state => {
   }
 }
 
-const explode = (debug = false) => {
+const explode = ({ debug = false, inputBufferSize = 0x10000, outputBufferSize = 0x40000 } = {}) => {
   const stateBackup = {
     extraBits: null,
     bitBuffer: null
@@ -283,8 +283,8 @@ const explode = (debug = false) => {
     lengthCodes: generateDecodeTables(LenCode, LenBits),
     distPosCodes: generateDecodeTables(DistCode, DistBits),
     extraBits: 0,
-    inputBuffer: new QuasiImmutableBuffer(0x10000),
-    outputBuffer: new QuasiImmutableBuffer(0x40000),
+    inputBuffer: new QuasiImmutableBuffer(inputBufferSize),
+    outputBuffer: new QuasiImmutableBuffer(outputBufferSize),
     onInputFinished: callback => {
       if (debug) {
         console.log('---------------')

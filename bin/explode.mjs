@@ -2,15 +2,15 @@
 
 import fs from 'fs'
 import minimist from 'minimist'
-import { explode } from '../src/index.mjs'
 import { isNil } from '../node_modules/ramda/src/index.mjs'
+import { explode } from '../src/index.mjs'
 import { transformSplitByIdx, transformIdentity, through, transformEmpty } from '../src/helpers.mjs'
 import { fileExists, getPackageVersion, isDecimalString, isHexadecimalString } from './helpers.mjs'
 
-const decompress = (input, output, offset, keepHeader, debug = false) => {
+const decompress = (input, output, offset, keepHeader, params) => {
   const handler = isNil(offset)
-    ? explode(debug)
-    : transformSplitByIdx(offset, keepHeader ? transformIdentity() : transformEmpty(), explode(debug))
+    ? explode(params)
+    : transformSplitByIdx(offset, keepHeader ? transformIdentity() : transformEmpty(), explode(params))
 
   return new Promise((resolve, reject) => {
     input.pipe(through(handler).on('error', reject)).pipe(output).on('finish', resolve).on('error', reject)
@@ -18,9 +18,19 @@ const decompress = (input, output, offset, keepHeader, debug = false) => {
 }
 
 const args = minimist(process.argv.slice(2), {
-  string: ['output', 'offset'],
+  string: ['output', 'offset', 'input-buffer-size', 'output-buffer-size'],
   boolean: ['version', 'drop-before-offset', 'debug']
 })
+
+const parseNumberString = (n, defaultValue = 0) => {
+  if (isDecimalString(n)) {
+    return parseInt(n)
+  } else if (isHexadecimalString(n)) {
+    return parseInt(n.replace(/^0x/, ''), 16)
+  } else {
+    return defaultValue
+  }
+}
 
 ;(async () => {
   if (args.version) {
@@ -54,18 +64,16 @@ const args = minimist(process.argv.slice(2), {
     process.exit(1)
   }
 
-  let offset = args.offset
-  if (isDecimalString(offset)) {
-    offset = parseInt(offset)
-  } else if (isHexadecimalString(offset)) {
-    offset = parseInt(offset.replace(/^0x/, ''), 16)
-  } else {
-    offset = 0
-  }
+  const offset = parseNumberString(args.offset, 0)
 
   const keepHeader = !args['drop-before-offset']
+  const params = {
+    debug: args.debug,
+    inputBufferSize: parseNumberString(args['input-buffer-size'], 0x10000),
+    outputBufferSize: parseNumberString(args['output-buffer-size'], 0x40000)
+  }
 
-  decompress(input, output, offset, keepHeader, args.debug)
+  decompress(input, output, offset, keepHeader, params)
     .then(() => {
       process.exit(0)
     })
