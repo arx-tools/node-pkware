@@ -138,11 +138,13 @@ const wasteBits = (state, numberOfBits) => {
 }
 
 const decodeNextLiteral = state => {
-  if (state.bitBuffer & 1) {
-    if (wasteBits(state, 1) === PKDCL_STREAM_END) {
-      return LITERAL_STREAM_ABORTED
-    }
+  const lastBit = state.bitBuffer & 1
 
+  if (wasteBits(state, 1) === PKDCL_STREAM_END) {
+    return LITERAL_STREAM_ABORTED
+  }
+
+  if (lastBit) {
     let lengthCode = state.lengthCodes[getLowestNBits(8, state.bitBuffer)]
 
     if (wasteBits(state, LenBits[lengthCode]) === PKDCL_STREAM_END) {
@@ -153,51 +155,50 @@ const decodeNextLiteral = state => {
     if (extraLenghtBits !== 0) {
       const extraLength = getLowestNBits(extraLenghtBits, state.bitBuffer)
 
-      if (wasteBits(state, extraLenghtBits) === PKDCL_STREAM_END) {
-        if (lengthCode + extraLength !== 0x10e) {
-          return LITERAL_STREAM_ABORTED
-        }
+      if (wasteBits(state, extraLenghtBits) === PKDCL_STREAM_END && lengthCode + extraLength !== 0x10e) {
+        return LITERAL_STREAM_ABORTED
       }
 
       lengthCode = LenBase[lengthCode] + extraLength
     }
 
     return lengthCode + 0x100
-  }
-
-  if (wasteBits(state, 1) === PKDCL_STREAM_END) {
-    return LITERAL_STREAM_ABORTED
-  }
-
-  if (state.compressionType === BINARY_COMPRESSION) {
-    const uncompressedByte = getLowestNBits(8, state.bitBuffer)
-    return wasteBits(state, 8) === PKDCL_STREAM_END ? LITERAL_STREAM_ABORTED : uncompressedByte
-  }
-
-  let value
-  if (getLowestNBits(8, state.bitBuffer)) {
-    value = state.asciiTable2C34[getLowestNBits(8, state.bitBuffer)]
-    if (value === 0xff) {
-      if (getLowestNBits(6, state.bitBuffer)) {
-        if (wasteBits(state, 4) === PKDCL_STREAM_END) {
-          return LITERAL_STREAM_ABORTED
-        }
-        value = state.asciiTable2D34[getLowestNBits(8, state.bitBuffer)]
-      } else {
-        if (wasteBits(state, 6) === PKDCL_STREAM_END) {
-          return LITERAL_STREAM_ABORTED
-        }
-        value = state.asciiTable2E34[getLowestNBits(7, state.bitBuffer)]
-      }
-    }
   } else {
-    if (wasteBits(state, 8) === PKDCL_STREAM_END) {
-      return LITERAL_STREAM_ABORTED
-    }
-    value = state.asciiTable2EB4[getLowestNBits(8, state.bitBuffer)]
-  }
+    const lastByte = getLowestNBits(8, state.bitBuffer)
 
-  return wasteBits(state, state.chBitsAsc[value]) === PKDCL_STREAM_END ? LITERAL_STREAM_ABORTED : value
+    if (state.compressionType === BINARY_COMPRESSION) {
+      return wasteBits(state, 8) === PKDCL_STREAM_END ? LITERAL_STREAM_ABORTED : lastByte
+    } else {
+      let value
+      if (lastByte > 0) {
+        value = state.asciiTable2C34[lastByte]
+
+        if (value === 0xff) {
+          if (getLowestNBits(6, state.bitBuffer)) {
+            if (wasteBits(state, 4) === PKDCL_STREAM_END) {
+              return LITERAL_STREAM_ABORTED
+            }
+
+            value = state.asciiTable2D34[getLowestNBits(8, state.bitBuffer)]
+          } else {
+            if (wasteBits(state, 6) === PKDCL_STREAM_END) {
+              return LITERAL_STREAM_ABORTED
+            }
+
+            value = state.asciiTable2E34[getLowestNBits(7, state.bitBuffer)]
+          }
+        }
+      } else {
+        if (wasteBits(state, 8) === PKDCL_STREAM_END) {
+          return LITERAL_STREAM_ABORTED
+        }
+
+        value = state.asciiTable2EB4[getLowestNBits(8, state.bitBuffer)]
+      }
+
+      return wasteBits(state, state.chBitsAsc[value]) === PKDCL_STREAM_END ? LITERAL_STREAM_ABORTED : value
+    }
+  }
 }
 
 const decodeDistance = (state, repeatLength) => {
@@ -208,17 +209,18 @@ const decodeDistance = (state, repeatLength) => {
   }
 
   let distance
+  let bitsToWaste
 
   if (repeatLength === 2) {
     distance = (distPosCode << 2) | getLowestNBits(2, state.bitBuffer)
-    if (wasteBits(state, 2) === PKDCL_STREAM_END) {
-      return 0
-    }
+    bitsToWaste = 2
   } else {
     distance = (distPosCode << state.dictionarySizeBits) | (state.bitBuffer & state.dictionarySizeMask)
-    if (wasteBits(state, state.dictionarySizeBits) === PKDCL_STREAM_END) {
-      return 0
-    }
+    bitsToWaste = state.dictionarySizeBits
+  }
+
+  if (wasteBits(state, bitsToWaste) === PKDCL_STREAM_END) {
+    return 0
   }
 
   return distance + 1
@@ -285,6 +287,7 @@ const explode = (debug = false) => {
     outputBuffer: new QuasiImmutableBuffer(0x40000),
     onInputFinished: callback => {
       if (debug) {
+        console.log('---------------')
         console.log('total number of chunks read:', state.stats.chunkCounter)
         console.log('inputBuffer heap size', toHex(state.inputBuffer.heapSize()))
         console.log('outputBuffer heap size', toHex(state.outputBuffer.heapSize()))
@@ -299,14 +302,12 @@ const explode = (debug = false) => {
     backup: () => {
       stateBackup.extraBits = state.extraBits
       stateBackup.bitBuffer = state.bitBuffer
-      state.inputBuffer.backup()
-      // state.outputBuffer.backup()
+      state.inputBuffer._saveIndices()
     },
     restore: () => {
       state.extraBits = stateBackup.extraBits
       state.bitBuffer = stateBackup.bitBuffer
-      state.inputBuffer.restore()
-      // state.outputBuffer.restore()
+      state.inputBuffer._restoreIndices()
     },
     stats: {
       chunkCounter: 0
@@ -330,10 +331,8 @@ const explode = (debug = false) => {
       work = Promise.resolve(state)
     }
 
-    state.stats.chunkCounter++
-
     if (debug) {
-      console.log(`reading ${toHex(chunk.length)} bytes from chunk #${state.stats.chunkCounter}`)
+      console.log(`reading ${toHex(chunk.length)} bytes from chunk #${state.stats.chunkCounter++}`)
     }
 
     work

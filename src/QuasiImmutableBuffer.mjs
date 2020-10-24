@@ -7,7 +7,8 @@ export default class QuasiImmutableBuffer {
     this._endIndex = 0
 
     this._backup = {
-      _heap: null
+      _startIndex: 0,
+      _endIndex: 0
     }
   }
 
@@ -78,13 +79,13 @@ export default class QuasiImmutableBuffer {
     this._endIndex = 0
   }
 
-  backup() {
-    this._backup._heap = Buffer.from(this.read())
+  _saveIndices() {
+    this._backup._startIndex = this._startIndex
+    this._backup._endIndex = this._endIndex
   }
 
-  restore() {
-    this._backup._heap.copy(this._heap, 0)
-    this._startIndex = 0
-    this._endIndex = this._backup._heap.length
+  _restoreIndices() {
+    this._startIndex = this._backup._startIndex
+    this._endIndex = this._backup._endIndex
   }
 }
