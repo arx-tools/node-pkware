@@ -5,7 +5,7 @@ import minimist from 'minimist'
 import { isNil } from '../node_modules/ramda/src/index.mjs'
 import { explode } from '../src/index.mjs'
 import { transformSplitByIdx, transformIdentity, through, transformEmpty } from '../src/helpers.mjs'
-import { fileExists, getPackageVersion, isDecimalString, isHexadecimalString } from './helpers.mjs'
+import { fileExists, getPackageVersion, parseNumberString } from './helpers.mjs'
 
 const decompress = (input, output, offset, keepHeader, params) => {
   const handler = isNil(offset)
@@ -21,16 +21,6 @@ const args = minimist(process.argv.slice(2), {
   string: ['output', 'offset', 'input-buffer-size', 'output-buffer-size'],
   boolean: ['version', 'drop-before-offset', 'debug']
 })
-
-const parseNumberString = (n, defaultValue = 0) => {
-  if (isDecimalString(n)) {
-    return parseInt(n)
-  } else if (isHexadecimalString(n)) {
-    return parseInt(n.replace(/^0x/, ''), 16)
-  } else {
-    return defaultValue
-  }
-}
 
 ;(async () => {
   if (args.version) {

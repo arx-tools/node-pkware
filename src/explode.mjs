@@ -39,7 +39,7 @@ const populateAsciiTable = (value, index, bits, target, limit = 0x100) => {
   return value - bits
 }
 
-const generateAsciiTables = () => {
+export const generateAsciiTables = () => {
   const state = {
     asciiTable2C34: repeat(0, 0x100),
     asciiTable2D34: repeat(0, 0x100),
@@ -69,7 +69,7 @@ const generateAsciiTables = () => {
   return state
 }
 
-const generateDecodeTables = (startIndexes, lengthBits) => {
+export const generateDecodeTables = (startIndexes, lengthBits) => {
   return lengthBits.reduce((acc, lengthBit, i) => {
     for (let index = startIndexes[i]; index < 0x100; index += 1 << lengthBit) {
       acc[index] = i
@@ -79,7 +79,7 @@ const generateDecodeTables = (startIndexes, lengthBits) => {
   }, repeat(0, 0x100))
 }
 
-const parseFirstChunk = (chunk, debug = false) => {
+export const parseFirstChunk = (chunk, debug = false) => {
   return new Promise((resolve, reject) => {
     if (chunk.length <= 4) {
       reject(new Error(ERROR_INVALID_DATA))
@@ -351,5 +351,3 @@ const explode = ({ debug = false, inputBufferSize = 0x10000, outputBufferSize = 
 }
 
 export default explode
-
-export { generateAsciiTables, parseFirstChunk, generateDecodeTables }

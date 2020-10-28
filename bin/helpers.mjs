@@ -24,3 +24,13 @@ export const getPackageVersion = async () => {
 export const isDecimalString = test(/^\d+$/)
 
 export const isHexadecimalString = test(/^0x[0-9a-fA-F]+$/)
+
+export const parseNumberString = (n, defaultValue = 0) => {
+  if (isDecimalString(n)) {
+    return parseInt(n)
+  } else if (isHexadecimalString(n)) {
+    return parseInt(n.replace(/^0x/, ''), 16)
+  } else {
+    return defaultValue
+  }
+}

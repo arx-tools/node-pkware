@@ -15,8 +15,9 @@ import {
   DistCode,
   DistBits
 } from './constants.mjs'
-import { nBitsOfOnes, isBufferEmpty, appendByteToBuffer, getLowestNBits /*, toHex */ } from './helpers.mjs'
+import { nBitsOfOnes, isBufferEmpty, appendByteToBuffer, getLowestNBits, toHex } from './helpers.mjs'
 import { flushBuffer } from './common.mjs'
+// import QuasiImmutableBuffer from './QuasiImmutableBuffer.mjs'
 
 // const LONGEST_ALLOWED_REPETITION = 0x204
 
@@ -109,7 +110,7 @@ const findRepetitions = state => {
   return 0
 }
 
-const processChunkData = state => {
+const processChunkData = (state, debug = false) => {
   return new Promise((resolve, reject) => {
     if (state.inputBuffer.length > 0x1000 || state.streamEnded) {
       state.needMoreInput = false
@@ -118,9 +119,11 @@ const processChunkData = state => {
         // need to wrap up writing bytes, just add final literal
       }
 
-      // console.log(
-      //   `reading ${toHex(state.inputBuffer.length)} bytes${state.streamEnded ? ' and the stream have ended' : ''}`
-      // )
+      if (debug) {
+        console.log(
+          `reading ${toHex(state.inputBuffer.length)} bytes${state.streamEnded ? ' and the stream have ended' : ''}`
+        )
+      }
 
       // to prevent infinite loops:
       // depending on the length of chunks we get the inputBuffer can be over 0x1000 multiple times
@@ -159,7 +162,11 @@ const processChunkData = state => {
   })
 }
 
-const implode = (compressionType, dictionarySize) => {
+const implode = (
+  compressionType,
+  dictionarySize,
+  { debug = false, inputBufferSize = 0x10000, outputBufferSize = 0x40000 } = {}
+) => {
   let state = {
     isFirstChunk: true,
     needMoreInput: true, // TODO: not sure, if we need this flag
@@ -173,9 +180,11 @@ const implode = (compressionType, dictionarySize) => {
     outputBuffer: Buffer.from([]),
     onInputFinished: callback => {
       state.streamEnded = true
-      processChunkData(state)
+      processChunkData(state, debug)
         .then(() => {
-          // console.log(`writing remaining ${toHex(state.outputBuffer.length)} bytes`)
+          if (debug) {
+            console.log(`writing remaining ${toHex(state.outputBuffer.length)} bytes`)
+          }
           callback(null, state.outputBuffer)
         })
         .catch(e => {
@@ -200,7 +209,7 @@ const implode = (compressionType, dictionarySize) => {
     }
 
     work
-      .then(processChunkData)
+      .then(state => processChunkData(state, debug))
       .then(() => {
         const output = flushBuffer(0x800, state)
         if (state.outBits === 0) {

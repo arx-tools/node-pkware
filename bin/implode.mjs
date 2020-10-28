@@ -12,15 +12,15 @@ import {
 } from '../src/index.mjs'
 import { isBetween, through, transformSplitByIdx, transformIdentity, transformEmpty } from '../src/helpers.mjs'
 import { isNil } from '../node_modules/ramda/src/index.mjs'
-import { fileExists, getPackageVersion, isDecimalString, isHexadecimalString } from './helpers.mjs'
+import { fileExists, getPackageVersion, parseNumberString } from './helpers.mjs'
 
-const decompress = (input, output, offset, keepHeader, compressionType, dictionarySize) => {
+const decompress = (input, output, offset, keepHeader, compressionType, dictionarySize, params) => {
   const handler = isNil(offset)
-    ? implode(compressionType, dictionarySize)
+    ? implode(compressionType, dictionarySize, params)
     : transformSplitByIdx(
         offset,
         keepHeader ? transformIdentity() : transformEmpty(),
-        implode(compressionType, dictionarySize)
+        implode(compressionType, dictionarySize, params)
       )
 
   return new Promise((resolve, reject) => {
@@ -29,8 +29,8 @@ const decompress = (input, output, offset, keepHeader, compressionType, dictiona
 }
 
 const args = minimist(process.argv.slice(2), {
-  string: ['output'],
-  boolean: ['version', 'binary', 'ascii', 'drop-before-offset']
+  string: ['output', 'offset', 'input-buffer-size', 'output-buffer-size'],
+  boolean: ['version', 'binary', 'ascii', 'drop-before-offset', 'debug']
 })
 
 ;(async () => {
@@ -81,20 +81,18 @@ const args = minimist(process.argv.slice(2), {
     process.exit(1)
   }
 
-  let offset = args.offset
-  if (isDecimalString(offset)) {
-    offset = parseInt(offset)
-  } else if (isHexadecimalString(offset)) {
-    offset = parseInt(offset.replace(/^0x/, ''), 16)
-  } else {
-    offset = 0
-  }
+  const offset = parseNumberString(args.offset, 0)
 
   const keepHeader = !args['drop-before-offset']
+  const params = {
+    debug: args.debug,
+    inputBufferSize: parseNumberString(args['input-buffer-size'], 0x10000),
+    outputBufferSize: parseNumberString(args['output-buffer-size'], 0x40000)
+  }
 
   const compressionType = args.ascii ? ASCII_COMPRESSION : BINARY_COMPRESSION
   const dictionarySize = args.level === 1 ? DICTIONARY_SIZE1 : args.level === 2 ? DICTIONARY_SIZE2 : DICTIONARY_SIZE3
-  decompress(input, output, offset, keepHeader, compressionType, dictionarySize)
+  decompress(input, output, offset, keepHeader, compressionType, dictionarySize, params)
     .then(() => {
       process.exit(0)
     })
