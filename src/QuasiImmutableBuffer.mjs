@@ -20,6 +20,10 @@ export default class QuasiImmutableBuffer {
     return this._endIndex - this._startIndex
   }
 
+  isEmpty() {
+    return this.size() === 0
+  }
+
   heapSize() {
     return this._heap.length
   }
@@ -61,9 +65,25 @@ export default class QuasiImmutableBuffer {
     }
   }
 
+  flushEnd(numberOfBytes) {
+    numberOfBytes = clamp(0, this.heapSize(), numberOfBytes)
+    if (numberOfBytes > 0) {
+      this._endIndex -= numberOfBytes
+    }
+  }
+
   dropStart(numberOfBytes) {
     if (numberOfBytes > 0) {
       this._startIndex += numberOfBytes
+      if (this._startIndex >= this._endIndex) {
+        this.clear()
+      }
+    }
+  }
+
+  dropEnd(numberOfBytes) {
+    if (numberOfBytes > 0) {
+      this._endIndex -= numberOfBytes
       if (this._startIndex >= this._endIndex) {
         this.clear()
       }

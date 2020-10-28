@@ -15,18 +15,6 @@ export const getLowestNBits = (numberOfBits, number) => {
   return number & nBitsOfOnes(numberOfBits)
 }
 
-// Ramda.isEmpty not working with Buffers
-// source: https://github.com/ramda/ramda/issues/2799
-export const isBufferEmpty = buffer => {
-  return buffer.length === 0
-}
-
-export const appendByteToBuffer = (byte, buffer) => {
-  const nextByte = Buffer.alloc(1)
-  nextByte.writeUInt8(byte, 0)
-  return Buffer.concat([buffer, nextByte])
-}
-
 export const through = handler => {
   return new Transform({
     transform: handler

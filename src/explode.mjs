@@ -119,7 +119,7 @@ export const parseFirstChunk = (chunk, debug = false) => {
 }
 
 const wasteBits = (state, numberOfBits) => {
-  if (numberOfBits > state.extraBits && state.inputBuffer.size() === 0) {
+  if (numberOfBits > state.extraBits && state.inputBuffer.isEmpty()) {
     return PKDCL_STREAM_END
   }
 
@@ -270,7 +270,7 @@ const processChunkData = state => {
   }
 }
 
-const explode = ({ debug = false, inputBufferSize = 0x10000, outputBufferSize = 0x40000 } = {}) => {
+const explode = ({ debug = false, inputBufferSize = 0x0, outputBufferSize = 0x0 } = {}) => {
   const stateBackup = {
     extraBits: null,
     bitBuffer: null

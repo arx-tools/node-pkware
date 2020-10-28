@@ -87,7 +87,7 @@ const args = minimist(process.argv.slice(2), {
   const params = {
     debug: args.debug,
     inputBufferSize: parseNumberString(args['input-buffer-size'], 0x10000),
-    outputBufferSize: parseNumberString(args['output-buffer-size'], 0x40000)
+    outputBufferSize: parseNumberString(args['output-buffer-size'], 0x12000)
   }
 
   const compressionType = args.ascii ? ASCII_COMPRESSION : BINARY_COMPRESSION

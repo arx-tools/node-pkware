@@ -15,9 +15,8 @@ import {
   DistCode,
   DistBits
 } from './constants.mjs'
-import { nBitsOfOnes, isBufferEmpty, appendByteToBuffer, getLowestNBits, toHex } from './helpers.mjs'
-import { flushBuffer } from './common.mjs'
-// import QuasiImmutableBuffer from './QuasiImmutableBuffer.mjs'
+import { nBitsOfOnes, getLowestNBits, toHex } from './helpers.mjs'
+import QuasiImmutableBuffer from './QuasiImmutableBuffer.mjs'
 
 // const LONGEST_ALLOWED_REPETITION = 0x204
 
@@ -74,7 +73,7 @@ const setup = (compressionType, dictionarySize) => {
       }
     }
 
-    state.outputBuffer = Buffer.from([compressionType, state.dictionarySizeBits, 0])
+    state.chunk = Buffer.from([compressionType, state.dictionarySizeBits, 0])
     state.outBits = 0
 
     resolve(state)
@@ -91,17 +90,20 @@ const outputBits = (state, nBits, bitBuffer) => {
   const outBits = state.outBits
 
   // in the original code bitBuffer is long, but is cast to char
-  state.outputBuffer[state.outputBuffer.length - 1] |= getLowestNBits(8, bitBuffer << outBits)
+  const lastBytes = state.outputBuffer.read(state.outputBuffer.size() - 1, 1)
+  state.outputBuffer.dropEnd(1)
+  state.outputBuffer.append(Buffer.from([lastBytes | getLowestNBits(8, bitBuffer << outBits)]))
+
   state.outBits = state.outBits + nBits
 
   if (state.outBits > 8) {
     bitBuffer = bitBuffer >> (8 - outBits)
-    state.outputBuffer = appendByteToBuffer(getLowestNBits(8, bitBuffer), state.outputBuffer)
+    state.outputBuffer.append(Buffer.from([getLowestNBits(8, bitBuffer)]))
     state.outBits = getLowestNBits(3, state.outBits)
   } else {
     state.outBits = getLowestNBits(3, state.outBits)
     if (state.outBits === 0) {
-      state.outputBuffer = appendByteToBuffer(0, state.outputBuffer)
+      state.outputBuffer.append(Buffer.from([0]))
     }
   }
 }
@@ -112,27 +114,22 @@ const findRepetitions = state => {
 
 const processChunkData = (state, debug = false) => {
   return new Promise((resolve, reject) => {
-    if (state.inputBuffer.length > 0x1000 || state.streamEnded) {
+    if (state.inputBuffer.size() > 0x1000 || state.streamEnded) {
       state.needMoreInput = false
 
-      if (state.streamEnded && isBufferEmpty(state.inputBuffer)) {
+      if (state.streamEnded && state.inputBuffer.isEmpty()) {
         // need to wrap up writing bytes, just add final literal
       }
 
-      if (debug) {
-        console.log(
-          `reading ${toHex(state.inputBuffer.length)} bytes${state.streamEnded ? ' and the stream have ended' : ''}`
-        )
-      }
-
       // to prevent infinite loops:
-      // depending on the length of chunks we get the inputBuffer can be over 0x1000 multiple times
-      // we will try reading the input buffer in 0x1000 chunks, but bail out after 1000 cycles
+      // depending on the length of chunks the inputBuffer can be over 0x1000 multiple times
+      // will try reading the input buffer in 0x1000 blocks, but bail out after 1000 cycles
       let maxCycles = 1000
+      const blockSize = 0x1000
 
-      while (maxCycles-- > 0 && (state.inputBuffer.length > 0 || !state.streamEnded)) {
+      while (maxCycles-- > 0 && (!state.inputBuffer.isEmpty() || !state.streamEnded)) {
         let bytesToSkip = 0
-        const inputBytes = Array.from(state.inputBuffer.slice(0, 0x1000))
+        const inputBytes = Array.from(state.inputBuffer.read(0, blockSize))
         inputBytes.forEach(byte => {
           if (bytesToSkip-- > 0) {
             return
@@ -148,7 +145,7 @@ const processChunkData = (state, debug = false) => {
           }
         })
 
-        state.inputBuffer = state.inputBuffer.slice(inputBytes.length)
+        state.inputBuffer.dropStart(inputBytes.length)
       }
     }
 
@@ -165,7 +162,7 @@ const processChunkData = (state, debug = false) => {
 const implode = (
   compressionType,
   dictionarySize,
-  { debug = false, inputBufferSize = 0x10000, outputBufferSize = 0x40000 } = {}
+  { debug = false, inputBufferSize = 0x0, outputBufferSize = 0x0 } = {}
 ) => {
   let state = {
     isFirstChunk: true,
@@ -176,45 +173,61 @@ const implode = (
     dictionarySizeBytes: dictionarySize,
     distCodes: clone(DistCode),
     distBits: clone(DistBits),
-    inputBuffer: Buffer.from([]),
-    outputBuffer: Buffer.from([]),
+    inputBuffer: new QuasiImmutableBuffer(inputBufferSize),
+    outputBuffer: new QuasiImmutableBuffer(outputBufferSize),
     onInputFinished: callback => {
       state.streamEnded = true
       processChunkData(state, debug)
         .then(() => {
           if (debug) {
-            console.log(`writing remaining ${toHex(state.outputBuffer.length)} bytes`)
+            console.log('---------------')
+            console.log('total number of chunks read:', state.stats.chunkCounter)
+            console.log('inputBuffer heap size', toHex(state.inputBuffer.heapSize()))
+            console.log('outputBuffer heap size', toHex(state.outputBuffer.heapSize()))
           }
-          callback(null, state.outputBuffer)
+          callback(null, state.outputBuffer.read())
         })
         .catch(e => {
           callback(e)
         })
+    },
+    stats: {
+      chunkCounter: 0
     }
   }
 
   return function (chunk, encoding, callback) {
     let work
+    state.inputBuffer.append(chunk)
     if (state.isFirstChunk) {
       state.isFirstChunk = false
       this._flush = state.onInputFinished
-      state.inputBuffer = chunk
-      work = setup(compressionType, dictionarySize).then(newState => {
+      work = setup(compressionType, dictionarySize).then(({ chunk, ...newState }) => {
         state = mergeRight(state, newState)
+        state.outputBuffer.append(chunk)
         return state
       })
     } else {
-      state.inputBuffer = Buffer.concat([state.inputBuffer, chunk])
       work = Promise.resolve(state)
+    }
+
+    if (debug) {
+      console.log(`reading ${toHex(chunk.length)} bytes from chunk #${state.stats.chunkCounter++}`)
     }
 
     work
       .then(state => processChunkData(state, debug))
       .then(() => {
-        const output = flushBuffer(0x800, state)
+        const blockSize = 0x800
+        const numberOfBytes = Math.floor(state.outputBuffer.size() / blockSize) * blockSize
+        const output = Buffer.from(state.outputBuffer.read(0, numberOfBytes))
+        state.outputBuffer.flushStart(numberOfBytes)
+
         if (state.outBits === 0) {
-          state.outputBuffer[state.outputBuffer.length - 1] = 0
+          state.outputBuffer.dropEnd(1)
+          state.outputBuffer.append(Buffer.from([0]))
         }
+
         callback(null, output)
       })
       .catch(e => {

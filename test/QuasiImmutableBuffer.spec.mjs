@@ -63,25 +63,52 @@ describe('QuasiImmutableBuffer', () => {
     buffersShouldEqual(expected, result)
     assert.strictEqual(expected.length, buffer.size())
   })
-  it('keeps the heapSize unchanged after flushing', () => {
+  it('keeps the heapSize unchanged after flushing from the beginning', () => {
     buffer.append(Buffer.from([1, 2, 3, 4, 5]))
     buffer.flushStart(3)
     assert.strictEqual(5, buffer.heapSize())
   })
-  it('adjusts size after flushing', () => {
+  it('keeps the heapSize unchanged after flushing from the end', () => {
+    buffer.append(Buffer.from([1, 2, 3, 4, 5]))
+    buffer.flushEnd(3)
+    assert.strictEqual(5, buffer.heapSize())
+  })
+  it('adjusts size after flushing from the beginning', () => {
     buffer.append(Buffer.from([1, 2, 3, 4, 5]))
     buffer.flushStart(3)
     assert.strictEqual(2, buffer.size())
   })
-  it('is not increasing the heapSize, when the size of data appended after flushing is less, than the number of bytes flushed', () => {
+  it('adjusts size after flushing from the end', () => {
+    buffer.append(Buffer.from([1, 2, 3, 4, 5]))
+    buffer.flushEnd(3)
+    assert.strictEqual(2, buffer.size())
+  })
+  it('is not increasing the heapSize, when the size of data appended after flushing from the beginning is less, than the number of bytes flushed', () => {
     buffer.append(Buffer.from([1, 2, 3, 4, 5]))
     buffer.flushStart(3)
     buffer.append(Buffer.from([7, 8]))
     assert.strictEqual(5, buffer.heapSize())
   })
-  it('re-uses the existing internal buffer, when appended data fits into the space freed by flushing', () => {
+  it('is not increasing the heapSize, when the size of data appended after flushing from the end is less, than the number of bytes flushed', () => {
+    buffer.append(Buffer.from([1, 2, 3, 4, 5]))
+    buffer.flushEnd(3)
+    buffer.append(Buffer.from([7, 8]))
+    assert.strictEqual(5, buffer.heapSize())
+  })
+  it('re-uses the existing internal buffer, when appended data fits into the space freed by flushing from the beginning', () => {
     buffer.append(Buffer.from([1, 2, 3, 4, 5]))
     buffer.flushStart(3)
+    const buffer1 = buffer.getHeap()
+    buffer.append(Buffer.from([7, 8]))
+    const buffer2 = buffer.getHeap()
+    assert.ok(
+      buffer1 === buffer2,
+      `reference of ${bufferToString(buffer1)} !== reference of ${bufferToString(buffer2)}`
+    )
+  })
+  it('re-uses the existing internal buffer, when appended data fits into the space freed by flushing from the end', () => {
+    buffer.append(Buffer.from([1, 2, 3, 4, 5]))
+    buffer.flushEnd(3)
     const buffer1 = buffer.getHeap()
     buffer.append(Buffer.from([7, 8]))
     const buffer2 = buffer.getHeap()
@@ -146,15 +173,43 @@ describe('QuasiImmutableBuffer', () => {
     const result = buffer.getHeap()
     buffersShouldEqual(expected, result)
   })
-  it('makes dropStart behave the same as flushStart by it changing the stored data', () => {
+  it('leaves the internal storage intact, when dropEnd is called', () => {
+    buffer.append(Buffer.from([1, 2, 3, 4, 5, 6]))
+    buffer.dropEnd(3)
+    const expected = Buffer.from([1, 2, 3, 4, 5, 6])
+    const result = buffer.getHeap()
+    buffersShouldEqual(expected, result)
+  })
+  it('makes dropStart behave the same as flushStart by changing the stored data', () => {
     buffer.append(Buffer.from([1, 2, 3, 4, 5, 6]))
     buffer.dropStart(3)
     const expected = Buffer.from([4, 5, 6])
     const result = buffer.read()
     buffersShouldEqual(expected, result)
   })
+  it('makes dropEnd behave the same as flushEnd by changing the stored data', () => {
+    buffer.append(Buffer.from([1, 2, 3, 4, 5, 6]))
+    buffer.dropEnd(3)
+    const expected = Buffer.from([1, 2, 3])
+    const result = buffer.read()
+    buffersShouldEqual(expected, result)
+  })
   it('returns a single byte when read is called with limit = 1', () => {
     buffer.append(Buffer.from([1, 2, 3]))
     assert.strictEqual(2, buffer.read(1, 1))
+  })
+  it('removes data from the beginning of the internal storage via flashStart', () => {
+    buffer.append(Buffer.from([1, 2, 3, 4, 5]))
+    buffer.flushStart(2)
+    const expected = Buffer.from([3, 4, 5])
+    const result = buffer.read()
+    buffersShouldEqual(expected, result)
+  })
+  it('removes data from the end of the internal storage via flashEnd', () => {
+    buffer.append(Buffer.from([1, 2, 3, 4, 5]))
+    buffer.flushEnd(2)
+    const expected = Buffer.from([1, 2, 3])
+    const result = buffer.read()
+    buffersShouldEqual(expected, result)
   })
 })
