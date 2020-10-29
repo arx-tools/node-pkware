@@ -50,7 +50,7 @@ const setup = (compressionType, dictionarySize) => {
         for (let nChCode = 0, nCount = 0; nCount < 0x100; nCount++) {
           state.nChBits[nCount] = 9
           state.nChCodes[nCount] = nChCode
-          nChCode = (nChCode & 0xffff) + 2
+          nChCode = getLowestNBits(16, nChCode) + 2
         }
         break
       case ASCII_COMPRESSION:
