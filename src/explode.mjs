@@ -80,42 +80,35 @@ export const generateDecodeTables = (startIndexes, lengthBits) => {
 }
 
 export const parseFirstChunk = (chunk, debug = false) => {
-  return new Promise((resolve, reject) => {
-    if (chunk.length <= 4) {
-      reject(new Error(ERROR_INVALID_DATA))
-      return
+  if (chunk.length <= 4) {
+    throw new Error(ERROR_INVALID_DATA)
+  }
+
+  let state = {
+    compressionType: chunk.readUInt8(0),
+    dictionarySizeBits: chunk.readUInt8(1),
+    bitBuffer: chunk.readUInt8(2)
+  }
+
+  if (!isBetween(4, 6, state.dictionarySizeBits)) {
+    throw new Error(ERROR_INVALID_DICTIONARY_SIZE)
+  }
+
+  state.dictionarySizeMask = nBitsOfOnes(state.dictionarySizeBits)
+
+  if (state.compressionType !== BINARY_COMPRESSION) {
+    if (state.compressionType !== ASCII_COMPRESSION) {
+      throw new Error(ERROR_INVALID_COMPRESSION_TYPE)
     }
+    state = mergeRight(state, generateAsciiTables())
+  }
 
-    let state = {
-      compressionType: chunk.readUInt8(0),
-      dictionarySizeBits: chunk.readUInt8(1),
-      bitBuffer: chunk.readUInt8(2)
-    }
+  if (debug) {
+    console.log(`compression type: ${state.compressionType === BINARY_COMPRESSION ? 'binary' : 'ascii'}`)
+    console.log(`compression level: ${state.dictionarySizeBits === 4 ? 1 : state.dictionarySizeBits === 5 ? 2 : 3}`)
+  }
 
-    if (!isBetween(4, 6, state.dictionarySizeBits)) {
-      reject(new Error(ERROR_INVALID_DICTIONARY_SIZE))
-      return
-    }
-
-    state.dictionarySizeMask = nBitsOfOnes(state.dictionarySizeBits)
-
-    if (state.compressionType !== BINARY_COMPRESSION) {
-      if (state.compressionType !== ASCII_COMPRESSION) {
-        reject(new Error(ERROR_INVALID_COMPRESSION_TYPE))
-        return
-      }
-      state = mergeRight(state, generateAsciiTables())
-    }
-
-    if (debug) {
-      console.log(`compression type: ${state.compressionType === BINARY_COMPRESSION ? 'binary' : 'ascii'}`)
-      console.log(`compression level: ${state.dictionarySizeBits === 4 ? 1 : state.dictionarySizeBits === 5 ? 2 : 3}`)
-    }
-
-    state.chunk = chunk.slice(3)
-
-    resolve(state)
-  })
+  return state
 }
 
 const wasteBits = (state, numberOfBits) => {
@@ -316,37 +309,31 @@ const explode = ({ debug = false, inputBufferSize = 0x0, outputBufferSize = 0x0 
 
   return function (chunk, encoding, callback) {
     state.needMoreInput = false
+    state.inputBuffer.append(chunk)
 
-    let work
-    if (state.isFirstChunk) {
-      state.isFirstChunk = false
-      this._flush = state.onInputFinished
-      work = parseFirstChunk(chunk, debug).then(({ chunk, ...newState }) => {
-        state = mergeRight(state, newState)
-        state.inputBuffer.append(chunk)
-        return state
-      })
-    } else {
-      state.inputBuffer.append(chunk)
-      work = Promise.resolve(state)
+    try {
+      if (state.isFirstChunk) {
+        state.isFirstChunk = false
+        this._flush = state.onInputFinished
+        state = mergeRight(state, parseFirstChunk(chunk, debug))
+        state.inputBuffer.dropStart(3)
+      }
+
+      if (debug) {
+        console.log(`reading ${toHex(chunk.length)} bytes from chunk #${state.stats.chunkCounter++}`)
+      }
+
+      processChunkData(state)
+
+      const blockSize = 0x1000
+      const numberOfBytes = Math.floor(state.outputBuffer.size() / blockSize) * blockSize
+      const output = Buffer.from(state.outputBuffer.read(0, numberOfBytes))
+      state.outputBuffer.flushStart(numberOfBytes)
+
+      callback(null, output)
+    } catch (e) {
+      callback(e)
     }
-
-    if (debug) {
-      console.log(`reading ${toHex(chunk.length)} bytes from chunk #${state.stats.chunkCounter++}`)
-    }
-
-    work
-      .then(processChunkData)
-      .then(() => {
-        const blockSize = 0x1000
-        const numberOfBytes = Math.floor(state.outputBuffer.size() / blockSize) * blockSize
-        const output = Buffer.from(state.outputBuffer.read(0, numberOfBytes))
-        state.outputBuffer.flushStart(numberOfBytes)
-        callback(null, output)
-      })
-      .catch(e => {
-        callback(e)
-      })
   }
 }
 

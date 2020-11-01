@@ -31,12 +31,12 @@ describe('parseFirstChunk', () => {
   })
 
   it('rejects with ERROR_INVALID_DATA, when given buffer is shorter, than 5', async () => {
-    await assert.rejects(parseFirstChunk(Buffer.from([0, 0, 0, 0])), new Error(ERROR_INVALID_DATA))
+    await assert.throws(() => parseFirstChunk(Buffer.from([0, 0, 0, 0])), { message: ERROR_INVALID_DATA })
   })
 
   it('rejects with ERROR_INVALID_DICTIONARY_SIZE, when 2nd byte is not between 4 and 6', async () => {
-    await assert.rejects(parseFirstChunk(Buffer.from([0, 2, 0, 0, 0])), new Error(ERROR_INVALID_DICTIONARY_SIZE))
-    await assert.rejects(parseFirstChunk(Buffer.from([0, 8, 0, 0, 0])), new Error(ERROR_INVALID_DICTIONARY_SIZE))
+    await assert.throws(() => parseFirstChunk(Buffer.from([0, 2, 0, 0, 0])), { message: ERROR_INVALID_DICTIONARY_SIZE })
+    await assert.throws(() => parseFirstChunk(Buffer.from([0, 8, 0, 0, 0])), { message: ERROR_INVALID_DICTIONARY_SIZE })
   })
 })
 
