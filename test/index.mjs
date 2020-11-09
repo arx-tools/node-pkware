@@ -1,11 +1,9 @@
 import fs from 'fs'
-// import { EOL } from 'os'
-import { implode, ASCII_COMPRESSION, DICTIONARY_SIZE1 } from '../src/index.mjs'
+import { implode, BINARY_COMPRESSION, DICTIONARY_SIZE3 } from '../src/index.mjs'
 import { through } from '../src/helpers.mjs'
 
 // https://stackoverflow.com/a/27641609/1806628
 const CHUNK_SIZE_IN_BYTES = 199
-// const CHUNK_SIZE_IN_BYTES = 0x1000
 
 /*
 const toConsole = () => (chunk, encoding, callback) => {
@@ -15,20 +13,13 @@ const toConsole = () => (chunk, encoding, callback) => {
 }
 */
 
-/*
-const turnEveryAtoZ = (chunk, encoding, callback) => {
-  callback(null, Buffer.from(Array.from(chunk).map(char => (char === 97 ? 122 : char))))
-}
-*/
-
 const test = () => {
   return new Promise((resolve, reject) => {
-    fs.createReadStream('./test/files/very-tiny.unpacked', { highWaterMark: CHUNK_SIZE_IN_BYTES })
+    fs.createReadStream('./test/files/binary.unpacked', { highWaterMark: CHUNK_SIZE_IN_BYTES })
       // .pipe(through(toConsole))
-      // .pipe(through(turnEveryAtoZ))
-      .pipe(through(implode(ASCII_COMPRESSION, DICTIONARY_SIZE1)).on('error', reject))
+      .pipe(through(implode(BINARY_COMPRESSION, DICTIONARY_SIZE3)).on('error', reject))
       // .pipe(through(toConsole()))
-      .pipe(fs.createWriteStream('E:\\compressed.txt'))
+      .pipe(fs.createWriteStream('E:\\binary.repacked'))
       .on('finish', resolve)
       .on('error', reject)
   })
