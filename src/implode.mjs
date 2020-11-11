@@ -18,7 +18,7 @@ import {
 import { nBitsOfOnes, getLowestNBits, toHex } from './helpers.mjs'
 import QuasiImmutableBuffer from './QuasiImmutableBuffer.mjs'
 
-const LONGEST_ALLOWED_REPETITION = 0x204
+// const LONGEST_ALLOWED_REPETITION = 0x204
 
 const setup = (compressionType, dictionarySize) => {
   const state = {
@@ -104,6 +104,16 @@ const outputBits = (state, nBits, bitBuffer) => {
   }
 }
 
+/*
+const bytePairHash = (byte1, byte2) => {
+  return byte1 * 4 + byte2 * 5
+}
+*/
+
+const sortBuffer = state => {
+  state.pairHashIndices = repeat(0, 0x900)
+}
+
 const findRepetitions = (state, inputBytes) => {
   return 0
 }
@@ -124,7 +134,25 @@ const processChunkData = (state, debug = false) => {
     while (maxCycles-- > 0 && (!state.inputBuffer.isEmpty() || !state.streamEnded)) {
       let bytesToSkip = 0
 
-      const inputBytes = Array.from(state.inputBuffer.read(0, state.dictionarySizeBytes + LONGEST_ALLOWED_REPETITION))
+      const inputBytes = Array.from(state.inputBuffer.read(0, state.dictionarySizeBytes))
+
+      switch (state.phase) {
+        case 0:
+          sortBuffer(state)
+          state.phase++
+          if (state.dictionarySizeBytes !== DICTIONARY_SIZE3) {
+            state.phase++
+          }
+          break
+        case 1:
+          sortBuffer(state)
+          state.phase++
+          break
+        default:
+          sortBuffer(state)
+          break
+      }
+
       inputBytes.forEach(byte => {
         if (bytesToSkip-- > 0) {
           return
