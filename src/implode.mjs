@@ -18,7 +18,7 @@ import {
 import { nBitsOfOnes, getLowestNBits, toHex } from './helpers.mjs'
 import QuasiImmutableBuffer from './QuasiImmutableBuffer.mjs'
 
-// const LONGEST_ALLOWED_REPETITION = 0x204
+const LONGEST_ALLOWED_REPETITION = 0x204
 
 const setup = (compressionType, dictionarySize) => {
   const state = {
@@ -131,16 +131,17 @@ const processChunkData = (state, debug = false) => {
     // will try reading the input buffer in 0x1000 blocks, but bail out after 1000 cycles
     let maxCycles = 1000
 
+    // while(input_data_ended == 0)
     while (maxCycles-- > 0 && (!state.inputBuffer.isEmpty() || !state.streamEnded)) {
       let bytesToSkip = 0
 
-      const inputBytes = Array.from(state.inputBuffer.read(0, state.dictionarySizeBytes))
+      const inputBytes = Array.from(state.inputBuffer.read(LONGEST_ALLOWED_REPETITION, state.inputBuffer.size()))
 
       switch (state.phase) {
         case 0:
-          sortBuffer(state)
+          sortBuffer(state, inputBytes)
           state.phase++
-          if (state.dictionarySizeBytes !== DICTIONARY_SIZE3) {
+          if (state.dictionarySizeBytes !== 0x1000) {
             state.phase++
           }
           break

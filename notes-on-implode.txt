@@ -1,0 +1,85 @@
+phase = 0
+dsize_bytes = 0x400(1024) | 0x800(2048) | 0x1000(4096)
+input_data_ended = false
+
+------------ while(input_data_ended === false) ------------
+
+// beolvasunk max 0x1000 byte adatot:
+
+bytes_to_load = 0x1000
+total_loaded = 0
+
+while (bytes_to_load > 0) {
+  read data: {
+    pWork->work_buff + dsize_bytes + 0x204 + total_loaded
+    pWork->work_buff + dsize_bytes + 0x204 + total_loaded + bytes_to_load
+  } -> bytes_loaded
+
+  if (bytes_loaded === 0) {
+    if (total_loaded === 0 && phase === 0) {
+
+    } else {
+      input_data_ended = true
+    }
+  } else {
+    total_loaded += bytes_loaded
+  }
+}
+
+------------
+
+if (input_data_ended) {
+  input_data = {
+    pWork->work_buff + dsize_bytes + 0x204
+    pWork->work_buff + dsize_bytes + 0x204 + total_loaded
+  }
+} else {
+  input_data = {
+    pWork->work_buff + dsize_bytes + 0x204
+    pWork->work_buff + dsize_bytes + total_loaded
+  }
+}
+
+============
+
+switch(phase) {
+  case 0: {
+    SortBuffer(state, input_data, input_data.length)
+    phase += dsize_bytes === 0x1000 ? 1 : 2
+  }
+  break
+  case 1: {
+    if (input_data_ended) {
+      tmp = {
+        pWork->work_buff + 0x204 + 0x204,
+        pWork->work_buff + dsize_bytes + 0x204 + total_loaded
+      }
+    } else {
+      tmp = {
+        pWork->work_buff + 0x204 + 0x204,
+        pWork->work_buff + dsize_bytes + total_loaded
+      }
+    }
+    // tmp = input_data - dsize_bytes + 0x204
+    SortBuffer(state, tmp, tmp.length)
+    phase += 1
+  }
+  break
+  default: {
+    if (input_data_ended) {
+      tmp = {
+        pWork->work_buff + 0x204,
+        pWork->work_buff + dsize_bytes + 0x204 + total_loaded
+      }
+    } else {
+      tmp = {
+        pWork->work_buff + 0x204,
+        pWork->work_buff + dsize_bytes + total_loaded
+      }
+    }
+    SortBuffer(state, tmp, tmp.length)
+  }
+}
+
+------------
+
