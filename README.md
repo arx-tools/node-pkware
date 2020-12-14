@@ -59,3 +59,9 @@ it will keep it untouched and attach it to the output file.
 
 * https://stackoverflow.com/questions/2094666/pointers-in-c-when-to-use-the-ampersand-and-the-asterisk
 * https://stackoverflow.com/a/49394095/1806628
+
+### TODOs:
+
+to overcome gotos and other jumps in implode: introduce flags and wrap affected code parts
+into if(flag) statements. that way the original intention of gotos in the code - being able
+to skip parts of the code - could be done without gotos.
