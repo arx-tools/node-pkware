@@ -33,7 +33,7 @@ while (bytes_to_load > 0) {
 if (input_data_ended) {
   input_data = {
     pWork->work_buff + dsize_bytes + 0x204
-    pWork->work_buff + dsize_bytes + 0x204 + total_loaded
+    pWork->work_buff + dsize_bytes + total_loaded + 0x204
   }
 } else {
   input_data = {
@@ -46,7 +46,17 @@ if (input_data_ended) {
 
 switch(phase) {
   case 0: {
-    SortBuffer(state, input_data, input_data.length)
+    if (input_data_ended) {
+      tmp = {
+        pWork->work_buff + dsize_bytes + 0x204
+        pWork->work_buff + dsize_bytes + total_loaded + 0x204
+      }
+    } else {
+      tmp = {
+        pWork->work_buff + dsize_bytes + 0x204
+        pWork->work_buff + dsize_bytes + total_loaded
+      }
+    }
     phase += dsize_bytes === 0x1000 ? 1 : 2
   }
   break
@@ -62,8 +72,6 @@ switch(phase) {
         pWork->work_buff + dsize_bytes + total_loaded
       }
     }
-    // tmp = input_data - dsize_bytes + 0x204
-    SortBuffer(state, tmp, tmp.length)
     phase += 1
   }
   break
@@ -79,9 +87,10 @@ switch(phase) {
         pWork->work_buff + dsize_bytes + total_loaded
       }
     }
-    SortBuffer(state, tmp, tmp.length)
   }
 }
+
+SortBuffer(state, tmp, tmp.length)
 
 ------------
 
@@ -108,6 +117,10 @@ while (input_data.length > 0) {
   input_data++
 
   __skip_one_byte_output:
+    if (!input_data_ended) {
+      input_data -= 0x1000;
+      drop first 0x1000 bytes in pWork->work_buff
+    }
 }
 
 ------------------------ end while ------------------------

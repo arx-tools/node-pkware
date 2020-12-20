@@ -1,4 +1,4 @@
-import { repeat, mergeRight, clone, last } from '../node_modules/ramda/src/index.mjs'
+import { repeat, mergeRight, clone, last, dropLast } from '../node_modules/ramda/src/index.mjs'
 import {
   DICTIONARY_SIZE1,
   DICTIONARY_SIZE2,
@@ -122,35 +122,62 @@ const processChunkData = (state, debug = false) => {
   if (state.inputBuffer.size() > 0x1000 || state.streamEnded) {
     state.needMoreInput = false
 
-    if (state.streamEnded && state.inputBuffer.isEmpty()) {
-      // need to wrap up writing bytes, just add final literal
-    }
-
     // to prevent infinite loops:
-    // depending on the length of chunks the inputBuffer can be over 0x1000 multiple times
+    // depending on the length of chunks the inputBuffer can be over 0x1000 multiple times;
     // will try reading the input buffer in 0x1000 blocks, but bail out after 1000 cycles
     let maxCycles = 1000
 
     // while(input_data_ended == 0)
-    while (maxCycles-- > 0 && (!state.inputBuffer.isEmpty() || !state.streamEnded)) {
+    while (maxCycles-- > 0 && !(state.inputBuffer.isEmpty() && state.streamEnded)) {
       let bytesToSkip = 0
 
-      const inputBytes = Array.from(state.inputBuffer.read(LONGEST_ALLOWED_REPETITION, state.inputBuffer.size()))
+      // should point to what is intially pWork->work_buff + pWork->dsize_bytes + 0x204 in the C code
+      // to pWork->work_buff + pWork->dsize_bytes + 0x204 + total_loaded
+      const inputBytes = Array.from(state.inputBuffer.read(0, state.dictionarySizeBytes))
+
+      // TODO: where to store the part between pWork->work_buff and pWork->work_buff + pWork->dsize_bytes + LONGEST_ALLOWED_REPETITION?
 
       switch (state.phase) {
         case 0:
-          sortBuffer(state, inputBytes)
-          state.phase++
-          if (state.dictionarySizeBytes !== 0x1000) {
-            state.phase++
+          if (state.streamEnded) {
+            sortBuffer(state, inputBytes)
+          } else {
+            sortBuffer(state, dropLast(LONGEST_ALLOWED_REPETITION, inputBytes))
           }
+          state.phase += state.dictionarySizeBytes === 0x1000 ? 1 : 2
           break
         case 1:
-          sortBuffer(state)
+          /*
+          if (input_data_ended) {
+            tmp = {
+              pWork->work_buff + LONGEST_ALLOWED_REPETITION + LONGEST_ALLOWED_REPETITION,
+              pWork->work_buff + dsize_bytes + LONGEST_ALLOWED_REPETITION + total_loaded
+            }
+          } else {
+            tmp = {
+              pWork->work_buff + LONGEST_ALLOWED_REPETITION + LONGEST_ALLOWED_REPETITION,
+              pWork->work_buff + dsize_bytes + total_loaded
+            }
+          }
+          */
+          // sortBuffer(state, tmp)
           state.phase++
           break
         default:
-          sortBuffer(state)
+          /*
+          if (input_data_ended) {
+            tmp = {
+              pWork->work_buff + LONGEST_ALLOWED_REPETITION,
+              pWork->work_buff + dsize_bytes + LONGEST_ALLOWED_REPETITION + total_loaded
+            }
+          } else {
+            tmp = {
+              pWork->work_buff + LONGEST_ALLOWED_REPETITION,
+              pWork->work_buff + dsize_bytes + total_loaded
+            }
+          }
+          */
+          // sortBuffer(state, tmp)
           break
       }
 
@@ -174,6 +201,7 @@ const processChunkData = (state, debug = false) => {
   }
 
   if (state.streamEnded) {
+    // Write the termination literal
     outputBits(state, last(state.nChBits), last(state.nChCodes))
   } else {
     state.needMoreInput = true
@@ -237,6 +265,7 @@ const implode = (
 
       processChunkData(state, debug)
 
+      // output as much whole blocks of 0x800 bytes from the outputBuffer as possible
       const blockSize = 0x800
       const numberOfBytes = Math.floor(state.outputBuffer.size() / blockSize) * blockSize
       const output = Buffer.from(state.outputBuffer.read(0, numberOfBytes))
