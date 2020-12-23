@@ -3,7 +3,7 @@ import { implode, BINARY_COMPRESSION, DICTIONARY_SIZE3 } from '../src/index.mjs'
 import { through } from '../src/helpers.mjs'
 
 // https://stackoverflow.com/a/27641609/1806628
-const CHUNK_SIZE_IN_BYTES = 199
+const CHUNK_SIZE_IN_BYTES = 1024
 
 /*
 const toConsole = () => (chunk, encoding, callback) => {
@@ -17,7 +17,7 @@ const test = () => {
   return new Promise((resolve, reject) => {
     fs.createReadStream('./test/files/binary.unpacked', { highWaterMark: CHUNK_SIZE_IN_BYTES })
       // .pipe(through(toConsole))
-      .pipe(through(implode(BINARY_COMPRESSION, DICTIONARY_SIZE3)).on('error', reject))
+      .pipe(through(implode(BINARY_COMPRESSION, DICTIONARY_SIZE3, { debug: true })).on('error', reject))
       // .pipe(through(toConsole()))
       .pipe(fs.createWriteStream('E:\\binary.repacked'))
       .on('finish', resolve)

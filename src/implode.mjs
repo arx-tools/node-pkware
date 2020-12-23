@@ -1,4 +1,15 @@
-import { repeat, mergeRight, clone, last, dropLast } from '../node_modules/ramda/src/index.mjs'
+import {
+  repeat,
+  mergeRight,
+  clone,
+  last,
+  dropLast,
+  aperture,
+  countBy,
+  identity,
+  map,
+  compose
+} from '../node_modules/ramda/src/index.mjs'
 import {
   DICTIONARY_SIZE1,
   DICTIONARY_SIZE2,
@@ -15,7 +26,7 @@ import {
   DistCode,
   DistBits
 } from './constants.mjs'
-import { nBitsOfOnes, getLowestNBits, toHex } from './helpers.mjs'
+import { nBitsOfOnes, getLowestNBits, toHex, projectOver } from './helpers.mjs'
 import QuasiImmutableBuffer from './QuasiImmutableBuffer.mjs'
 
 const LONGEST_ALLOWED_REPETITION = 0x204
@@ -104,14 +115,23 @@ const outputBits = (state, nBits, bitBuffer) => {
   }
 }
 
-/*
-const bytePairHash = (byte1, byte2) => {
-  return byte1 * 4 + byte2 * 5
+const bytePairHash = ([byte0, byte1]) => {
+  return byte0 * 4 + byte1 * 5
 }
-*/
 
-const sortBuffer = state => {
-  state.pairHashIndices = repeat(0, 0x900)
+const countPairHashes = inputBytes => {
+  return compose(
+    projectOver(repeat(0, 0x900)), // [30, 0, 0, 0, 1, ...]
+    countBy(identity), // { "0": 30, "4": 1, "5": 2, "8": 5, "10": 5, ...}
+    map(bytePairHash), // [689, 686, 488, 138, 8, ...]
+    aperture(2) // [[ 86, 69 ], [ 69, 82 ], [ 82, 32 ], [ 32, 2 ], [ 2, 0 ], ...]
+  )(inputBytes)
+}
+
+const sortBuffer = (state, inputBytes) => {
+  state.pairHashIndices = countPairHashes(inputBytes)
+
+  console.log(state.pairHashIndices)
 }
 
 const findRepetitions = (state, inputBytes) => {
@@ -147,36 +167,40 @@ const processChunkData = (state, debug = false) => {
           state.phase += state.dictionarySizeBytes === 0x1000 ? 1 : 2
           break
         case 1:
-          /*
-          if (input_data_ended) {
+          if (state.streamEnded) {
+            /*
             tmp = {
               pWork->work_buff + LONGEST_ALLOWED_REPETITION + LONGEST_ALLOWED_REPETITION,
               pWork->work_buff + dsize_bytes + LONGEST_ALLOWED_REPETITION + total_loaded
             }
+            */
           } else {
+            /*
             tmp = {
               pWork->work_buff + LONGEST_ALLOWED_REPETITION + LONGEST_ALLOWED_REPETITION,
               pWork->work_buff + dsize_bytes + total_loaded
             }
+            */
           }
-          */
           // sortBuffer(state, tmp)
           state.phase++
           break
         default:
-          /*
-          if (input_data_ended) {
+          if (state.streamEnded) {
+            /*
             tmp = {
               pWork->work_buff + LONGEST_ALLOWED_REPETITION,
               pWork->work_buff + dsize_bytes + LONGEST_ALLOWED_REPETITION + total_loaded
             }
+            */
           } else {
+            /*
             tmp = {
               pWork->work_buff + LONGEST_ALLOWED_REPETITION,
               pWork->work_buff + dsize_bytes + total_loaded
             }
+            */
           }
-          */
           // sortBuffer(state, tmp)
           break
       }
