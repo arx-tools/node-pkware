@@ -122,18 +122,15 @@ const bytePairHash = ([byte0, byte1]) => {
   return byte0 * 4 + byte1 * 5
 }
 
-const countPairHashes = inputBytes => {
-  // [86, 69, 82, 32, 2, ...] -> [30, 0, 0, 0, 1, ...]
-  return compose(
-    projectOver(repeat(0, 0x900)), // [30, 0, 0, 0, 1, ...]
-    countBy(identity), // { "0": 30, "4": 1, "5": 2, "8": 5, "10": 5, ...}
-    map(bytePairHash), // [689, 686, 488, 138, 8, ...]
-    aperture(2) // [[ 86, 69 ], [ 69, 82 ], [ 82, 32 ], [ 32, 2 ], [ 2, 0 ], ...]
-  )(inputBytes)
+const createPairHashes = inputBytes => {
+  return compose(map(bytePairHash), aperture(2))(inputBytes)
+}
+
+const countPairHashes = pairHashes => {
+  return compose(projectOver(repeat(0, 0x900)), countBy(identity))(pairHashes)
 }
 
 const quantifyPairHashes = pairHashes => {
-  // [30, 0, 0, 0, 1, 2, ...] -> [30, 30, 30, 30, 31, 33, ...]
   return reduce(
     (acc, amount) => {
       return append(last(acc) + amount, acc)
@@ -144,8 +141,13 @@ const quantifyPairHashes = pairHashes => {
 }
 
 const sortBuffer = (state, inputBytes) => {
-  state.pairHashIndices = compose(quantifyPairHashes, countPairHashes)(inputBytes)
+  const pairHashes = createPairHashes(inputBytes)
+  state.pairHashIndices = compose(quantifyPairHashes, countPairHashes)(pairHashes)
   state.pairHashOffsets = repeat(0, 2 * 0x1000 + LONGEST_ALLOWED_REPETITION)
+
+  for (let i = pairHashes.length - 1; i >= 0; i--) {
+    state.pairHashOffsets[--state.pairHashIndices[pairHashes[i]]] = i
+  }
 }
 
 const findRepetitions = (state, inputBytes) => {
