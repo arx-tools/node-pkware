@@ -8,7 +8,11 @@ import {
   countBy,
   identity,
   map,
-  compose
+  compose,
+  reduce,
+  head,
+  tail,
+  append
 } from '../node_modules/ramda/src/index.mjs'
 import {
   DICTIONARY_SIZE1,
@@ -24,12 +28,11 @@ import {
   LenBits,
   LenCode,
   DistCode,
-  DistBits
+  DistBits,
+  LONGEST_ALLOWED_REPETITION
 } from './constants.mjs'
 import { nBitsOfOnes, getLowestNBits, toHex, projectOver } from './helpers.mjs'
 import QuasiImmutableBuffer from './QuasiImmutableBuffer.mjs'
-
-const LONGEST_ALLOWED_REPETITION = 0x204
 
 const setup = (compressionType, dictionarySize) => {
   const state = {
@@ -120,6 +123,7 @@ const bytePairHash = ([byte0, byte1]) => {
 }
 
 const countPairHashes = inputBytes => {
+  // [86, 69, 82, 32, 2, ...] -> [30, 0, 0, 0, 1, ...]
   return compose(
     projectOver(repeat(0, 0x900)), // [30, 0, 0, 0, 1, ...]
     countBy(identity), // { "0": 30, "4": 1, "5": 2, "8": 5, "10": 5, ...}
@@ -128,10 +132,20 @@ const countPairHashes = inputBytes => {
   )(inputBytes)
 }
 
-const sortBuffer = (state, inputBytes) => {
-  state.pairHashIndices = countPairHashes(inputBytes)
+const quantifyPairHashes = pairHashes => {
+  // [30, 0, 0, 0, 1, 2, ...] -> [30, 30, 30, 30, 31, 33, ...]
+  return reduce(
+    (acc, amount) => {
+      return append(last(acc) + amount, acc)
+    },
+    [head(pairHashes)],
+    tail(pairHashes)
+  )
+}
 
-  console.log(state.pairHashIndices)
+const sortBuffer = (state, inputBytes) => {
+  state.pairHashIndices = compose(quantifyPairHashes, countPairHashes)(inputBytes)
+  state.pairHashOffsets = repeat(0, 2 * 0x1000 + LONGEST_ALLOWED_REPETITION)
 }
 
 const findRepetitions = (state, inputBytes) => {
@@ -248,7 +262,8 @@ const implode = (
     inputBuffer: new QuasiImmutableBuffer(inputBufferSize),
     outputBuffer: new QuasiImmutableBuffer(outputBufferSize),
     phase: 0,
-    pairHashIndices: repeat(0, 0x900),
+    pairHashIndices: [],
+    pairHashOffsets: [],
     onInputFinished: callback => {
       state.streamEnded = true
       try {

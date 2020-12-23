@@ -10,7 +10,7 @@ export const DICTIONARY_SIZE1 = 0x0400
 export const DICTIONARY_SIZE2 = 0x0800
 export const DICTIONARY_SIZE3 = 0x1000
 
-export const MAX_REP_LENGTH = 0x204
+export const LONGEST_ALLOWED_REPETITION = 0x204
 
 export const PKDCL_OK = 'OK'
 export const PKDCL_STREAM_END = 'All data from the input stream is read'
