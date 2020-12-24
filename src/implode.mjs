@@ -150,15 +150,22 @@ const sortBuffer = (state, inputBytes) => {
   }
 }
 
+let infLoopCntrForFindRepetitions = 0 // TODO: remove this, when the algorithm is working
+
 /* eslint-disable prefer-const */
-const findRepetitions = (state, inputBytes, startIndex) => {
+const findRepetitions = (state, inputBytes, startIndex, debug = false) => {
+  const returnData = {
+    size: 0,
+    distance: null
+  }
+
   let pairHashIndex = bytePairHash(inputBytes.slice(startIndex, startIndex + 2))
   let pairHashOffsetIndex = state.pairHashIndices[pairHashIndex]
   let pairHashOffset = state.pairHashOffsets[pairHashOffsetIndex]
   let lowestPairHashOffset = Math.floor(startIndex / 2)
 
   if (pairHashOffset < lowestPairHashOffset) {
-    let __original = pairHashOffset
+    let original = pairHashOffset
     while (pairHashOffset < lowestPairHashOffset) {
       pairHashIndex++
       pairHashOffsetIndex = state.pairHashIndices[pairHashIndex]
@@ -166,15 +173,79 @@ const findRepetitions = (state, inputBytes, startIndex) => {
     }
 
     state.pairHashIndices[pairHashIndex] = pairHashOffsetIndex
-    if (pairHashOffset === undefined) {
-      console.log('!error!', startIndex, lowestPairHashOffset, __original, pairHashOffsetIndex)
+    if (pairHashOffset === undefined && debug) {
+      console.warn('warning: findRepetition() tried to access an invalid address:')
+      console.log({
+        startIndex,
+        lowestPairHashOffset,
+        original,
+        pairHashOffsetIndex
+      })
     }
   }
 
-  return {
-    size: 0,
-    distance: 0
+  let prevRepetitionIndex = pairHashOffset
+
+  if (prevRepetitionIndex >= startIndex - 1) {
+    return returnData
   }
+
+  let equalByteCount
+  let repLength = 1
+  let inputDataPtr = startIndex
+
+  let infLoopProtector = 1000 // TODO: remove this, when the algorithm is working
+  for (;;) {
+    if (
+      inputBytes[inputDataPtr] === inputBytes[prevRepetitionIndex] &&
+      inputBytes[inputDataPtr + repLength - 1] === inputBytes[prevRepetitionIndex + repLength - 1]
+    ) {
+      prevRepetitionIndex++
+      inputDataPtr++
+      equalByteCount = 2
+
+      while (equalByteCount < LONGEST_ALLOWED_REPETITION) {
+        prevRepetitionIndex++
+        inputDataPtr++
+
+        if (inputBytes[inputDataPtr] !== inputBytes[prevRepetitionIndex]) {
+          break
+        }
+
+        equalByteCount++
+      }
+
+      inputDataPtr = startIndex
+      if (equalByteCount >= repLength) {
+        returnData.distance = startIndex - prevRepetitionIndex + equalByteCount - 1
+
+        repLength = equalByteCount
+        if (repLength > 10) {
+          break
+        }
+      }
+    }
+
+    pairHashIndex++
+    pairHashOffsetIndex = state.pairHashIndices[pairHashIndex]
+    pairHashOffset = state.pairHashOffsets[pairHashOffsetIndex]
+
+    prevRepetitionIndex = pairHashOffset
+
+    if (inputBytes[prevRepetitionIndex] >= startIndex - 1) {
+      returnData.size = repLength >= 2 ? repLength : 0
+      return returnData
+    }
+
+    // TODO: remove this, when the algorithm is working
+    if (--infLoopProtector <= 0) {
+      infLoopCntrForFindRepetitions++
+      console.log(`infinite loop for detecting repetitions at 0x${startIndex.toString(16)}`)
+      break
+    }
+  }
+
+  return returnData
 }
 /* eslint-enable */
 
@@ -247,10 +318,12 @@ const processChunkData = (state, debug = false) => {
 
       let inputBytesIdx = 0
       while (inputBytesIdx < inputBytes.length - 1) {
-        const { /* size, */ distance } = findRepetitions(state, inputBytes, inputBytesIdx)
+        const { size, distance } = findRepetitions(state, inputBytes, inputBytesIdx, debug)
 
         state.distance = distance
-        // console.log(size)
+        if (size > 0) {
+          console.log(size, distance, `0x${inputBytesIdx.toString(16)}`)
+        }
 
         inputBytesIdx++
       }
@@ -274,6 +347,11 @@ const processChunkData = (state, debug = false) => {
 
       state.inputBuffer.dropStart(inputBytes.length)
     }
+  }
+
+  // TODO: remove this, when the algorithm is working
+  if (infLoopCntrForFindRepetitions > 0) {
+    console.log(`There were ${infLoopCntrForFindRepetitions} findRepetitions() calls which resulted in infinite loops`)
   }
 
   if (state.streamEnded) {
