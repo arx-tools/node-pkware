@@ -150,9 +150,33 @@ const sortBuffer = (state, inputBytes) => {
   }
 }
 
-const findRepetitions = (state, inputBytes) => {
-  return 0
+/* eslint-disable prefer-const */
+const findRepetitions = (state, inputBytes, startIndex) => {
+  let pairHashIndex = bytePairHash(inputBytes.slice(startIndex, startIndex + 2))
+  let pairHashOffsetIndex = state.pairHashIndices[pairHashIndex]
+  let pairHashOffset = state.pairHashOffsets[pairHashOffsetIndex]
+  let lowestPairHashOffset = Math.floor(startIndex / 2)
+
+  if (pairHashOffset < lowestPairHashOffset) {
+    let __original = pairHashOffset
+    while (pairHashOffset < lowestPairHashOffset) {
+      pairHashIndex++
+      pairHashOffsetIndex = state.pairHashIndices[pairHashIndex]
+      pairHashOffset = state.pairHashOffsets[pairHashOffsetIndex]
+    }
+
+    state.pairHashIndices[pairHashIndex] = pairHashOffsetIndex
+    if (pairHashOffset === undefined) {
+      console.log('!error!', startIndex, lowestPairHashOffset, __original, pairHashOffsetIndex)
+    }
+  }
+
+  return {
+    size: 0,
+    distance: 0
+  }
 }
+/* eslint-enable */
 
 const processChunkData = (state, debug = false) => {
   if (state.inputBuffer.size() > 0x1000 || state.streamEnded) {
@@ -165,7 +189,7 @@ const processChunkData = (state, debug = false) => {
 
     // while(input_data_ended == 0)
     while (maxCycles-- > 0 && !(state.inputBuffer.isEmpty() && state.streamEnded)) {
-      let bytesToSkip = 0
+      // const bytesToSkip = 0
 
       // should point to what is intially pWork->work_buff + pWork->dsize_bytes + 0x204 in the C code
       // to pWork->work_buff + pWork->dsize_bytes + 0x204 + total_loaded
@@ -221,6 +245,17 @@ const processChunkData = (state, debug = false) => {
           break
       }
 
+      let inputBytesIdx = 0
+      while (inputBytesIdx < inputBytes.length - 1) {
+        const { /* size, */ distance } = findRepetitions(state, inputBytes, inputBytesIdx)
+
+        state.distance = distance
+        // console.log(size)
+
+        inputBytesIdx++
+      }
+
+      /*
       inputBytes.forEach(byte => {
         if (bytesToSkip-- > 0) {
           return
@@ -235,6 +270,7 @@ const processChunkData = (state, debug = false) => {
           outputBits(state, state.nChBits[byte], state.nChCodes[byte])
         }
       })
+      */
 
       state.inputBuffer.dropStart(inputBytes.length)
     }
