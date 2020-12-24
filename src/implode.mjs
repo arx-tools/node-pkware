@@ -255,10 +255,9 @@ const processChunkData = (state, debug = false) => {
     // to prevent infinite loops:
     // depending on the length of chunks the inputBuffer can be over 0x1000 multiple times;
     // will try reading the input buffer in 0x1000 blocks, but bail out after 1000 cycles
-    let maxCycles = 1000
+    let infLoopProtector = 1000
 
-    // while(input_data_ended == 0)
-    while (maxCycles-- > 0 && !(state.inputBuffer.isEmpty() && state.streamEnded)) {
+    while (infLoopProtector-- > 0 && !(state.inputBuffer.isEmpty() && state.streamEnded)) {
       // const bytesToSkip = 0
 
       // should point to what is intially pWork->work_buff + pWork->dsize_bytes + 0x204 in the C code
