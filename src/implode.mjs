@@ -150,7 +150,8 @@ const sortBuffer = (state, inputBytes) => {
   }
 }
 
-let infLoopCntrForFindRepetitions = 0 // TODO: remove this, when the algorithm is working
+let infLoopCntrForFindRepetitions = 0
+const infiniteLoopWarningLimit = 10
 
 /* eslint-disable prefer-const */
 const findRepetitions = (state, inputBytes, startIndex, debug = false) => {
@@ -236,10 +237,15 @@ const findRepetitions = (state, inputBytes, startIndex, debug = false) => {
 
     // TODO: remove this, when the algorithm is working
     if (--infLoopProtector <= 0) {
-      if (debug && infLoopCntrForFindRepetitions < 10) {
-        console.log(`infinite loop detected in findRepetitions() for data at address 0x${startIndex.toString(16)}`)
-      }
       infLoopCntrForFindRepetitions++
+      if (debug) {
+        if (infLoopCntrForFindRepetitions <= infiniteLoopWarningLimit) {
+          console.log(`infinite loop detected in findRepetitions() for data at address 0x${startIndex.toString(16)}`)
+        }
+        if (infLoopCntrForFindRepetitions === infiniteLoopWarningLimit) {
+          console.log(' ┖- subsequent warnings for infinite loops within findRepetitions() will not be printed')
+        }
+      }
       break
     }
   }
@@ -319,8 +325,9 @@ const processChunkData = (state, debug = false) => {
         const { size, distance } = findRepetitions(state, inputBytes, inputBytesIdx, debug)
 
         if (debug && size > 0) {
-          const address = `0x${inputBytesIdx.toString(16)}`
-          console.log(`findRepetitions() found repetitions of ${size} bytes ${distance} bytes earlier at ${address}`)
+          const currentAddress = `0x${inputBytesIdx.toString(16)}`
+          const repetitionAddress = `0x${(inputBytesIdx - distance - 1).toString(16)}`
+          console.log(`found ${size} bytes of repetition for ${currentAddress} at ${repetitionAddress}`)
         }
         state.distance = distance
 
@@ -348,8 +355,10 @@ const processChunkData = (state, debug = false) => {
     }
   }
 
-  if (debug && infLoopCntrForFindRepetitions > 0) {
-    console.log(`There were ${infLoopCntrForFindRepetitions} findRepetitions() calls which resulted in infinite loops`)
+  if (debug && infLoopCntrForFindRepetitions > infiniteLoopWarningLimit) {
+    console.log(
+      `There were a total of ${infLoopCntrForFindRepetitions} findRepetitions() calls which ended in infinite loops`
+    )
   }
 
   if (state.streamEnded) {
