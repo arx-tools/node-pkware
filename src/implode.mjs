@@ -173,13 +173,10 @@ const findRepetitions = (state, inputBytes, startIndex, debug = false) => {
     }
 
     state.pairHashIndices[pairHashIndex] = pairHashOffsetIndex
-    if (pairHashOffset === undefined && debug) {
-      console.warn('warning: findRepetition() tried to access an invalid address:')
-      console.log({
-        startIndex,
-        lowestPairHashOffset,
-        original,
-        pairHashOffsetIndex
+    if (debug && pairHashOffset === undefined) {
+      console.warn('findRepetition() tried to access an invalid pairHashOffset address:', {
+        lowest: `0x${lowestPairHashOffset.toString(16)}`,
+        original: `0x${original.toString(16)}`
       })
     }
   }
@@ -194,7 +191,7 @@ const findRepetitions = (state, inputBytes, startIndex, debug = false) => {
   let repLength = 1
   let inputDataPtr = startIndex
 
-  let infLoopProtector = 1000 // TODO: remove this, when the algorithm is working
+  let infLoopProtector = 1000
   for (;;) {
     if (
       inputBytes[inputDataPtr] === inputBytes[prevRepetitionIndex] &&
@@ -239,8 +236,10 @@ const findRepetitions = (state, inputBytes, startIndex, debug = false) => {
 
     // TODO: remove this, when the algorithm is working
     if (--infLoopProtector <= 0) {
+      if (debug && infLoopCntrForFindRepetitions < 10) {
+        console.log(`infinite loop detected in findRepetitions() for data at address 0x${startIndex.toString(16)}`)
+      }
       infLoopCntrForFindRepetitions++
-      console.log(`infinite loop for detecting repetitions at 0x${startIndex.toString(16)}`)
       break
     }
   }
@@ -320,10 +319,11 @@ const processChunkData = (state, debug = false) => {
       while (inputBytesIdx < inputBytes.length - 1) {
         const { size, distance } = findRepetitions(state, inputBytes, inputBytesIdx, debug)
 
-        state.distance = distance
-        if (size > 0) {
-          console.log(size, distance, `0x${inputBytesIdx.toString(16)}`)
+        if (debug && size > 0) {
+          const address = `0x${inputBytesIdx.toString(16)}`
+          console.log(`findRepetitions() found repetitions of ${size} bytes ${distance} bytes earlier at ${address}`)
         }
+        state.distance = distance
 
         inputBytesIdx++
       }
@@ -349,8 +349,7 @@ const processChunkData = (state, debug = false) => {
     }
   }
 
-  // TODO: remove this, when the algorithm is working
-  if (infLoopCntrForFindRepetitions > 0) {
+  if (debug && infLoopCntrForFindRepetitions > 0) {
     console.log(`There were ${infLoopCntrForFindRepetitions} findRepetitions() calls which resulted in infinite loops`)
   }
 
