@@ -151,7 +151,7 @@ const sortBuffer = (state, inputBytes) => {
 }
 
 let infLoopCntrForFindRepetitions = 0
-const infiniteLoopWarningLimit = 10
+const infiniteLoopWarningLimit = 50
 
 /* eslint-disable prefer-const */
 const findRepetitions = (state, inputBytes, startIndex, debug = false) => {
@@ -176,8 +176,8 @@ const findRepetitions = (state, inputBytes, startIndex, debug = false) => {
     state.pairHashIndices[pairHashIndex] = pairHashOffsetIndex
     if (debug && pairHashOffset === undefined) {
       console.warn('findRepetition() tried to access an invalid pairHashOffset address:', {
-        lowest: `0x${lowestPairHashOffset.toString(16)}`,
-        original: `0x${original.toString(16)}`
+        lowest: lowestPairHashOffset,
+        original: original
       })
     }
   }
@@ -230,7 +230,7 @@ const findRepetitions = (state, inputBytes, startIndex, debug = false) => {
 
     prevRepetitionIndex = pairHashOffset
 
-    if (inputBytes[prevRepetitionIndex] >= startIndex - 1) {
+    if (prevRepetitionIndex >= startIndex) {
       returnData.size = repLength >= 2 ? repLength : 0
       return returnData
     }
@@ -240,6 +240,7 @@ const findRepetitions = (state, inputBytes, startIndex, debug = false) => {
       infLoopCntrForFindRepetitions++
       if (debug) {
         if (infLoopCntrForFindRepetitions <= infiniteLoopWarningLimit) {
+          console.log(inputBytes[inputDataPtr], inputBytes[prevRepetitionIndex])
           console.log(`infinite loop detected in findRepetitions() for data at address 0x${startIndex.toString(16)}`)
         }
         if (infLoopCntrForFindRepetitions === infiniteLoopWarningLimit) {
@@ -258,12 +259,8 @@ const processChunkData = (state, debug = false) => {
   if (state.inputBuffer.size() > 0x1000 || state.streamEnded) {
     state.needMoreInput = false
 
-    // to prevent infinite loops:
-    // depending on the length of chunks the inputBuffer can be over 0x1000 multiple times;
-    // will try reading the input buffer in 0x1000 blocks, but bail out after 1000 cycles
     let infLoopProtector = 1000
-
-    while (infLoopProtector-- > 0 && !(state.inputBuffer.isEmpty() && state.streamEnded)) {
+    while (--infLoopProtector >= 0 && !(state.inputBuffer.isEmpty() && state.streamEnded)) {
       // const bytesToSkip = 0
 
       // should point to what is intially pWork->work_buff + pWork->dsize_bytes + 0x204 in the C code
@@ -325,9 +322,11 @@ const processChunkData = (state, debug = false) => {
         const { size, distance } = findRepetitions(state, inputBytes, inputBytesIdx, debug)
 
         if (debug && size > 0) {
+          /*
           const currentAddress = `0x${inputBytesIdx.toString(16)}`
           const repetitionAddress = `0x${(inputBytesIdx - distance - 1).toString(16)}`
           console.log(`found ${size} bytes of repetition for ${currentAddress} at ${repetitionAddress}`)
+          */
         }
         state.distance = distance
 
@@ -355,7 +354,7 @@ const processChunkData = (state, debug = false) => {
     }
   }
 
-  if (debug && infLoopCntrForFindRepetitions > infiniteLoopWarningLimit) {
+  if (debug && infLoopCntrForFindRepetitions > 0) {
     console.log(
       `There were a total of ${infLoopCntrForFindRepetitions} findRepetitions() calls which ended in infinite loops`
     )
