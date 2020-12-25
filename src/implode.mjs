@@ -251,63 +251,31 @@ const findRepetitions = (state, inputBytes, startIndex, debug = false) => {
       infLoopCntrForFindRepetitions++
       if (debug) {
         if (infLoopCntrForFindRepetitions <= infiniteLoopWarningLimit) {
-          if (prevRepetitionIndex === undefined) {
-            console.log(
-              '\n * infinite loop!',
-              `[0x${startIndex.toString(16)}] = ${inputBytes[startIndex].toString(16).padStart(2, '0')} ${inputBytes[
-                startIndex + 1
-              ]
-                .toString(16)
-                .padStart(2, '0')} (${bytePairHash([inputBytes[startIndex], inputBytes[startIndex + 1]]).toString(
-                16
-              )})`,
-              inputBytes[startIndex] === inputBytes[originalPrevRepetitionIndex] ? '===' : '=/=',
-              `[${
-                originalPrevRepetitionIndex === undefined
-                  ? 'undefined'
-                  : `0x${originalPrevRepetitionIndex.toString(16)}`
-              }] = ${
-                inputBytes[originalPrevRepetitionIndex] === undefined
-                  ? '?? ??'
-                  : `${inputBytes[originalPrevRepetitionIndex].toString(16).padStart(2, '0')} ${inputBytes[
-                      originalPrevRepetitionIndex + 1
-                    ]
-                      .toString(16)
-                      .padStart(2, '0')} (${bytePairHash([
-                      inputBytes[originalPrevRepetitionIndex],
-                      inputBytes[originalPrevRepetitionIndex + 1]
-                    ]).toString(16)})`
-              }`,
-              ` | repLength = ${repLength}`
-            )
-          } else {
-            console.log(
-              '\n   infinite loop!',
-              `[0x${startIndex.toString(16)}] = ${inputBytes[startIndex].toString(16).padStart(2, '0')} ${inputBytes[
-                startIndex + 1
-              ]
-                .toString(16)
-                .padStart(2, '0')} (${bytePairHash([inputBytes[startIndex], inputBytes[startIndex + 1]]).toString(
-                16
-              )})`,
-              inputBytes[startIndex] === inputBytes[prevRepetitionIndex] ? '===' : '=/=',
-              `[${prevRepetitionIndex === undefined ? 'undefined' : `0x${prevRepetitionIndex.toString(16)}`}] = ${
-                inputBytes[prevRepetitionIndex] === undefined
-                  ? '?? ??'
-                  : `${inputBytes[prevRepetitionIndex].toString(16).padStart(2, '0')} ${inputBytes[
-                      prevRepetitionIndex + 1
-                    ]
-                      .toString(16)
-                      .padStart(2, '0')} (${bytePairHash([
-                      inputBytes[prevRepetitionIndex],
-                      inputBytes[prevRepetitionIndex + 1]
-                    ]).toString(16)})`
-              }`,
-              ` | repLength = ${repLength}`
-            )
+          const left = [inputBytes[startIndex], inputBytes[startIndex + 1]]
+          const right = [inputBytes[originalPrevRepetitionIndex], inputBytes[originalPrevRepetitionIndex + 1]]
+
+          const dump = data => {
+            return `<${data.map(x => toHex(x, 2, true)).join(' ')}>`
           }
-          // console.log(`infinite loop detected in findRepetitions() for data at address 0x${startIndex.toString(16)}`)
+
+          let log = '\n'
+
+          if (prevRepetitionIndex === undefined) {
+            log += ' * infinite loop!'
+          } else {
+            log += '   infinite loop!'
+          }
+
+          log += `[${toHex(startIndex, 3)}] = ${dump(left)} (${toHex(bytePairHash(left), 3, true)})`
+          log += left[0] === right[0] ? ' === ' : ' =/= '
+          log += `[${
+            originalPrevRepetitionIndex === undefined ? 'undefined' : toHex(originalPrevRepetitionIndex, 3)
+          }] = ${right[0] === undefined ? '<?? ??>' : `${dump(right)} (${toHex(bytePairHash(right), 3, true)})`}`
+          log += ` | repLength = ${repLength}`
+
+          console.log(log)
         }
+
         if (infLoopCntrForFindRepetitions === infiniteLoopWarningLimit) {
           console.log(' ┖- subsequent warnings for infinite loops within findRepetitions() will not be printed')
         }
