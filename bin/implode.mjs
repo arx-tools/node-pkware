@@ -10,15 +10,22 @@ import {
   DICTIONARY_SIZE2,
   DICTIONARY_SIZE3
 } from '../src/index.mjs'
-import { isBetween, through, transformSplitByIdx, transformIdentity, transformEmpty } from '../src/helpers.mjs'
+import {
+  isBetween,
+  through,
+  transformSplitBy,
+  splitAtIndex,
+  transformIdentity,
+  transformEmpty
+} from '../src/helpers.mjs'
 import { isNil } from '../node_modules/ramda/src/index.mjs'
 import { fileExists, getPackageVersion, parseNumberString } from './helpers.mjs'
 
 const decompress = (input, output, offset, keepHeader, compressionType, dictionarySize, params) => {
   const handler = isNil(offset)
     ? implode(compressionType, dictionarySize, params)
-    : transformSplitByIdx(
-        offset,
+    : transformSplitBy(
+        splitAtIndex(offset),
         keepHeader ? transformIdentity() : transformEmpty(),
         implode(compressionType, dictionarySize, params)
       )
@@ -39,7 +46,7 @@ const args = minimist(process.argv.slice(2), {
     process.exit(0)
   }
 
-  let input = args._[0]
+  let input = args._[0] || args.input
   let output = args.output
 
   let hasErrors = false

@@ -1,19 +1,4 @@
-import {
-  repeat,
-  mergeRight,
-  clone,
-  last,
-  dropLast,
-  aperture,
-  countBy,
-  identity,
-  map,
-  compose,
-  reduce,
-  head,
-  tail,
-  append
-} from '../node_modules/ramda/src/index.mjs'
+import { repeat, mergeRight, clone, last } from '../node_modules/ramda/src/index.mjs'
 import {
   DICTIONARY_SIZE1,
   DICTIONARY_SIZE2,
@@ -28,10 +13,9 @@ import {
   LenBits,
   LenCode,
   DistCode,
-  DistBits,
-  LONGEST_ALLOWED_REPETITION
+  DistBits
 } from './constants.mjs'
-import { nBitsOfOnes, getLowestNBits, toHex, projectOver } from './helpers.mjs'
+import { nBitsOfOnes, getLowestNBits, toHex } from './helpers.mjs'
 import QuasiImmutableBuffer from './QuasiImmutableBuffer.mjs'
 
 const setup = (compressionType, dictionarySize) => {
@@ -118,260 +102,9 @@ const outputBits = (state, nBits, bitBuffer) => {
   }
 }
 
-const bytePairHash = ([byte0, byte1]) => {
-  return byte0 * 4 + byte1 * 5
+const findRepetitions = inputBytes => {
+  return 0
 }
-
-const createPairHashes = inputBytes => {
-  return compose(map(bytePairHash), aperture(2))(inputBytes)
-}
-
-const countPairHashes = pairHashes => {
-  return compose(projectOver(repeat(0, 0x900)), countBy(identity))(pairHashes)
-}
-
-const quantifyPairHashes = pairHashes => {
-  return reduce(
-    (acc, amount) => {
-      return append(last(acc) + amount, acc)
-    },
-    [head(pairHashes)],
-    tail(pairHashes)
-  )
-}
-
-const sortBuffer = (state, inputBytes) => {
-  const pairHashes = createPairHashes(inputBytes)
-  state.pairHashIndices = compose(quantifyPairHashes, countPairHashes)(pairHashes)
-  state.pairHashOffsets = repeat(0, 2 * 0x1000 + LONGEST_ALLOWED_REPETITION)
-
-  for (let i = pairHashes.length - 1; i >= 0; i--) {
-    state.pairHashOffsets[--state.pairHashIndices[pairHashes[i]]] = i
-  }
-}
-
-let infLoopCntrForFindRepetitions = 0
-const infiniteLoopWarningLimit = 100
-
-/* eslint-disable prefer-const */
-const findRepetitions = (state, inputBytes, startIndex, debug = false) => {
-  const returnData = {
-    size: 0,
-    distance: null
-  }
-
-  // Calculate the previous position of the PAIR_HASH
-  let pairHashIndex = bytePairHash(inputBytes.slice(startIndex, startIndex + 2))
-  let pairHashOffsetIndex = state.pairHashIndices[pairHashIndex]
-  let pairHashOffset = state.pairHashOffsets[pairHashOffsetIndex]
-  let lowestPairHashOffset = Math.floor(startIndex / 2)
-
-  // If the PAIR_HASH offset is below the limit, find a next one
-  if (pairHashOffset < lowestPairHashOffset) {
-    let original = pairHashOffset
-
-    while (pairHashOffset < lowestPairHashOffset) {
-      pairHashIndex++
-      pairHashOffsetIndex = state.pairHashIndices[pairHashIndex]
-      pairHashOffset = state.pairHashOffsets[pairHashOffsetIndex]
-    }
-
-    state.pairHashIndices[pairHashIndex] = pairHashOffsetIndex
-    if (debug && pairHashOffset === undefined) {
-      console.warn('\nfindRepetition() tried to access an invalid pairHashOffset address:', {
-        lowest: lowestPairHashOffset,
-        original: original
-      })
-    }
-  }
-
-  // Get the first location of the PAIR_HASH,
-  // and thus the first eventual location of byte repetition
-  let prevRepetitionIndex = pairHashOffset
-  let repetitionLimitIndex = startIndex - 1
-
-  // If the current PAIR_HASH was not encountered before,
-  // we haven't found a repetition.
-  if (prevRepetitionIndex >= repetitionLimitIndex) {
-    return returnData
-  }
-
-  // for debugging:
-  const originalPrevRepetitionIndex = prevRepetitionIndex
-
-  // We have found a match of a PAIR_HASH. Now we have to make sure
-  // that it is also a byte match, because PAIR_HASH is not unique.
-  // We compare the bytes and count the length of the repetition
-  let inputDataPtr = startIndex
-  let equalByteCount
-  let repLength = 1
-  let infLoopProtector = 1000
-  for (;;) {
-    // If the first byte of the repetition and the so-far-last byte
-    // of the repetition are equal, we will compare the blocks.
-    if (
-      inputBytes[inputDataPtr] === inputBytes[prevRepetitionIndex] &&
-      inputBytes[inputDataPtr + repLength - 1] === inputBytes[prevRepetitionIndex + repLength - 1]
-    ) {
-      // Skip the current byte
-      prevRepetitionIndex++
-      inputDataPtr++
-      equalByteCount = 2
-
-      // Now count how many more bytes are equal
-      while (equalByteCount < LONGEST_ALLOWED_REPETITION) {
-        prevRepetitionIndex++
-        inputDataPtr++
-
-        // Are the bytes different ?
-        if (inputBytes[inputDataPtr] !== inputBytes[prevRepetitionIndex]) {
-          break
-        }
-
-        equalByteCount++
-      }
-
-      // If we found a repetition of at least the same length, take it.
-      // If there are multiple repetitions in the input buffer, this will
-      // make sure that we find the most recent one, which in turn allows
-      // us to store backward length in less amount of bits
-      inputDataPtr = startIndex
-      if (equalByteCount >= repLength) {
-        // Calculate the backward distance of the repetition.
-        // Note that the distance is stored as decremented by 1
-        returnData.distance = startIndex - prevRepetitionIndex + equalByteCount - 1
-
-        // Repetitions longer than 10 bytes will be stored in more bits,
-        // so they need a bit different handling
-        repLength = equalByteCount
-        if (repLength > 10) {
-          break
-        }
-      }
-    }
-
-    // Move forward in the table of PAIR_HASH repetitions.
-    // There might be a more recent occurence of the same repetition.
-    pairHashIndex++
-    pairHashOffsetIndex = state.pairHashIndices[pairHashIndex]
-    pairHashOffset = state.pairHashOffsets[pairHashOffsetIndex]
-    prevRepetitionIndex = pairHashOffset
-
-    // If the next repetition is beyond the minimum allowed repetition, we are done.
-    if (prevRepetitionIndex >= startIndex) {
-      // A repetition must have at least 2 bytes, otherwise it's not worth it
-      returnData.size = repLength >= 2 ? repLength : 0
-      return returnData
-    }
-
-    // TODO: remove this, when the algorithm is working
-    if (--infLoopProtector <= 0) {
-      infLoopCntrForFindRepetitions++
-      if (debug) {
-        if (infLoopCntrForFindRepetitions <= infiniteLoopWarningLimit) {
-          const left = [inputBytes[startIndex], inputBytes[startIndex + 1]]
-          const right = [inputBytes[originalPrevRepetitionIndex], inputBytes[originalPrevRepetitionIndex + 1]]
-
-          const dump = data => {
-            return `<${data.map(x => toHex(x, 2, true)).join(' ')}>`
-          }
-
-          let log = '\n'
-
-          if (prevRepetitionIndex === undefined) {
-            log += ' * infinite loop!'
-          } else {
-            log += '   infinite loop!'
-          }
-
-          log += `[${toHex(startIndex, 3)}] = ${dump(left)} (${toHex(bytePairHash(left), 3, true)})`
-          log += left[0] === right[0] ? ' === ' : ' =/= '
-          log += `[${
-            originalPrevRepetitionIndex === undefined ? 'undefined' : toHex(originalPrevRepetitionIndex, 3)
-          }] = ${right[0] === undefined ? '<?? ??>' : `${dump(right)} (${toHex(bytePairHash(right), 3, true)})`}`
-          log += ` | repLength = ${repLength}`
-
-          console.log(log)
-        }
-
-        if (infLoopCntrForFindRepetitions === infiniteLoopWarningLimit) {
-          console.log(' ┖- subsequent warnings for infinite loops within findRepetitions() will not be printed')
-        }
-      }
-
-      // bailing out because of infinite loop
-      return returnData
-    }
-  }
-
-  // If the repetition has max length of 0x204 bytes, we can't go any fuhrter
-  if (equalByteCount === LONGEST_ALLOWED_REPETITION) {
-    returnData.distance--
-    returnData.size = equalByteCount
-    return returnData
-  }
-
-  // Check for possibility of a repetition that occurs at more recent position
-  pairHashOffset = state.pairHashOffsets[pairHashOffsetIndex]
-  if (state.pairHashOffsets[pairHashOffsetIndex + 1] >= repetitionLimitIndex) {
-    returnData.size = repLength
-    return returnData
-  }
-
-  //
-  // The following part checks if there isn't a longer repetition at
-  // a latter offset, that would lead to better compression.
-  //
-  // Example of data that can trigger this optimization:
-  //
-  //   "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEQQQQQQQQQQQQ"
-  //   "XYZ"
-  //   "EEEEEEEEEEEEEEEEQQQQQQQQQQQQ";
-  //
-  // Description of data in this buffer
-  //   [0x00] Single byte "E"
-  //   [0x01] Single byte "E"
-  //   [0x02] Repeat 0x1E bytes from [0x00]
-  //   [0x20] Single byte "X"
-  //   [0x21] Single byte "Y"
-  //   [0x22] Single byte "Z"
-  //   [0x23] 17 possible previous repetitions of length at least 0x10 bytes:
-  //          - Repetition of 0x10 bytes from [0x00] "EEEEEEEEEEEEEEEE"
-  //          - Repetition of 0x10 bytes from [0x01] "EEEEEEEEEEEEEEEE"
-  //          - Repetition of 0x10 bytes from [0x02] "EEEEEEEEEEEEEEEE"
-  //          ...
-  //          - Repetition of 0x10 bytes from [0x0F] "EEEEEEEEEEEEEEEE"
-  //          - Repetition of 0x1C bytes from [0x10] "EEEEEEEEEEEEEEEEQQQQQQQQQQQQ"
-  //          The last repetition is the best one.
-  //
-
-  state.offs09BC[0] = 0xffff
-  state.offs09BC[1] = 0
-  let diVal = 0
-
-  // Note: I failed to figure out what does the table "offs09BC" mean.
-  // If anyone has an idea, let me know to zezula_at_volny_dot_cz
-  let offsInRep
-  infLoopProtector = 1000
-  for (offsInRep = 1; offsInRep < repLength; ) {
-    if (--infLoopProtector <= 0) {
-      infLoopCntrForFindRepetitions++
-      console.log('\n   infinite loop in the second for loop of findRepetitions()')
-      return returnData
-    }
-    if (inputBytes[offsInRep] !== inputBytes[diVal]) {
-      diVal = state.offs09BC[diVal]
-      if (diVal !== 0xffff) {
-        continue
-      }
-    }
-
-    state.offs09BC[++offsInRep] = ++diVal
-  }
-
-  return returnData
-}
-/* eslint-enable */
 
 const processChunkData = (state, debug = false) => {
   if (state.inputBuffer.size() > 0x1000 || state.streamEnded) {
@@ -379,79 +112,10 @@ const processChunkData = (state, debug = false) => {
 
     let infLoopProtector = 1000
     while (--infLoopProtector >= 0 && !(state.inputBuffer.isEmpty() && state.streamEnded)) {
-      // const bytesToSkip = 0
+      let bytesToSkip = 0
 
-      // should point to what is intially pWork->work_buff + pWork->dsize_bytes + 0x204 in the C code
-      // to pWork->work_buff + pWork->dsize_bytes + 0x204 + total_loaded
       const inputBytes = Array.from(state.inputBuffer.read(0, state.dictionarySizeBytes))
 
-      // TODO: where to store the part between pWork->work_buff and pWork->work_buff + pWork->dsize_bytes + LONGEST_ALLOWED_REPETITION?
-
-      switch (state.phase) {
-        case 0:
-          if (state.streamEnded) {
-            sortBuffer(state, inputBytes)
-          } else {
-            sortBuffer(state, dropLast(LONGEST_ALLOWED_REPETITION, inputBytes))
-          }
-          state.phase += state.dictionarySizeBytes === 0x1000 ? 1 : 2
-          break
-        case 1:
-          if (state.streamEnded) {
-            /*
-            tmp = {
-              pWork->work_buff + LONGEST_ALLOWED_REPETITION + LONGEST_ALLOWED_REPETITION,
-              pWork->work_buff + dsize_bytes + LONGEST_ALLOWED_REPETITION + total_loaded
-            }
-            */
-          } else {
-            /*
-            tmp = {
-              pWork->work_buff + LONGEST_ALLOWED_REPETITION + LONGEST_ALLOWED_REPETITION,
-              pWork->work_buff + dsize_bytes + total_loaded
-            }
-            */
-          }
-          // sortBuffer(state, tmp)
-          state.phase++
-          break
-        default:
-          if (state.streamEnded) {
-            /*
-            tmp = {
-              pWork->work_buff + LONGEST_ALLOWED_REPETITION,
-              pWork->work_buff + dsize_bytes + LONGEST_ALLOWED_REPETITION + total_loaded
-            }
-            */
-          } else {
-            /*
-            tmp = {
-              pWork->work_buff + LONGEST_ALLOWED_REPETITION,
-              pWork->work_buff + dsize_bytes + total_loaded
-            }
-            */
-          }
-          // sortBuffer(state, tmp)
-          break
-      }
-
-      let inputBytesIdx = 0
-      while (inputBytesIdx < inputBytes.length - 1) {
-        const { size, distance } = findRepetitions(state, inputBytes, inputBytesIdx, debug)
-
-        if (debug && size > 0) {
-          /*
-          const currentAddress = `0x${inputBytesIdx.toString(16)}`
-          const repetitionAddress = `0x${(inputBytesIdx - distance - 1).toString(16)}`
-          console.log(`found ${size} bytes of repetition for ${currentAddress} at ${repetitionAddress}`)
-          */
-        }
-        state.distance = distance
-
-        inputBytesIdx++
-      }
-
-      /*
       inputBytes.forEach(byte => {
         if (bytesToSkip-- > 0) {
           return
@@ -466,16 +130,9 @@ const processChunkData = (state, debug = false) => {
           outputBits(state, state.nChBits[byte], state.nChCodes[byte])
         }
       })
-      */
 
       state.inputBuffer.dropStart(inputBytes.length)
     }
-  }
-
-  if (debug && infLoopCntrForFindRepetitions > 0) {
-    console.log(
-      `There were a total of ${infLoopCntrForFindRepetitions} findRepetitions() calls which ended in infinite loops`
-    )
   }
 
   if (state.streamEnded) {
@@ -501,10 +158,6 @@ const implode = (
     distBits: clone(DistBits),
     inputBuffer: new QuasiImmutableBuffer(inputBufferSize),
     outputBuffer: new QuasiImmutableBuffer(outputBufferSize),
-    phase: 0,
-    pairHashIndices: [],
-    pairHashOffsets: [],
-    offs09BC: repeat(0, LONGEST_ALLOWED_REPETITION),
     onInputFinished: callback => {
       state.streamEnded = true
       try {

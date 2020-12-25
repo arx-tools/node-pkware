@@ -2,7 +2,7 @@
 
 import { Transform } from 'stream'
 import { promisify } from 'util'
-import { reduce, toPairs, curry, subtract } from '../node_modules/ramda/src/index.mjs'
+import { subtract } from '../node_modules/ramda/src/index.mjs'
 
 export const isBetween = (min, max, num) => {
   return num >= min && num <= max
@@ -118,17 +118,3 @@ export const transformEmpty = () => {
 export const isNumeric = val => {
   return parseInt(val.trim()).toString() === val.trim()
 }
-
-// projectOver([0, 0, 0, 0, 0], {"3":20, "1":10}) -> [0, 10, 0, 20, 0]
-export const projectOver = curry((arr, obj) => {
-  return reduce(
-    (acc, [key, value]) => {
-      if (isNumeric(key)) {
-        acc[key] = value
-      }
-      return acc
-    },
-    arr,
-    toPairs(obj)
-  )
-})

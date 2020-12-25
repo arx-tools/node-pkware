@@ -17,18 +17,18 @@ import { fileExists, getPackageVersion, parseNumberString } from './helpers.mjs'
 const decompress = (input, output, offset, autoDetect, keepHeader, params) => {
   const leftHandler = keepHeader ? transformIdentity() : transformEmpty()
   const rightHandler = explode(params)
-  const everyPkwareHeader = [
-    Buffer.from([BINARY_COMPRESSION, 4]),
-    Buffer.from([BINARY_COMPRESSION, 5]),
-    Buffer.from([BINARY_COMPRESSION, 6]),
-    Buffer.from([ASCII_COMPRESSION, 4]),
-    Buffer.from([ASCII_COMPRESSION, 5]),
-    Buffer.from([ASCII_COMPRESSION, 6])
-  ]
 
   let handler = rightHandler
 
   if (autoDetect) {
+    const everyPkwareHeader = [
+      Buffer.from([BINARY_COMPRESSION, 4]),
+      Buffer.from([BINARY_COMPRESSION, 5]),
+      Buffer.from([BINARY_COMPRESSION, 6]),
+      Buffer.from([ASCII_COMPRESSION, 4]),
+      Buffer.from([ASCII_COMPRESSION, 5]),
+      Buffer.from([ASCII_COMPRESSION, 6])
+    ]
     handler = transformSplitBy(splitAtMatch(everyPkwareHeader, offset, params.debug), leftHandler, rightHandler)
   } else if (offset > 0) {
     handler = transformSplitBy(splitAtIndex(offset), leftHandler, rightHandler)
@@ -50,7 +50,7 @@ const args = minimist(process.argv.slice(2), {
     process.exit(0)
   }
 
-  let input = args._[0]
+  let input = args._[0] || args.input
   let output = args.output
 
   let hasErrors = false
