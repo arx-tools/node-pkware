@@ -151,7 +151,7 @@ const sortBuffer = (state, inputBytes) => {
 }
 
 let infLoopCntrForFindRepetitions = 0
-const infiniteLoopWarningLimit = 30
+const infiniteLoopWarningLimit = 100
 
 /* eslint-disable prefer-const */
 const findRepetitions = (state, inputBytes, startIndex, debug = false) => {
@@ -251,32 +251,61 @@ const findRepetitions = (state, inputBytes, startIndex, debug = false) => {
       infLoopCntrForFindRepetitions++
       if (debug) {
         if (infLoopCntrForFindRepetitions <= infiniteLoopWarningLimit) {
-          // if (prevRepetitionIndex === undefined) {
-          console.log(
-            '\ninfinite loop!',
-            `[0x${startIndex.toString(16)}] = ${inputBytes[startIndex].toString(16).padStart(2, '0')} ${inputBytes[
-              startIndex + 1
-            ]
-              .toString(16)
-              .padStart(2, '0')} (${bytePairHash([inputBytes[startIndex], inputBytes[startIndex + 1]]).toString(16)})`,
-            inputBytes[startIndex] === inputBytes[originalPrevRepetitionIndex] ? '===' : '=/=',
-            `[${
-              originalPrevRepetitionIndex === undefined ? 'undefined' : `0x${originalPrevRepetitionIndex.toString(16)}`
-            }] = ${
-              inputBytes[originalPrevRepetitionIndex] === undefined
-                ? '?? ??'
-                : `${inputBytes[originalPrevRepetitionIndex].toString(16).padStart(2, '0')} ${inputBytes[
-                    originalPrevRepetitionIndex + 1
-                  ]
-                    .toString(16)
-                    .padStart(2, '0')} (${bytePairHash([
-                    inputBytes[originalPrevRepetitionIndex],
-                    inputBytes[originalPrevRepetitionIndex + 1]
-                  ]).toString(16)})`
-            }`,
-            ` | repLength = ${repLength}`
-          )
-          // }
+          if (prevRepetitionIndex === undefined) {
+            console.log(
+              '\n * infinite loop!',
+              `[0x${startIndex.toString(16)}] = ${inputBytes[startIndex].toString(16).padStart(2, '0')} ${inputBytes[
+                startIndex + 1
+              ]
+                .toString(16)
+                .padStart(2, '0')} (${bytePairHash([inputBytes[startIndex], inputBytes[startIndex + 1]]).toString(
+                16
+              )})`,
+              inputBytes[startIndex] === inputBytes[originalPrevRepetitionIndex] ? '===' : '=/=',
+              `[${
+                originalPrevRepetitionIndex === undefined
+                  ? 'undefined'
+                  : `0x${originalPrevRepetitionIndex.toString(16)}`
+              }] = ${
+                inputBytes[originalPrevRepetitionIndex] === undefined
+                  ? '?? ??'
+                  : `${inputBytes[originalPrevRepetitionIndex].toString(16).padStart(2, '0')} ${inputBytes[
+                      originalPrevRepetitionIndex + 1
+                    ]
+                      .toString(16)
+                      .padStart(2, '0')} (${bytePairHash([
+                      inputBytes[originalPrevRepetitionIndex],
+                      inputBytes[originalPrevRepetitionIndex + 1]
+                    ]).toString(16)})`
+              }`,
+              ` | repLength = ${repLength}`
+            )
+          } else {
+            console.log(
+              '\n   infinite loop!',
+              `[0x${startIndex.toString(16)}] = ${inputBytes[startIndex].toString(16).padStart(2, '0')} ${inputBytes[
+                startIndex + 1
+              ]
+                .toString(16)
+                .padStart(2, '0')} (${bytePairHash([inputBytes[startIndex], inputBytes[startIndex + 1]]).toString(
+                16
+              )})`,
+              inputBytes[startIndex] === inputBytes[prevRepetitionIndex] ? '===' : '=/=',
+              `[${prevRepetitionIndex === undefined ? 'undefined' : `0x${prevRepetitionIndex.toString(16)}`}] = ${
+                inputBytes[prevRepetitionIndex] === undefined
+                  ? '?? ??'
+                  : `${inputBytes[prevRepetitionIndex].toString(16).padStart(2, '0')} ${inputBytes[
+                      prevRepetitionIndex + 1
+                    ]
+                      .toString(16)
+                      .padStart(2, '0')} (${bytePairHash([
+                      inputBytes[prevRepetitionIndex],
+                      inputBytes[prevRepetitionIndex + 1]
+                    ]).toString(16)})`
+              }`,
+              ` | repLength = ${repLength}`
+            )
+          }
           // console.log(`infinite loop detected in findRepetitions() for data at address 0x${startIndex.toString(16)}`)
         }
         if (infLoopCntrForFindRepetitions === infiniteLoopWarningLimit) {
