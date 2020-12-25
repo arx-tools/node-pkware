@@ -151,7 +151,7 @@ const sortBuffer = (state, inputBytes) => {
 }
 
 let infLoopCntrForFindRepetitions = 0
-const infiniteLoopWarningLimit = 20
+const infiniteLoopWarningLimit = 30
 
 /* eslint-disable prefer-const */
 const findRepetitions = (state, inputBytes, startIndex, debug = false) => {
@@ -178,7 +178,7 @@ const findRepetitions = (state, inputBytes, startIndex, debug = false) => {
 
     state.pairHashIndices[pairHashIndex] = pairHashOffsetIndex
     if (debug && pairHashOffset === undefined) {
-      console.warn('findRepetition() tried to access an invalid pairHashOffset address:', {
+      console.warn('\nfindRepetition() tried to access an invalid pairHashOffset address:', {
         lowest: lowestPairHashOffset,
         original: original
       })
@@ -251,23 +251,33 @@ const findRepetitions = (state, inputBytes, startIndex, debug = false) => {
       infLoopCntrForFindRepetitions++
       if (debug) {
         if (infLoopCntrForFindRepetitions <= infiniteLoopWarningLimit) {
-          if (prevRepetitionIndex === undefined) {
-            console.log(
-              inputBytes[startIndex] === inputBytes[originalPrevRepetitionIndex] ? '+++' : '---',
-              `[0x${startIndex.toString(16)}] = ${inputBytes[startIndex].toString(16).padStart(3, ' ')}`,
-              `[${
-                originalPrevRepetitionIndex === undefined
-                  ? 'undefined'
-                  : `0x${originalPrevRepetitionIndex.toString(16)}`
-              }] = ${
-                inputBytes[originalPrevRepetitionIndex] === undefined
-                  ? '?'
-                  : inputBytes[originalPrevRepetitionIndex].toString(16).padStart(3, ' ')
-              }`
-            )
-            console.log(` ┎- ${startIndex.toString(16)} undefined > `, repLength)
-          }
-          console.log(`infinite loop detected in findRepetitions() for data at address 0x${startIndex.toString(16)}`)
+          // if (prevRepetitionIndex === undefined) {
+          console.log(
+            '\ninfinite loop!',
+            `[0x${startIndex.toString(16)}] = ${inputBytes[startIndex].toString(16).padStart(2, '0')} ${inputBytes[
+              startIndex + 1
+            ]
+              .toString(16)
+              .padStart(2, '0')} (${bytePairHash([inputBytes[startIndex], inputBytes[startIndex + 1]]).toString(16)})`,
+            inputBytes[startIndex] === inputBytes[originalPrevRepetitionIndex] ? '===' : '=/=',
+            `[${
+              originalPrevRepetitionIndex === undefined ? 'undefined' : `0x${originalPrevRepetitionIndex.toString(16)}`
+            }] = ${
+              inputBytes[originalPrevRepetitionIndex] === undefined
+                ? '?? ??'
+                : `${inputBytes[originalPrevRepetitionIndex].toString(16).padStart(2, '0')} ${inputBytes[
+                    originalPrevRepetitionIndex + 1
+                  ]
+                    .toString(16)
+                    .padStart(2, '0')} (${bytePairHash([
+                    inputBytes[originalPrevRepetitionIndex],
+                    inputBytes[originalPrevRepetitionIndex + 1]
+                  ]).toString(16)})`
+            }`,
+            ` | repLength = ${repLength}`
+          )
+          // }
+          // console.log(`infinite loop detected in findRepetitions() for data at address 0x${startIndex.toString(16)}`)
         }
         if (infLoopCntrForFindRepetitions === infiniteLoopWarningLimit) {
           console.log(' ┖- subsequent warnings for infinite loops within findRepetitions() will not be printed')
