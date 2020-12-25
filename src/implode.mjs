@@ -302,6 +302,15 @@ const findRepetitions = (state, inputBytes, startIndex, debug = false) => {
     }
   }
 
+  // If the repetition has max length of 0x204 bytes, we can't go any fuhrter
+  if (equalByteCount === LONGEST_ALLOWED_REPETITION) {
+    returnData.distance--
+    returnData.size = equalByteCount
+    return returnData
+  }
+
+  // ...
+
   return returnData
 }
 /* eslint-enable */
