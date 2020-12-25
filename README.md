@@ -37,18 +37,18 @@ it will keep it untouched and attach it to the output file.
 
 ### piping also works
 
-`cat c:/arx/level8.llf | explode > c:/arx/level8.llf.unpacked --keep-header`
+`cat c:/arx/level8.llf | explode > c:/arx/level8.llf.unpacked`
 
-`explode c:/arx/level8.llf > c:/arx/level8.llf.unpacked --keep-header`
+`explode c:/arx/level8.llf > c:/arx/level8.llf.unpacked`
 
-`cat c:/arx/level8.llf | explode --output=c:/arx/level8.llf.unpacked --keep-header`
+`cat c:/arx/level8.llf | explode --output=c:/arx/level8.llf.unpacked`
 
 
-`cat e:/piping/level8.llf.unpacked | implode --binary --level=3 > e:/piping/level8.llf.comp2 --keep-header`
+`cat e:/piping/level8.llf.unpacked | implode --binary --level=3 > e:/piping/level8.llf.comp2`
 
-`implode e:/piping/level8.llf.unpacked --binary --level=3 > e:/piping/level8.llf.comp --keep-header`
+`implode e:/piping/level8.llf.unpacked --binary --level=3 > e:/piping/level8.llf.comp`
 
-`cat e:/piping/level8.llf.unpacked | implode --binary --level=3 --output="e:/piping/level8.llf.comp2" --keep-header`
+`cat e:/piping/level8.llf.unpacked | implode --binary --level=3 --output="e:/piping/level8.llf.comp2"`
 
 ## sources:
 
