@@ -29,11 +29,11 @@ it will keep it untouched and attach it to the output file.
 
 ## examples
 
-`explode test/files/fast.fts --output=C:/fast.fts.decompressed --offset=1816 --keep-header`
+`explode test/files/fast.fts --output=C:/fast.fts.decompressed --offset=1816`
 
-`explode test/files/fast.fts --output=C:/fast.fts.decompressed --offset=0x718 --keep-header`
+`explode test/files/fast.fts --output=C:/fast.fts.decompressed --offset=0x718`
 
-`implode test/files/fast.fts.unpacked --output=C:/fast.fts --binary --level=3 --offset=1816 --keep-header`
+`implode test/files/fast.fts.unpacked --output=C:/fast.fts --binary --level=3 --offset=1816`
 
 ### piping also works
 
