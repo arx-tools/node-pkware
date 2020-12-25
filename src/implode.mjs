@@ -298,7 +298,9 @@ const findRepetitions = (state, inputBytes, startIndex, debug = false) => {
           console.log(' ┖- subsequent warnings for infinite loops within findRepetitions() will not be printed')
         }
       }
-      break
+
+      // bailing out because of infinite loop
+      return returnData
     }
   }
 
@@ -309,7 +311,63 @@ const findRepetitions = (state, inputBytes, startIndex, debug = false) => {
     return returnData
   }
 
-  // ...
+  // Check for possibility of a repetition that occurs at more recent position
+  pairHashOffset = state.pairHashOffsets[pairHashOffsetIndex]
+  if (state.pairHashOffsets[pairHashOffsetIndex + 1] >= repetitionLimitIndex) {
+    returnData.size = repLength
+    return returnData
+  }
+
+  //
+  // The following part checks if there isn't a longer repetition at
+  // a latter offset, that would lead to better compression.
+  //
+  // Example of data that can trigger this optimization:
+  //
+  //   "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEQQQQQQQQQQQQ"
+  //   "XYZ"
+  //   "EEEEEEEEEEEEEEEEQQQQQQQQQQQQ";
+  //
+  // Description of data in this buffer
+  //   [0x00] Single byte "E"
+  //   [0x01] Single byte "E"
+  //   [0x02] Repeat 0x1E bytes from [0x00]
+  //   [0x20] Single byte "X"
+  //   [0x21] Single byte "Y"
+  //   [0x22] Single byte "Z"
+  //   [0x23] 17 possible previous repetitions of length at least 0x10 bytes:
+  //          - Repetition of 0x10 bytes from [0x00] "EEEEEEEEEEEEEEEE"
+  //          - Repetition of 0x10 bytes from [0x01] "EEEEEEEEEEEEEEEE"
+  //          - Repetition of 0x10 bytes from [0x02] "EEEEEEEEEEEEEEEE"
+  //          ...
+  //          - Repetition of 0x10 bytes from [0x0F] "EEEEEEEEEEEEEEEE"
+  //          - Repetition of 0x1C bytes from [0x10] "EEEEEEEEEEEEEEEEQQQQQQQQQQQQ"
+  //          The last repetition is the best one.
+  //
+
+  state.offs09BC[0] = 0xffff
+  state.offs09BC[1] = 0
+  let diVal = 0
+
+  // Note: I failed to figure out what does the table "offs09BC" mean.
+  // If anyone has an idea, let me know to zezula_at_volny_dot_cz
+  let offsInRep
+  infLoopProtector = 1000
+  for (offsInRep = 1; offsInRep < repLength; ) {
+    if (--infLoopProtector <= 0) {
+      infLoopCntrForFindRepetitions++
+      console.log('\n   infinite loop in the second for loop of findRepetitions()')
+      return returnData
+    }
+    if (inputBytes[offsInRep] !== inputBytes[diVal]) {
+      diVal = state.offs09BC[diVal]
+      if (diVal !== 0xffff) {
+        continue
+      }
+    }
+
+    state.offs09BC[++offsInRep] = ++diVal
+  }
 
   return returnData
 }
@@ -446,6 +504,7 @@ const implode = (
     phase: 0,
     pairHashIndices: [],
     pairHashOffsets: [],
+    offs09BC: repeat(0, LONGEST_ALLOWED_REPETITION),
     onInputFinished: callback => {
       state.streamEnded = true
       try {
