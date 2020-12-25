@@ -199,24 +199,31 @@ const findRepetitions = (state, inputBytes, startIndex, debug = false) => {
   // for debugging:
   const originalPrevRepetitionIndex = prevRepetitionIndex
 
+  // We have found a match of a PAIR_HASH. Now we have to make sure
+  // that it is also a byte match, because PAIR_HASH is not unique.
+  // We compare the bytes and count the length of the repetition
+  let inputDataPtr = startIndex
   let equalByteCount
   let repLength = 1
-  let inputDataPtr = startIndex
-
   let infLoopProtector = 1000
   for (;;) {
+    // If the first byte of the repetition and the so-far-last byte
+    // of the repetition are equal, we will compare the blocks.
     if (
       inputBytes[inputDataPtr] === inputBytes[prevRepetitionIndex] &&
       inputBytes[inputDataPtr + repLength - 1] === inputBytes[prevRepetitionIndex + repLength - 1]
     ) {
+      // Skip the current byte
       prevRepetitionIndex++
       inputDataPtr++
       equalByteCount = 2
 
+      // Now count how many more bytes are equal
       while (equalByteCount < LONGEST_ALLOWED_REPETITION) {
         prevRepetitionIndex++
         inputDataPtr++
 
+        // Are the bytes different ?
         if (inputBytes[inputDataPtr] !== inputBytes[prevRepetitionIndex]) {
           break
         }
@@ -224,10 +231,18 @@ const findRepetitions = (state, inputBytes, startIndex, debug = false) => {
         equalByteCount++
       }
 
+      // If we found a repetition of at least the same length, take it.
+      // If there are multiple repetitions in the input buffer, this will
+      // make sure that we find the most recent one, which in turn allows
+      // us to store backward length in less amount of bits
       inputDataPtr = startIndex
       if (equalByteCount >= repLength) {
+        // Calculate the backward distance of the repetition.
+        // Note that the distance is stored as decremented by 1
         returnData.distance = startIndex - prevRepetitionIndex + equalByteCount - 1
 
+        // Repetitions longer than 10 bytes will be stored in more bits,
+        // so they need a bit different handling
         repLength = equalByteCount
         if (repLength > 10) {
           break
@@ -235,13 +250,16 @@ const findRepetitions = (state, inputBytes, startIndex, debug = false) => {
       }
     }
 
+    // Move forward in the table of PAIR_HASH repetitions.
+    // There might be a more recent occurence of the same repetition.
     pairHashIndex++
     pairHashOffsetIndex = state.pairHashIndices[pairHashIndex]
     pairHashOffset = state.pairHashOffsets[pairHashOffsetIndex]
-
     prevRepetitionIndex = pairHashOffset
 
+    // If the next repetition is beyond the minimum allowed repetition, we are done.
     if (prevRepetitionIndex >= startIndex) {
+      // A repetition must have at least 2 bytes, otherwise it's not worth it
       returnData.size = repLength >= 2 ? repLength : 0
       return returnData
     }
