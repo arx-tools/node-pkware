@@ -102,8 +102,33 @@ const outputBits = (state, nBits, bitBuffer) => {
   }
 }
 
-const findRepetitions = inputBytes => {
-  return 0
+// TODO: only go till LONGEST_ALLOWED_REPETITION
+const getSizeOfMatching = (inputBytes, matchIndex, needleIndex) => {
+  for (let i = 2; i < needleIndex; i++) {
+    if (inputBytes[matchIndex + i] !== inputBytes[needleIndex + i]) {
+      return i
+    }
+  }
+
+  return needleIndex
+}
+
+// TODO: make sure that we find the most recent one, which in turn allows
+// us to store backward length in less amount of bits
+// currently the code goes from the furthest point
+const findRepetitions = (inputBytes, startIndex) => {
+  const needle = inputBytes.slice(startIndex, startIndex + 2)
+  const haystack = inputBytes.slice(0, startIndex)
+
+  const matchIndex = haystack.indexOf(needle)
+  if (matchIndex !== -1) {
+    return {
+      distance: startIndex - matchIndex,
+      size: getSizeOfMatching(inputBytes, matchIndex, startIndex)
+    }
+  }
+
+  return { size: 0, distance: 0 }
 }
 
 const processChunkData = (state, debug = false) => {
@@ -114,17 +139,31 @@ const processChunkData = (state, debug = false) => {
     while (--infLoopProtector >= 0 && !(state.inputBuffer.isEmpty() && state.streamEnded)) {
       let bytesToSkip = 0
 
-      const inputBytes = Array.from(state.inputBuffer.read(0, state.dictionarySizeBytes))
+      const inputBytes = state.inputBuffer.read(0, state.dictionarySizeBytes)
 
-      inputBytes.forEach(byte => {
+      let startIndex = 2
+      const limiter = 20 // temporarily
+      while (startIndex < inputBytes.length) {
+        /* const { size, distance } = */ findRepetitions(inputBytes, startIndex)
+
+        // console.log(startIndex, size, distance)
+
+        startIndex++
+
+        // temporarily
+        if (startIndex > limiter) {
+          break
+        }
+      }
+
+      Array.from(inputBytes).forEach(byte => {
         if (bytesToSkip-- > 0) {
           return
         }
 
         const foundRepetition = false
 
-        const repetitionSize = findRepetitions(state, inputBytes)
-        bytesToSkip += repetitionSize
+        // bytesToSkip += size
 
         if (!foundRepetition) {
           outputBits(state, state.nChBits[byte], state.nChCodes[byte])

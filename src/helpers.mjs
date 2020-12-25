@@ -65,6 +65,17 @@ export const splitAtIndex = splitAt => {
   }
 }
 
+export const toHex = (num, bytes = 0, raw = false) => {
+  return `${raw ? '' : '0x'}${num.toString(16).padStart(bytes, '0')}`
+}
+
+export const dumpBytes = bytes => {
+  const formattedBytes = Array.from(bytes)
+    .map(byte => toHex(byte, 2, true))
+    .join(' ')
+  return `<${formattedBytes}>`
+}
+
 export const splitAtMatch = (matches, skipBytes = 0, debug = false) => {
   let alreadyMatched = false
   const empty = Buffer.from([])
@@ -92,8 +103,7 @@ export const splitAtMatch = (matches, skipBytes = 0, debug = false) => {
 
     alreadyMatched = true
     if (debug) {
-      const dump = `<${toHex(chunk[idxs[0]], 2, true)} ${toHex(chunk[idxs[0] + 1], 2, true)}>`
-      console.log(`found pkware header ${dump} at ${toHex(idxs[0])}`)
+      console.log(`found pkware header ${dumpBytes(chunk.slice(idxs[0], idxs[0] + 2))} at ${toHex(idxs[0])}`)
     }
     return splitAtIndex(idxs[0])(chunk, offset)
   }
@@ -103,10 +113,6 @@ export const transformIdentity = () => {
   return function (chunk, encoding, callback) {
     callback(null, chunk)
   }
-}
-
-export const toHex = (num, bytes = 0, raw = false) => {
-  return `${raw ? '' : '0x'}${num.toString(16).padStart(bytes, '0')}`
 }
 
 export const transformEmpty = () => {
