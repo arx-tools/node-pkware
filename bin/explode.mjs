@@ -2,15 +2,37 @@
 
 import fs from 'fs'
 import minimist from 'minimist'
-import { isNil } from '../node_modules/ramda/src/index.mjs'
 import { explode } from '../src/index.mjs'
-import { transformSplitByIdx, transformIdentity, through, transformEmpty } from '../src/helpers.mjs'
+import {
+  splitAtIndex,
+  splitAtMatch,
+  transformSplitBy,
+  transformIdentity,
+  through,
+  transformEmpty
+} from '../src/helpers.mjs'
+import { BINARY_COMPRESSION, ASCII_COMPRESSION } from '../src/constants.mjs'
 import { fileExists, getPackageVersion, parseNumberString } from './helpers.mjs'
 
-const decompress = (input, output, offset, keepHeader, params) => {
-  const handler = isNil(offset)
-    ? explode(params)
-    : transformSplitByIdx(offset, keepHeader ? transformIdentity() : transformEmpty(), explode(params))
+const decompress = (input, output, offset, autoDetect, keepHeader, params) => {
+  const leftHandler = keepHeader ? transformIdentity() : transformEmpty()
+  const rightHandler = explode(params)
+  const everyPkwareHeader = [
+    Buffer.from([BINARY_COMPRESSION, 4]),
+    Buffer.from([BINARY_COMPRESSION, 5]),
+    Buffer.from([BINARY_COMPRESSION, 6]),
+    Buffer.from([ASCII_COMPRESSION, 4]),
+    Buffer.from([ASCII_COMPRESSION, 5]),
+    Buffer.from([ASCII_COMPRESSION, 6])
+  ]
+
+  let handler = rightHandler
+
+  if (autoDetect) {
+    handler = transformSplitBy(splitAtMatch(everyPkwareHeader, offset, params.debug), leftHandler, rightHandler)
+  } else if (offset > 0) {
+    handler = transformSplitBy(splitAtIndex(offset), leftHandler, rightHandler)
+  }
 
   return new Promise((resolve, reject) => {
     input.pipe(through(handler).on('error', reject)).pipe(output).on('finish', resolve).on('error', reject)
@@ -19,7 +41,7 @@ const decompress = (input, output, offset, keepHeader, params) => {
 
 const args = minimist(process.argv.slice(2), {
   string: ['output', 'offset', 'input-buffer-size', 'output-buffer-size'],
-  boolean: ['version', 'drop-before-offset', 'debug']
+  boolean: ['version', 'drop-before-offset', 'debug', 'auto-detect']
 })
 
 ;(async () => {
@@ -55,6 +77,7 @@ const args = minimist(process.argv.slice(2), {
   }
 
   const offset = parseNumberString(args.offset, 0)
+  const autoDetect = args['auto-detect']
 
   const keepHeader = !args['drop-before-offset']
   const params = {
@@ -63,12 +86,12 @@ const args = minimist(process.argv.slice(2), {
     outputBufferSize: parseNumberString(args['output-buffer-size'], 0x40000)
   }
 
-  decompress(input, output, offset, keepHeader, params)
+  decompress(input, output, offset, autoDetect, keepHeader, params)
     .then(() => {
       process.exit(0)
     })
     .catch(e => {
-      console.error(e)
+      console.error(`Error: ${e.message}`)
       process.exit(1)
     })
 })()

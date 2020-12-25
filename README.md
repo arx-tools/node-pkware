@@ -27,6 +27,9 @@ for mixed files, such as the fts files of Arx Fatalis
 The `--drop-before-offset` flag tells node-pkware to drop the portion before `--offset`, otherwise
 it will keep it untouched and attach it to the output file.
 
+There is an `--auto-detect` flag, which will search for the first pkware header starting from the
+beginning of the file. If `--offset` is defined, then it will start searching from that point.
+
 ## examples
 
 `explode test/files/fast.fts --output=C:/fast.fts.decompressed --offset=1816`
@@ -34,6 +37,10 @@ it will keep it untouched and attach it to the output file.
 `explode test/files/fast.fts --output=C:/fast.fts.decompressed --offset=0x718`
 
 `implode test/files/fast.fts.unpacked --output=C:/fast.fts --binary --level=3 --offset=1816`
+
+`explode test/files/fast.fts --auto-detect --debug --output=E:/fast.fts.unpacked`
+
+`explode test/files/fast.fts --auto-detect --debug --output=E:/fast.fts.unpacked --offset=2000`
 
 ### piping also works
 

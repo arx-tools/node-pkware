@@ -2,7 +2,7 @@
 
 import { Transform } from 'stream'
 import { promisify } from 'util'
-import { reduce, toPairs, curry } from '../node_modules/ramda/src/index.mjs'
+import { reduce, toPairs, curry, subtract } from '../node_modules/ramda/src/index.mjs'
 
 export const isBetween = (min, max, num) => {
   return num >= min && num <= max
@@ -22,30 +22,80 @@ export const through = handler => {
   })
 }
 
-export const transformSplitByIdx = (splitAt, handleFirstPart, handleSecondPart) => {
+export const transformSplitBy = (fn, handleLeft, handleRight) => {
   let idx = 0
 
   return function (chunk, encoding, callback) {
-    if (idx + chunk.length <= splitAt) {
-      handleFirstPart.call(this, chunk, encoding, callback)
-    } else if (idx > splitAt) {
-      handleSecondPart.call(this, chunk, encoding, callback)
-    } else {
-      const firstPart = chunk.slice(0, splitAt - idx)
-      const secondPart = chunk.slice(splitAt - idx)
+    const { left, right } = fn(chunk, idx)
 
-      Promise.all([
-        promisify(handleFirstPart).call(this, firstPart, encoding),
-        promisify(handleSecondPart).call(this, secondPart, encoding)
-      ])
-        .then(buffers => {
-          callback(null, Buffer.concat(buffers))
-        })
-        .catch(err => {
-          callback(err)
-        })
-    }
     idx = idx + chunk.length
+
+    Promise.all([promisify(handleLeft).call(this, left, encoding), promisify(handleRight).call(this, right, encoding)])
+      .then(buffers => {
+        callback(null, Buffer.concat(buffers))
+      })
+      .catch(err => {
+        callback(err)
+      })
+  }
+}
+
+export const splitAtIndex = splitAt => {
+  const empty = Buffer.from([])
+
+  return (chunk, offset) => {
+    if (offset + chunk.length <= splitAt) {
+      return {
+        left: chunk,
+        right: empty
+      }
+    }
+
+    if (offset > splitAt) {
+      return {
+        left: empty,
+        right: chunk
+      }
+    }
+
+    return {
+      left: chunk.slice(0, splitAt - offset),
+      right: chunk.slice(splitAt - offset)
+    }
+  }
+}
+
+export const splitAtMatch = (matches, skipBytes = 0, debug = false) => {
+  let alreadyMatched = false
+  const empty = Buffer.from([])
+
+  return (chunk, offset) => {
+    if (alreadyMatched) {
+      return {
+        left: empty,
+        right: chunk
+      }
+    }
+
+    const idxs = matches
+      .map(bytes => chunk.indexOf(bytes))
+      .filter(idx => idx > -1)
+      .sort(subtract)
+      .filter(idx => idx + offset >= skipBytes)
+
+    if (idxs.length === 0) {
+      return {
+        left: empty,
+        right: chunk
+      }
+    }
+
+    alreadyMatched = true
+    if (debug) {
+      const dump = `<${toHex(chunk[idxs[0]], 2, true)} ${toHex(chunk[idxs[0] + 1], 2, true)}>`
+      console.log(`found pkware header ${dump} at ${toHex(idxs[0])}`)
+    }
+    return splitAtIndex(idxs[0])(chunk, offset)
   }
 }
 
@@ -55,8 +105,8 @@ export const transformIdentity = () => {
   }
 }
 
-export const toHex = (num, bytes = 0) => {
-  return `0x${num.toString(16).padStart(bytes, '0')}`
+export const toHex = (num, bytes = 0, raw = false) => {
+  return `${raw ? '' : '0x'}${num.toString(16).padStart(bytes, '0')}`
 }
 
 export const transformEmpty = () => {
