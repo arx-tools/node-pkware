@@ -104,7 +104,7 @@ const outputBits = (state, nBits, bitBuffer) => {
 
 // TODO: only go till LONGEST_ALLOWED_REPETITION
 const getSizeOfMatching = (inputBytes, matchIndex, needleIndex) => {
-  for (let i = 2; i < needleIndex; i++) {
+  for (let i = 2; i <= needleIndex; i++) {
     if (inputBytes[matchIndex + i] !== inputBytes[needleIndex + i]) {
       return i
     }
@@ -123,7 +123,7 @@ const findRepetitions = (inputBytes, startIndex) => {
   const matchIndex = haystack.indexOf(needle)
   if (matchIndex !== -1) {
     return {
-      distance: startIndex - matchIndex,
+      distance: startIndex - matchIndex - 1,
       size: getSizeOfMatching(inputBytes, matchIndex, startIndex)
     }
   }
@@ -137,38 +137,55 @@ const processChunkData = (state, debug = false) => {
 
     let infLoopProtector = 1000
     while (--infLoopProtector >= 0 && !(state.inputBuffer.isEmpty() && state.streamEnded)) {
-      let bytesToSkip = 0
-
       const inputBytes = state.inputBuffer.read(0, state.dictionarySizeBytes)
 
+      let byte = inputBytes[0]
+      outputBits(state, state.nChBits[byte], state.nChCodes[byte])
+      byte = inputBytes[1]
+      outputBits(state, state.nChBits[byte], state.nChCodes[byte])
+
       let startIndex = 2
-      const limiter = 20 // temporarily
       while (startIndex < inputBytes.length) {
-        /* const { size, distance } = */ findRepetitions(inputBytes, startIndex)
+        const { size, distance } = findRepetitions(inputBytes, startIndex)
 
-        // console.log(startIndex, size, distance)
+        // TODO: remove side effects
+        const isRepetitionFlushable = () => {
+          if (size === 0) {
+            return false
+          }
 
-        startIndex++
+          if (size === 2 && distance >= 0x100) {
+            return false
+          }
 
-        // temporarily
-        if (startIndex > limiter) {
-          break
+          if (size >= 8 || startIndex + 1 >= inputBytes.length) {
+            return true
+          }
+
+          // TODO: try to find a better repetition 1 byte later
+
+          return true
+        }
+
+        if (isRepetitionFlushable()) {
+          const byte = size + 0xfe
+          outputBits(state, state.nChBits[byte], state.nChCodes[byte])
+          if (size === 2) {
+            const byte = distance >> 2
+            outputBits(state, state.distBits[byte], state.distCodes[byte])
+            outputBits(state, 2, distance & 3)
+          } else {
+            const byte = distance >> state.dictionarySizeBits
+            outputBits(state, state.distBits[byte], state.distCodes[byte])
+            outputBits(state, state.dictionarySizeBits, state.dictionarySizeMask & distance)
+          }
+          startIndex += size
+        } else {
+          const byte = inputBytes[startIndex]
+          outputBits(state, state.nChBits[byte], state.nChCodes[byte])
+          startIndex += 1
         }
       }
-
-      Array.from(inputBytes).forEach(byte => {
-        if (bytesToSkip-- > 0) {
-          return
-        }
-
-        const foundRepetition = false
-
-        // bytesToSkip += size
-
-        if (!foundRepetition) {
-          outputBits(state, state.nChBits[byte], state.nChCodes[byte])
-        }
-      })
 
       state.inputBuffer.dropStart(inputBytes.length)
     }
