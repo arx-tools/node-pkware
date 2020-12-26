@@ -1,4 +1,4 @@
-import { repeat, mergeRight, clone, last } from '../node_modules/ramda/src/index.mjs'
+import { repeat, mergeRight, clone, last, clamp } from '../node_modules/ramda/src/index.mjs'
 import {
   DICTIONARY_SIZE1,
   DICTIONARY_SIZE2,
@@ -13,7 +13,8 @@ import {
   LenBits,
   LenCode,
   DistCode,
-  DistBits
+  DistBits,
+  LONGEST_ALLOWED_REPETITION
 } from './constants.mjs'
 import { nBitsOfOnes, getLowestNBits, toHex } from './helpers.mjs'
 import QuasiImmutableBuffer from './QuasiImmutableBuffer.mjs'
@@ -102,15 +103,15 @@ const outputBits = (state, nBits, bitBuffer) => {
   }
 }
 
-// TODO: only go till LONGEST_ALLOWED_REPETITION
 const getSizeOfMatching = (inputBytes, matchIndex, needleIndex) => {
-  for (let i = 2; i <= needleIndex; i++) {
-    if (inputBytes[matchIndex + i] !== inputBytes[needleIndex + i]) {
-      return i
+  const limit = clamp(3, LONGEST_ALLOWED_REPETITION, needleIndex - matchIndex)
+  for (let i = 3; i <= limit; i++) {
+    if (inputBytes[matchIndex + i] !== inputBytes[limit + i]) {
+      return i - 1
     }
   }
 
-  return needleIndex
+  return limit
 }
 
 // TODO: make sure that we find the most recent one, which in turn allows
@@ -121,10 +122,11 @@ const findRepetitions = (inputBytes, startIndex) => {
   const haystack = inputBytes.slice(0, startIndex)
 
   const matchIndex = haystack.indexOf(needle)
+  const distance = startIndex - matchIndex
   if (matchIndex !== -1) {
     return {
-      distance: startIndex - matchIndex - 1,
-      size: getSizeOfMatching(inputBytes, matchIndex, startIndex)
+      distance: distance - 1,
+      size: distance > 2 ? getSizeOfMatching(inputBytes, matchIndex, startIndex) : 2
     }
   }
 
@@ -135,7 +137,7 @@ const processChunkData = (state, debug = false) => {
   if (state.inputBuffer.size() > 0x1000 || state.streamEnded) {
     state.needMoreInput = false
 
-    let infLoopProtector = 20
+    let infLoopProtector = 100
     while (!state.inputBuffer.isEmpty()) {
       if (--infLoopProtector <= 0) {
         console.error('infinite loop detected, halting!')
@@ -159,21 +161,17 @@ const processChunkData = (state, debug = false) => {
             return false
           }
 
-          return false
-
-          /*
           if (size === 2 && distance >= 0x100) {
             return false
           }
 
-          if (size >= 8 || startIndex + 1 >= inputBytes.length) {
+          if (size >= 8) {
             return true
           }
 
           // TODO: try to find a better repetition 1 byte later
 
           return true
-          */
         }
 
         if (isRepetitionFlushable()) {
