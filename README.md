@@ -69,14 +69,4 @@ beginning of the file. If `--offset` is defined, then it will start searching fr
 
 ### TODOs:
 
-to overcome gotos and other jumps in implode: introduce flags and wrap affected code parts
-into if(flag) statements. that way the original intention of gotos in the code - being able
-to skip parts of the code - could be done without gotos.
-
-```
-Goals:
-
-[ ] make compression work with 1 chunk
-[ ] make compression work with 2 chunks
-[ ] make compression work with any number of chunks
-```
+Apply optimization to findRepetitions() and make it cross-chunk
