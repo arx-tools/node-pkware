@@ -135,8 +135,13 @@ const processChunkData = (state, debug = false) => {
   if (state.inputBuffer.size() > 0x1000 || state.streamEnded) {
     state.needMoreInput = false
 
-    let infLoopProtector = 1000
-    while (--infLoopProtector >= 0 && !(state.inputBuffer.isEmpty() && state.streamEnded)) {
+    let infLoopProtector = 20
+    while (!state.inputBuffer.isEmpty()) {
+      if (--infLoopProtector <= 0) {
+        console.error('infinite loop detected, halting!')
+        process.exit(1)
+      }
+
       const inputBytes = state.inputBuffer.read(0, state.dictionarySizeBytes)
 
       let byte = inputBytes[0]
@@ -154,6 +159,9 @@ const processChunkData = (state, debug = false) => {
             return false
           }
 
+          return false
+
+          /*
           if (size === 2 && distance >= 0x100) {
             return false
           }
@@ -165,6 +173,7 @@ const processChunkData = (state, debug = false) => {
           // TODO: try to find a better repetition 1 byte later
 
           return true
+          */
         }
 
         if (isRepetitionFlushable()) {
