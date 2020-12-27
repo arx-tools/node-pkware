@@ -103,11 +103,11 @@ const outputBits = (state, nBits, bitBuffer) => {
   }
 }
 
-const getSizeOfMatching = (inputBytes, matchIndex, needleIndex) => {
-  const limit = clamp(3, LONGEST_ALLOWED_REPETITION, needleIndex - matchIndex)
-  for (let i = 3; i <= limit; i++) {
-    if (inputBytes[matchIndex + i] !== inputBytes[limit + i]) {
-      return i - 1
+const getSizeOfMatching = (inputBytes, a, b) => {
+  const limit = clamp(2, LONGEST_ALLOWED_REPETITION, b - a)
+  for (let i = 2; i <= limit; i++) {
+    if (inputBytes[a + i] !== inputBytes[b + i]) {
+      return i
     }
   }
 
@@ -117,27 +117,40 @@ const getSizeOfMatching = (inputBytes, matchIndex, needleIndex) => {
 // TODO: make sure that we find the most recent one, which in turn allows
 // us to store backward length in less amount of bits
 // currently the code goes from the furthest point
-const findRepetitions = (inputBytes, startIndex) => {
-  const needle = inputBytes.slice(startIndex, startIndex + 2)
-  const haystack = inputBytes.slice(0, startIndex)
+const findRepetitions = (inputBytes, endOfLastMatch, cursor) => {
+  if (endOfLastMatch === cursor || cursor - endOfLastMatch < 2) {
+    return { size: 0, distance: 0 }
+  }
+
+  const haystack = inputBytes.slice(endOfLastMatch, cursor)
+  const needle = inputBytes.slice(cursor, cursor + 2)
 
   const matchIndex = haystack.indexOf(needle)
-  const distance = startIndex - matchIndex
+  if (repetitionMatchLimiter > 0 && cursor === 6659 - 0x1000) {
+    console.log(endOfLastMatch + 0x1000, cursor + 0x1000)
+    console.log(haystack)
+    console.log('                 ', inputBytes.slice(cursor, cursor + 20))
+    const distance = cursor - endOfLastMatch - matchIndex
+    console.log(distance, distance > 2 ? getSizeOfMatching(inputBytes, endOfLastMatch + matchIndex, cursor) : 2)
+  }
   if (matchIndex !== -1) {
+    const distance = cursor - endOfLastMatch - matchIndex
     return {
       distance: distance - 1,
-      size: distance > 2 ? getSizeOfMatching(inputBytes, matchIndex, startIndex) : 2
+      size: distance > 2 ? getSizeOfMatching(inputBytes, endOfLastMatch + matchIndex, cursor) : 2
     }
   }
 
   return { size: 0, distance: 0 }
 }
 
+let repetitionMatchLimiter = 9000
 const processChunkData = (state, debug = false) => {
   if (state.inputBuffer.size() > 0x1000 || state.streamEnded) {
     state.needMoreInput = false
 
     let infLoopProtector = 100
+    let endOfLastMatch
     while (!state.inputBuffer.isEmpty()) {
       if (--infLoopProtector <= 0) {
         console.error('infinite loop detected, halting!')
@@ -152,8 +165,9 @@ const processChunkData = (state, debug = false) => {
       outputBits(state, state.nChBits[byte], state.nChCodes[byte])
 
       let startIndex = 2
+      endOfLastMatch = 0
       while (startIndex < inputBytes.length) {
-        const { size, distance } = findRepetitions(inputBytes, startIndex)
+        const { size, distance } = findRepetitions(inputBytes, endOfLastMatch, startIndex)
 
         // TODO: remove side effects
         const isRepetitionFlushable = () => {
@@ -165,16 +179,19 @@ const processChunkData = (state, debug = false) => {
             return false
           }
 
-          if (size >= 8) {
-            return true
-          }
+          // if (size >= 8) {
+          //   return true
+          // }
 
           // TODO: try to find a better repetition 1 byte later
 
           return true
         }
 
-        if (isRepetitionFlushable()) {
+        if (repetitionMatchLimiter-- > 0 && isRepetitionFlushable()) {
+          // console.log(`${endOfLastMatch}..${startIndex}`, size, distance)
+          endOfLastMatch = startIndex + size
+
           const byte = size + 0xfe
           outputBits(state, state.nChBits[byte], state.nChCodes[byte])
           if (size === 2) {
@@ -226,6 +243,7 @@ const implode = (
       try {
         processChunkData(state, debug)
 
+        console.log('\n', repetitionMatchLimiter)
         if (debug) {
           console.log('---------------')
           console.log('total number of chunks read:', state.stats.chunkCounter)
