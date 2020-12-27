@@ -1,4 +1,4 @@
-import { repeat, mergeRight, clone, last, clamp } from '../node_modules/ramda/src/index.mjs'
+import { repeat, mergeRight, clone, last /*, clamp */ } from '../node_modules/ramda/src/index.mjs'
 import {
   DICTIONARY_SIZE1,
   DICTIONARY_SIZE2,
@@ -13,8 +13,8 @@ import {
   LenBits,
   LenCode,
   DistCode,
-  DistBits,
-  LONGEST_ALLOWED_REPETITION
+  DistBits //,
+  // LONGEST_ALLOWED_REPETITION
 } from './constants.mjs'
 import { nBitsOfOnes, getLowestNBits, toHex } from './helpers.mjs'
 import QuasiImmutableBuffer from './QuasiImmutableBuffer.mjs'
@@ -103,6 +103,9 @@ const outputBits = (state, nBits, bitBuffer) => {
   }
 }
 
+/* eslint-disable prefer-const */
+
+/*
 const getSizeOfMatching = (inputBytes, a, b) => {
   const limit = clamp(2, LONGEST_ALLOWED_REPETITION, b - a)
   for (let i = 2; i <= limit; i++) {
@@ -126,13 +129,6 @@ const findRepetitions = (inputBytes, endOfLastMatch, cursor) => {
   const needle = inputBytes.slice(cursor, cursor + 2)
 
   const matchIndex = haystack.indexOf(needle)
-  if (repetitionMatchLimiter > 0 && cursor === 6659 - 0x1000) {
-    console.log(endOfLastMatch + 0x1000, cursor + 0x1000)
-    console.log(haystack)
-    console.log('                 ', inputBytes.slice(cursor, cursor + 20))
-    const distance = cursor - endOfLastMatch - matchIndex
-    console.log(distance, distance > 2 ? getSizeOfMatching(inputBytes, endOfLastMatch + matchIndex, cursor) : 2)
-  }
   if (matchIndex !== -1) {
     const distance = cursor - endOfLastMatch - matchIndex
     return {
@@ -143,85 +139,122 @@ const findRepetitions = (inputBytes, endOfLastMatch, cursor) => {
 
   return { size: 0, distance: 0 }
 }
+*/
 
-let repetitionMatchLimiter = 9000
+let gotFirstTwoBytes = false
+
+const INFINITE_LOOP_THRESHOLD = 100
+
 const processChunkData = (state, debug = false) => {
-  if (state.inputBuffer.size() > 0x1000 || state.streamEnded) {
-    state.needMoreInput = false
+  if (!state.inputBuffer.isEmpty()) {
+    let startIndex = 0
 
-    let infLoopProtector = 100
-    let endOfLastMatch
-    while (!state.inputBuffer.isEmpty()) {
-      if (--infLoopProtector <= 0) {
-        console.error('infinite loop detected, halting!')
-        process.exit(1)
-      }
+    // repetitions are at least 2 bytes long,
+    // so the initial 2 bytes can be moved to the output as is
+    if (!gotFirstTwoBytes) {
+      gotFirstTwoBytes = true
 
-      const inputBytes = state.inputBuffer.read(0, state.dictionarySizeBytes)
-
-      let byte = inputBytes[0]
-      outputBits(state, state.nChBits[byte], state.nChCodes[byte])
-      byte = inputBytes[1]
-      outputBits(state, state.nChBits[byte], state.nChCodes[byte])
-
-      let startIndex = 2
-      endOfLastMatch = 0
-      while (startIndex < inputBytes.length) {
-        const { size, distance } = findRepetitions(inputBytes, endOfLastMatch, startIndex)
-
-        // TODO: remove side effects
-        const isRepetitionFlushable = () => {
-          if (size === 0) {
-            return false
-          }
-
-          if (size === 2 && distance >= 0x100) {
-            return false
-          }
-
-          // if (size >= 8) {
-          //   return true
-          // }
-
-          // TODO: try to find a better repetition 1 byte later
-
-          return true
-        }
-
-        if (repetitionMatchLimiter-- > 0 && isRepetitionFlushable()) {
-          // console.log(`${endOfLastMatch}..${startIndex}`, size, distance)
-          endOfLastMatch = startIndex + size
-
-          const byte = size + 0xfe
-          outputBits(state, state.nChBits[byte], state.nChCodes[byte])
-          if (size === 2) {
-            const byte = distance >> 2
-            outputBits(state, state.distBits[byte], state.distCodes[byte])
-            outputBits(state, 2, distance & 3)
-          } else {
-            const byte = distance >> state.dictionarySizeBits
-            outputBits(state, state.distBits[byte], state.distCodes[byte])
-            outputBits(state, state.dictionarySizeBits, state.dictionarySizeMask & distance)
-          }
-          startIndex += size
-        } else {
-          const byte = inputBytes[startIndex]
-          outputBits(state, state.nChBits[byte], state.nChCodes[byte])
-          startIndex += 1
-        }
-      }
-
-      state.inputBuffer.dropStart(inputBytes.length)
+      const [byte1, byte2] = state.inputBuffer.read(0, 2)
+      outputBits(state, state.nChBits[byte1], state.nChCodes[byte1])
+      outputBits(state, state.nChBits[byte2], state.nChCodes[byte2])
+      startIndex += 2
     }
+
+    // ---------------------------
+
+    // I don't trust my code, so just in case I'm trying to detect infinite loops in the while loop below
+    let infLoopProtector = 0
+    let previousStartIndex = startIndex
+
+    while (startIndex < state.inputBuffer.size()) {
+      // the idea is to detect if the startIndex is not progressing for over INFINITE_LOOP_THRESHOLD times
+      if (previousStartIndex === startIndex) {
+        if (++infLoopProtector > INFINITE_LOOP_THRESHOLD) {
+          console.error('infinite loop detected, halting!')
+          process.exit(1)
+        }
+      } else {
+        infLoopProtector = 0
+        previousStartIndex = startIndex
+      }
+
+      // ---------------------------
+
+      const byte = state.inputBuffer.read(startIndex, 1)
+      outputBits(state, state.nChBits[byte], state.nChCodes[byte])
+      startIndex += 1
+    }
+
+    state.inputBuffer.dropStart(state.inputBuffer.size())
+
+    /*
+    
+    let endOfLastMatch = 0
+    while (startIndex < state.inputBuffer.size()) {
+      let { size, distance } = findRepetitions(state.inputBuffer.read(endOfLastMatch), endOfLastMatch, startIndex) // eslint-disable-line prefer-const
+
+      const isRepetitionFlushable = (currentSize, currentDistance) => {
+        if (currentSize === 0) {
+          return false
+        }
+
+        if (currentSize === 2 && currentDistance >= 0x100) {
+          return false
+        }
+
+        return true
+      }
+
+      if (isRepetitionFlushable(size, distance, startIndex)) {
+        // let cursor = startIndex
+        // let newSize = size
+        // let newDistance = distance
+        // let currentSize
+        // let currentDistance
+        // while (newSize <= currentSize && isRepetitionFlushable(newSize, newDistance)) {
+        //   currentSize = newSize
+        //   currentDistance = newDistance
+        //   const reps = findRepetitions(state.inputBuffer.read(endOfLastMatch), endOfLastMatch, ++cursor)
+        //   newSize = reps.size
+        //   newDistance = reps.distance
+        // }
+        // size = newSize
+        // distance = currentDistance
+
+        endOfLastMatch = startIndex + size
+
+        const byte = size + 0xfe
+        outputBits(state, state.nChBits[byte], state.nChCodes[byte])
+        if (size === 2) {
+          const byte = distance >> 2
+          outputBits(state, state.distBits[byte], state.distCodes[byte])
+          outputBits(state, 2, distance & 3)
+        } else {
+          const byte = distance >> state.dictionarySizeBits
+          outputBits(state, state.distBits[byte], state.distCodes[byte])
+          outputBits(state, state.dictionarySizeBits, state.dictionarySizeMask & distance)
+        }
+        startIndex += size
+      } else {
+        const byte = state.inputBuffer.read(startIndex, 1)
+        outputBits(state, state.nChBits[byte], state.nChCodes[byte])
+        startIndex += 1
+      }
+
+      state.inputBuffer.dropStart(endOfLastMatch)
+      startIndex -= endOfLastMatch
+      endOfLastMatch = 0
+    }
+    */
   }
 
   if (state.streamEnded) {
     // Write the termination literal
     outputBits(state, last(state.nChBits), last(state.nChCodes))
-  } else {
-    state.needMoreInput = true
   }
 }
+
+/* eslint-enable */
 
 const implode = (
   compressionType,
@@ -230,7 +263,6 @@ const implode = (
 ) => {
   let state = {
     isFirstChunk: true,
-    needMoreInput: true, // TODO: not sure, if we need this flag
     streamEnded: false,
     compressionType: compressionType,
     dictionarySizeBytes: dictionarySize,
@@ -243,7 +275,6 @@ const implode = (
       try {
         processChunkData(state, debug)
 
-        console.log('\n', repetitionMatchLimiter)
         if (debug) {
           console.log('---------------')
           console.log('total number of chunks read:', state.stats.chunkCounter)
