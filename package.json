@@ -2,18 +2,9 @@
   "name": "node-pkware",
   "version": "0.8.1",
   "description": "The nodejs implementation of StormLib's pkware compressor/de-compressor",
-  "main": "src/index.mjs",
-  "bin": {
-    "implode": "bin/implode.mjs",
-    "explode": "bin/explode.mjs"
-  },
-  "scripts": {
-    "lint": "eslint \"src/**/*.+(js|mjs)\"",
-    "lint:fix": "npm run lint -- --fix",
-    "unit": "mocha --experimental-modules test/**/*.spec.mjs --timeout 100000",
-    "unit:watch": "nodemon --exec \"npm run test:unit\" --watch test --watch src",
-    "lint:staged": "lint-staged"
-  },
+  "main": "src/index.js",
+  "bin": {},
+  "scripts": {},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/meszaros-lajos-gyorgy/node-pkware.git"
@@ -24,35 +15,6 @@
   "homepage": "https://github.com/meszaros-lajos-gyorgy/node-pkware#readme",
   "author": "Lajos Meszaros <m_lajos@hotmail.com>",
   "license": "GPL-3.0-or-later",
-  "dependencies": {
-    "minimist": "^1.2.5",
-    "ramda": "^0.27.1"
-  },
-  "devDependencies": {
-    "assert": "^2.0.0",
-    "binary-comparator": "^0.4.1",
-    "eslint": "^7.6.0",
-    "eslint-config-prettier": "^6.11.0",
-    "eslint-config-prettier-standard": "^3.0.1",
-    "eslint-config-standard": "^14.1.1",
-    "eslint-plugin-import": "^2.22.0",
-    "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-prettier": "^3.1.4",
-    "eslint-plugin-promise": "^4.2.1",
-    "eslint-plugin-ramda": "^2.5.1",
-    "eslint-plugin-standard": "^4.0.1",
-    "lint-staged": "^10.2.11",
-    "mocha": "^8.1.1",
-    "nodemon": "^2.0.4",
-    "pre-commit": "^1.2.2",
-    "prettier": "^2.0.5",
-    "prettier-config-standard": "^1.0.1"
-  },
-  "pre-commit": [
-    "lint:staged",
-    "unit"
-  ],
-  "lint-staged": {
-    "*.{js,mjs}": "eslint --fix"
-  }
+  "dependencies": {},
+  "devDependencies": {}
 }

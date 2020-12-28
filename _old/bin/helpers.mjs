@@ -1,6 +1,8 @@
 import fs from 'fs'
 import path from 'path'
-import { test } from '../node_modules/ramda/src/index.mjs'
+import * as R from 'ramda'
+
+const { test } = R
 
 export const fileExists = async filename => {
   try {
