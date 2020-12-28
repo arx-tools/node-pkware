@@ -14,7 +14,7 @@ describe('Buffer', () => {
 
   it('can aggregate chunks of a stream', done => {
     const chunks = []
-    fs.createReadStream('test/files/fast.fts')
+    fs.createReadStream('test/files/arx-fatalis/level8/fast.fts')
       .on('data', function (d) {
         chunks.push(d)
       })

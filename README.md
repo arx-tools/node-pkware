@@ -66,7 +66,3 @@ beginning of the file. If `--offset` is defined, then it will start searching fr
 
 * https://stackoverflow.com/questions/2094666/pointers-in-c-when-to-use-the-ampersand-and-the-asterisk
 * https://stackoverflow.com/a/49394095/1806628
-
-### TODOs:
-
-Apply optimization to findRepetitions() and make it cross-chunk

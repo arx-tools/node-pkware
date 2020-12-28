@@ -8,13 +8,10 @@
     "explode": "bin/explode.mjs"
   },
   "scripts": {
-    "test": "node --experimental-modules test/index.mjs",
-    "test:watch": "nodemon --experimental-modules test/index.mjs --ext .mjs",
-    "validate-test-results": "nodemon --watch e:/binary.repacked ../binary-comparator/bin/bin-compare.mjs test/files/binary e:\\binary.repacked --hex",
     "lint": "eslint \"src/**/*.+(js|mjs)\"",
     "lint:fix": "npm run lint -- --fix",
     "unit": "mocha --experimental-modules test/**/*.spec.mjs --timeout 5000",
-    "unit:watch": "nodemon --exec \"npm run unit\" --watch test --watch src",
+    "unit:watch": "nodemon --exec \"npm run test:unit\" --watch test --watch src",
     "lint:staged": "lint-staged"
   },
   "repository": {

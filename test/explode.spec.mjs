@@ -57,42 +57,60 @@ describe('explode', () => {
     assert.strictEqual(typeof explode, 'function')
   })
   it('can decode files, which have been compressed with ascii mode', done => {
-    Promise.all([readToBuffer('test/files/large.unpacked'), decompressToBuffer('test/files/large.ascii')])
+    Promise.all([
+      readToBuffer('test/files/implode-decoder/large.unpacked'),
+      decompressToBuffer('test/files/implode-decoder/large.ascii')
+    ])
       .then(([expected, result]) => {
         buffersShouldEqual(expected, result)
       })
       .then(done, done)
   })
   it('can decode files, which have been compressed with binary mode', done => {
-    Promise.all([readToBuffer('test/files/binary.unpacked'), decompressToBuffer('test/files/binary')])
+    Promise.all([
+      readToBuffer('test/files/implode-decoder/binary.unpacked'),
+      decompressToBuffer('test/files/implode-decoder/binary')
+    ])
       .then(([expected, result]) => {
         buffersShouldEqual(expected, result)
       })
       .then(done, done)
   })
   it('can decode files, which have been compressed with small dictionary size', done => {
-    Promise.all([readToBuffer('test/files/small.unpacked'), decompressToBuffer('test/files/small')])
+    Promise.all([
+      readToBuffer('test/files/implode-decoder/small.unpacked'),
+      decompressToBuffer('test/files/implode-decoder/small')
+    ])
       .then(([expected, result]) => {
         buffersShouldEqual(expected, result)
       })
       .then(done, done)
   })
   it('can decode files, which have been compressed with medium dictionary size', done => {
-    Promise.all([readToBuffer('test/files/medium.unpacked'), decompressToBuffer('test/files/medium')])
+    Promise.all([
+      readToBuffer('test/files/implode-decoder/medium.unpacked'),
+      decompressToBuffer('test/files/implode-decoder/medium')
+    ])
       .then(([expected, result]) => {
         buffersShouldEqual(expected, result)
       })
       .then(done, done)
   })
   it('can decode files, which have been compressed with large dictionary size', done => {
-    Promise.all([readToBuffer('test/files/large.unpacked'), decompressToBuffer('test/files/large')])
+    Promise.all([
+      readToBuffer('test/files/implode-decoder/large.unpacked'),
+      decompressToBuffer('test/files/implode-decoder/large')
+    ])
       .then(([expected, result]) => {
         buffersShouldEqual(expected, result)
       })
       .then(done, done)
   })
   it('can decode files, which span over multiple chunks', done => {
-    Promise.all([readToBuffer('test/files/large.unpacked'), decompressToBuffer('test/files/large', 97)])
+    Promise.all([
+      readToBuffer('test/files/implode-decoder/large.unpacked'),
+      decompressToBuffer('test/files/implode-decoder/large', 97)
+    ])
       .then(([expected, result]) => {
         buffersShouldEqual(expected, result)
       })
