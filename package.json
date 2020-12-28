@@ -10,7 +10,7 @@
   "scripts": {
     "lint": "eslint \"src/**/*.+(js|mjs)\"",
     "lint:fix": "npm run lint -- --fix",
-    "unit": "mocha --experimental-modules test/**/*.spec.mjs --timeout 5000",
+    "unit": "mocha --experimental-modules test/**/*.spec.mjs --timeout 100000",
     "unit:watch": "nodemon --exec \"npm run test:unit\" --watch test --watch src",
     "lint:staged": "lint-staged"
   },
@@ -30,6 +30,7 @@
   },
   "devDependencies": {
     "assert": "^2.0.0",
+    "binary-comparator": "^0.4.1",
     "eslint": "^7.6.0",
     "eslint-config-prettier": "^6.11.0",
     "eslint-config-prettier-standard": "^3.0.1",

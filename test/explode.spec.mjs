@@ -4,15 +4,24 @@ import assert from 'assert'
 import fs from 'fs'
 import explode, { parseFirstChunk, generateAsciiTables, generateDecodeTables } from '../src/explode.mjs'
 import { ERROR_INVALID_DATA, ERROR_INVALID_DICTIONARY_SIZE } from '../src/constants.mjs'
-import { through } from '../src/helpers.mjs'
+import { through, transformIdentity, transformSplitBy, splitAtIndex } from '../src/helpers.mjs'
 import { readToBuffer, buffersShouldEqual } from './helpers.mjs'
 
-const decompressToBuffer = (fileName, chunkSizeInBytes = 1024) => {
+const decompressToBuffer = (fileName, offset = 0, chunkSizeInBytes = 1024) => {
   return new Promise((resolve, reject) => {
     const chunks = []
+
+    const leftHandler = transformIdentity()
+    const rightHandler = explode()
+
+    let handler = rightHandler
+    if (offset > 0) {
+      handler = transformSplitBy(splitAtIndex(offset), leftHandler, rightHandler)
+    }
+
     fs.createReadStream(fileName, { highWaterMark: chunkSizeInBytes })
       .pipe(
-        through(explode())
+        through(handler)
           .on('error', reject)
           .on('data', chunk => {
             chunks.push(chunk)
@@ -109,11 +118,48 @@ describe('explode', () => {
   it('can decode files, which span over multiple chunks', done => {
     Promise.all([
       readToBuffer('test/files/implode-decoder/large.unpacked'),
-      decompressToBuffer('test/files/implode-decoder/large', 97)
+      decompressToBuffer('test/files/implode-decoder/large', 0, 97)
     ])
       .then(([expected, result]) => {
         buffersShouldEqual(expected, result)
       })
       .then(done, done)
   })
+
+  /*
+  describe('arx fatalis', () => {
+    // TODO: header size is dynamic, use arx-header-size for other levels
+    const level = 8
+    it(`can decode DLF file of level ${level}`, done => {
+      Promise.all([
+        readToBuffer(`test/files/arx-fatalis/level${level}/level${level}.dlf.unpacked`),
+        decompressToBuffer(`test/files/arx-fatalis/level${level}/level${level}.dlf`, 8520)
+      ])
+        .then(([expected, result]) => {
+          buffersShouldEqual(expected, result)
+        })
+        .then(done, done)
+    })
+    it(`can decode FTS file of level ${level}`, done => {
+      Promise.all([
+        readToBuffer(`test/files/arx-fatalis/level${level}/fast.fts.unpacked`),
+        decompressToBuffer(`test/files/arx-fatalis/level${level}/fast.fts`, 1816)
+      ])
+        .then(([expected, result]) => {
+          buffersShouldEqual(expected, result)
+        })
+        .then(done, done)
+    })
+    it(`can decode LLF file of level ${level}`, done => {
+      Promise.all([
+        readToBuffer(`test/files/arx-fatalis/level${level}/level${level}.llf.unpacked`),
+        decompressToBuffer(`test/files/arx-fatalis/level${level}/level${level}.llf`)
+      ])
+      .then(([expected, result]) => {
+        buffersShouldEqual(expected, result)
+      })
+      .then(done, done)
+    })
+  })
+  */
 })

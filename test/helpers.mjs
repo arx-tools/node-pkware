@@ -1,6 +1,7 @@
 import { EOL } from 'os'
 import fs from 'fs'
 import assert from 'assert'
+import binCompare, { report } from '../node_modules/binary-comparator/src/index.mjs'
 
 export const isPromise = promise => {
   return typeof promise === 'object' && promise.constructor.name === 'Promise'
@@ -48,6 +49,7 @@ export const bufferToString = buffer => {
   return `<Buffer ${hexString}${ellipsisNecessary ? '...' : ''}>`
 }
 
-export const buffersShouldEqual = (expected, result) => {
-  assert.ok(expected.equals(result), `${bufferToString(expected)} !== ${bufferToString(result)}`)
+export const buffersShouldEqual = (expected, result, offset = 0) => {
+  const diff = report(expected, result, binCompare(expected, result, offset))
+  assert.ok(expected.equals(result), diff)
 }
