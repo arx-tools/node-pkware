@@ -1,4 +1,9 @@
+const { isNumber } = require('ramda-adjunct')
+
 const isBetween = (min, max, num) => {
+  if (!isNumber(min) || !isNumber(max) || !isNumber(num)) {
+    return null
+  }
   return num >= min && num <= max
 }
 
