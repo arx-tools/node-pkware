@@ -4,10 +4,17 @@ const isBetween = (min, max, num) => {
   if (!isNumber(min) || !isNumber(max) || !isNumber(num)) {
     return null
   }
+  if (min > max) {
+    ;[min, max] = [max, min]
+  }
+
   return num >= min && num <= max
 }
 
 const nBitsOfOnes = numberOfBits => {
+  if (numberOfBits < 0) {
+    return null
+  }
   return (1 << numberOfBits) - 1
 }
 

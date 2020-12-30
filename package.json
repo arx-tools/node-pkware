@@ -7,7 +7,7 @@
   "scripts": {
     "lint": "eslint \"src/**/*.js\"",
     "lint:fix": "npm run lint -- --fix",
-    "unit": "mocha test/**/*.spec.js --timeout 5000",
+    "unit": "set FORCE_COLOR=true && mocha test/**/*.spec.js --timeout 5000",
     "unit:watch": "nodemon --exec \"npm run unit\" --watch test --watch src",
     "lint:staged": "lint-staged"
   },
