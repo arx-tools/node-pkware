@@ -43,8 +43,7 @@ const isClass = obj => {
 }
 
 // https://stackoverflow.com/a/48845122/1806628
-const bufferToString = buffer => {
-  const limit = 20
+const bufferToString = (buffer, limit = 20) => {
   const ellipsisNecessary = buffer.length > limit
   let hexString = buffer.slice(0, limit).toString('hex')
   hexString = hexString.length > 2 ? hexString.match(/../g).join(' ') : hexString
