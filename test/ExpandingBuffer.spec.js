@@ -1,14 +1,14 @@
 /* global describe, it, beforeEach */
 
 const assert = require('assert')
-const QuasiImmutableBuffer = require('../src/QuasiImmutableBuffer.js')
+const ExpandingBuffer = require('../src/ExpandingBuffer.js')
 const { isClass, buffersShouldEqual, bufferToString } = require('../src/helpers/test.js')
 
-describe('QuasiImmutableBuffer', () => {
+describe('ExpandingBuffer', () => {
   let buffer
 
   beforeEach(() => {
-    buffer = new QuasiImmutableBuffer()
+    buffer = new ExpandingBuffer()
   })
 
   it('is a class', () => {
@@ -83,13 +83,13 @@ describe('QuasiImmutableBuffer', () => {
     buffer.flushEnd(3)
     assert.strictEqual(2, buffer.size())
   })
-  it('is not increasing the heapSize, when the size of data appended after flushing from the beginning is less, than the number of bytes flushed', () => {
+  it('is not increasing heapSize, when the size of data appended after flushStart is less, than the number of bytes flushed', () => {
     buffer.append(Buffer.from([1, 2, 3, 4, 5]))
     buffer.flushStart(3)
     buffer.append(Buffer.from([7, 8]))
     assert.strictEqual(5, buffer.heapSize())
   })
-  it('is not increasing the heapSize, when the size of data appended after flushing from the end is less, than the number of bytes flushed', () => {
+  it('is not increasing the heapSize, when the size of data appended after flushEnd is less, than the number of bytes flushed', () => {
     buffer.append(Buffer.from([1, 2, 3, 4, 5]))
     buffer.flushEnd(3)
     buffer.append(Buffer.from([7, 8]))
@@ -125,7 +125,7 @@ describe('QuasiImmutableBuffer', () => {
     buffersShouldEqual(expected, result)
   })
   it('pre-allocates internally stored data with N bytes when constructor recieves a non zero number', () => {
-    const buffer = new QuasiImmutableBuffer(100)
+    const buffer = new ExpandingBuffer(100)
     assert.strictEqual(buffer.heapSize(), 100)
   })
   it('returns an empty buffer, when reading from a negative offset', () => {

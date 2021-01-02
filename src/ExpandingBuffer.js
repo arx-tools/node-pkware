@@ -1,6 +1,6 @@
 const { clamp } = require('ramda')
 
-class QuasiImmutableBuffer {
+class ExpandingBuffer {
   constructor(numberOfBytes = 0) {
     this._heap = Buffer.allocUnsafe(numberOfBytes)
     this._startIndex = 0
@@ -110,4 +110,4 @@ class QuasiImmutableBuffer {
   }
 }
 
-module.exports = QuasiImmutableBuffer
+module.exports = ExpandingBuffer
