@@ -1,11 +1,29 @@
-// TODO: create some higher order functions for streams
-//
-// 1) as a starter, we need an identity function: fn(streamHandler) == streamHandler
-//
-// 2) then we need an addIndex function, which adds +1 parameter to the handler: chunk index,
-// which is 0 for the first chunk, 1 for the second, etc
-// all of these have to preserve reference for "this"
-//
-// 3) then we need a universal function, like reduce
+const splitAt = index => {
+  let cntr = 0
 
-module.exports = {}
+  return chunk => {
+    let left
+    let right
+
+    if (index <= cntr) {
+      // index ..... cntr ..... chunk.length
+      left = Buffer.from([])
+      right = chunk
+    } else if (index >= cntr + chunk.length) {
+      // cntr ..... chunk.length ..... index
+      left = chunk
+      right = Buffer.from([])
+    } else {
+      // cntr ..... index ..... chunk.length
+      left = chunk.slice(0, index - cntr)
+      right = chunk.slice(index - cntr)
+    }
+
+    cntr += chunk.length
+    return [left, right]
+  }
+}
+
+module.exports = {
+  splitAt
+}
