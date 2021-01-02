@@ -2,7 +2,7 @@
 
 const assert = require('assert')
 const ExpandingBuffer = require('../src/ExpandingBuffer.js')
-const { isClass, buffersShouldEqual, bufferToString } = require('../src/helpers/test.js')
+const { isClass, buffersShouldEqual, bufferToString } = require('../src/helpers/testing.js')
 
 describe('ExpandingBuffer', () => {
   let buffer

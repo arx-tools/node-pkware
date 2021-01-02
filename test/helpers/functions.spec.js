@@ -2,17 +2,9 @@
 
 const assert = require('assert')
 const { isFunction } = require('ramda-adjunct')
-const {
-  isBetween,
-  nBitsOfOnes,
-  maskBits,
-  isFullHexString,
-  toHex,
-  dumpBytes,
-  isNumeric
-} = require('../../src/helpers/src.js')
+const { isBetween, nBitsOfOnes, maskBits, isFullHexString, toHex } = require('../../src/helpers/functions.js')
 
-describe('helpers/src', () => {
+describe('helpers/functions', () => {
   describe('isBetween', () => {
     it('is a function', () => {
       assert.ok(isFunction(isBetween), `${isBetween} is not a function`)
@@ -144,18 +136,6 @@ describe('helpers/src', () => {
     it('returns only the hex characters without 0x prefix, when 3rd parameter is true', () => {
       assert.strictEqual(toHex(200, 0, true), 'c8')
       assert.strictEqual(toHex(600, 5, true), '00258')
-    })
-  })
-
-  describe('dumpBytes', () => {
-    it('is a function', () => {
-      assert.ok(isFunction(dumpBytes), `${dumpBytes} is not a function`)
-    })
-  })
-
-  describe('isNumeric', () => {
-    it('is a function', () => {
-      assert.ok(isFunction(isNumeric), `${isNumeric} is not a function`)
     })
   })
 })

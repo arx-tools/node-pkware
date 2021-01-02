@@ -37,8 +37,8 @@ const isFullHexString = str => {
   }
 }
 
-const toHex = (num, digits = 0, raw = false) => {
-  const prefix = raw ? '' : '0x'
+const toHex = (num, digits = 0, withoutPrefix = false) => {
+  const prefix = withoutPrefix ? '' : '0x'
   if (!isInteger(digits) || isNegative(digits)) {
     return null
   }
@@ -52,23 +52,10 @@ const toHex = (num, digits = 0, raw = false) => {
   return `${prefix}${num.toString(16).padStart(digits, '0')}`
 }
 
-const dumpBytes = bytes => {
-  const formattedBytes = Array.from(bytes)
-    .map(byte => toHex(byte, 2, true))
-    .join(' ')
-  return `<${formattedBytes}>`
-}
-
-const isNumeric = val => {
-  return parseInt(val.trim()).toString() === val.trim()
-}
-
 module.exports = {
   isBetween,
   nBitsOfOnes,
   maskBits,
   isFullHexString,
-  toHex,
-  dumpBytes,
-  isNumeric
+  toHex
 }

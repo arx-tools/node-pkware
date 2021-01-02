@@ -1,8 +1,9 @@
-const { EOL } = require('os')
-const fs = require('fs')
+// const { EOL } = require('os')
+// const fs = require('fs')
 const assert = require('assert')
 const { compare, report } = require('binary-comparator')
 
+/*
 const isPromise = promise => {
   return typeof promise === 'object' && promise.constructor.name === 'Promise'
 }
@@ -26,6 +27,7 @@ const readToBuffer = (fileName, chunkSizeInBytes = 1024) => {
       })
   })
 }
+*/
 
 // source: https://stackoverflow.com/a/43197340/1806628
 const isClass = obj => {
@@ -55,10 +57,7 @@ const buffersShouldEqual = (expected, result, offset = 0) => {
 }
 
 module.exports = {
-  isPromise,
-  toConsole,
-  readToBuffer,
   isClass,
-  bufferToString,
-  buffersShouldEqual
+  buffersShouldEqual,
+  bufferToString
 }
