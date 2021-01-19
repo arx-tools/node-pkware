@@ -24,13 +24,18 @@ tested in node version 14.9.0
 
 ### sources:
 
-* https://github.com/ladislav-zezula/StormLib/tree/master/src/pklib
-* https://github.com/ShieldBattery/implode-decoder
+- https://github.com/ladislav-zezula/StormLib/tree/master/src/pklib
+- https://github.com/ShieldBattery/implode-decoder
+- https://github.com/TheNitesWhoSay/lawine/blob/master/lawine/misc/implode.c - nice find, @alexpineda!
+- https://github.com/arx/ArxLibertatis/blob/master/src/io/Blast.cpp
+- https://github.com/arx/ArxLibertatis/blob/229d55b1c537c137ac50096221fa486df18ba0d2/src/io/Implode.cpp
+
+Implode was removed from Arx Libertatis at this commit: https://github.com/arx/ArxLibertatis/commit/2db9f0dd023fdd5d4da6f06c08a92d932e218187
 
 ### helpful links:
 
-* https://stackoverflow.com/questions/2094666/pointers-in-c-when-to-use-the-ampersand-and-the-asterisk
-* https://stackoverflow.com/a/49394095/1806628
+- https://stackoverflow.com/questions/2094666/pointers-in-c-when-to-use-the-ampersand-and-the-asterisk
+- https://stackoverflow.com/a/49394095/1806628
 
 ### notes:
 
@@ -39,15 +44,12 @@ tested in node version 14.9.0
 ```javascript
 const { compose, apply, useWith, concat, splitAt } = require('ramda')
 
-const splitAtIndex = (idx) => input => {
+const splitAtIndex = idx => input => {
   return splitAt(idx)(input)
 }
 
 const parseString = (splitter, left, right) => input => {
-  return compose(
-    apply(useWith(concat, [left, right])),
-    splitter
-  )(input)
+  return compose(apply(useWith(concat, [left, right])), splitter)(input)
 }
 
 const headerSize = 6
