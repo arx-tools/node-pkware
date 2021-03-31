@@ -10,6 +10,8 @@ It was the de-facto compression for games from around Y2K, like Arx Fatalis
 
 recommended node version: 8.5+
 
+development and testing should be done in node 12.3+ because of the tests utilizing `Readable.from()` - source: https://stackoverflow.com/a/59638132/1806628
+
 tested in node version 14.9.0
 
 ## command line interface
