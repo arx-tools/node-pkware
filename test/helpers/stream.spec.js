@@ -2,7 +2,7 @@
 
 const assert = require('assert')
 const { isFunction } = require('ramda-adjunct')
-const { splitAt } = require('../../src/helpers/stream.js')
+const { splitAt, transformIdentity } = require('../../src/helpers/stream.js')
 const { buffersShouldEqual } = require('../../src/helpers/testing.js')
 
 describe('helpers/stream', () => {
@@ -94,6 +94,39 @@ describe('helpers/stream', () => {
         assert.strictEqual(result1, null)
         buffersShouldEqual(result2[0], Buffer.from([1, 2, 3, 4]))
         buffersShouldEqual(result2[1], Buffer.from([5]))
+      })
+    })
+  })
+
+  describe('transformIdentity', () => {
+    it('is a function', () => {
+      assert.ok(isFunction(transformIdentity), `${transformIdentity} is not a function`)
+    })
+    it('takes no argument and returns a function', () => {
+      const handler = transformIdentity()
+      assert.strictEqual(isFunction(handler), true)
+    })
+    describe('returned handler', () => {
+      it('takes a Buffer, a string and a callback function and calls it with the given Buffer as the 2nd argument', () => {
+        const handler = transformIdentity()
+        const callback = (a, b) => {
+          buffersShouldEqual(b, Buffer.from([1, 2, 3]))
+        }
+        handler(Buffer.from([1, 2, 3]), '', callback)
+      })
+      it('passes null to the given callback function as the 1st parameter when called', () => {
+        const handler = transformIdentity()
+        const callback = (a, b) => {
+          assert.strictEqual(a, null)
+        }
+        handler(Buffer.from([1, 2, 3, 4]), '', callback)
+      })
+      it("passes whatever was given as the 1st parameter to the callback's 2nd parameter", () => {
+        const handler = transformIdentity()
+        const callback1 = (a, b) => {
+          assert.strictEqual(b, '#ffffff')
+        }
+        handler('#ffffff', '', callback1)
       })
     })
   })

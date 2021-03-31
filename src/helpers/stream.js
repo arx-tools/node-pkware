@@ -34,6 +34,13 @@ const splitAt = index => {
   }
 }
 
+const transformIdentity = () => {
+  return function (chunk, encoding, callback) {
+    callback(null, chunk)
+  }
+}
+
 module.exports = {
-  splitAt
+  splitAt,
+  transformIdentity
 }
