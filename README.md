@@ -14,11 +14,13 @@ tested in node version 14.9.0
 
 ## command line interface
 
-// TODO: add documentation
+_TODO: add documentation_
 
 ## using as a library
 
-// TODO: add documentation
+_TODO: add documentation_
+
+---
 
 ## misc
 
@@ -62,5 +64,5 @@ if (headerSize > 0) {
 const inputData = 'abcdefghijklmnopq'
 const outputData = handler(inputData)
 
-// outputData = 'abcdefGHIJKLMNOPQ'
+console.log(outputData) // 'abcdefGHIJKLMNOPQ'
 ```
