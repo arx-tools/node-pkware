@@ -1,9 +1,19 @@
 const splitAt = index => {
   let cntr = 0
 
+  if (!Number.isInteger(index) || index < 0) {
+    return () => {
+      return null
+    }
+  }
+
   return chunk => {
     let left
     let right
+
+    if (!Buffer.isBuffer(chunk)) {
+      return null
+    }
 
     if (index <= cntr) {
       // index ..... cntr ..... chunk.length

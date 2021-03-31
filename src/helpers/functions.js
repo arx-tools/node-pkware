@@ -1,4 +1,4 @@
-const { isNumber, isInteger, isNegative, isString } = require('ramda-adjunct')
+const { isNumber, isString } = require('ramda-adjunct')
 
 const isBetween = (min, max, num) => {
   if (!isNumber(min) || !isNumber(max) || !isNumber(num)) {
@@ -12,7 +12,7 @@ const isBetween = (min, max, num) => {
 }
 
 const nBitsOfOnes = numberOfBits => {
-  if (!isNumber(numberOfBits) || isNegative(numberOfBits) || !isInteger(numberOfBits)) {
+  if (!Number.isInteger(numberOfBits) || numberOfBits < 0) {
     return null
   }
   return (1 << numberOfBits) - 1
@@ -23,7 +23,7 @@ const maskBits = (numberOfBits, number) => {
   if (bits === null) {
     return null
   }
-  if (isNegative(number) || !isInteger(number)) {
+  if (!Number.isInteger(number) || number < 0) {
     return null
   }
   return number & nBitsOfOnes(numberOfBits)
@@ -39,14 +39,14 @@ const isFullHexString = str => {
 
 const toHex = (num, digits = 0, withoutPrefix = false) => {
   const prefix = withoutPrefix ? '' : '0x'
-  if (!isInteger(digits) || isNegative(digits)) {
+  if (!Number.isInteger(digits) || digits < 0) {
     return null
   }
-  if (isString(num) && isFullHexString(num)) {
+  if (isFullHexString(num)) {
     const number = num.trim().replace(/^0x0*/, '')
     return `${prefix}${number.padStart(digits, '0')}`
   }
-  if (!isNumber(num) || !isInteger(num)) {
+  if (!Number.isInteger(num)) {
     return null
   }
   return `${prefix}${num.toString(16).padStart(digits, '0')}`
