@@ -1,3 +1,5 @@
+const { Transform } = require('stream')
+
 const splitAt = index => {
   let cntr = 0
 
@@ -40,7 +42,14 @@ const transformIdentity = () => {
   }
 }
 
+const through = handler => {
+  return new Transform({
+    transform: handler
+  })
+}
+
 module.exports = {
   splitAt,
-  transformIdentity
+  transformIdentity,
+  through
 }

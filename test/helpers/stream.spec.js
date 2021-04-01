@@ -1,10 +1,10 @@
 /* global describe, it */
 
 const assert = require('assert')
-// const { Readable } = require('stream')
+const { Readable } = require('stream')
 const { isFunction } = require('ramda-adjunct')
-const { splitAt, transformIdentity } = require('../../src/helpers/stream.js')
-const { buffersShouldEqual } = require('../../src/helpers/testing.js')
+const { splitAt, transformIdentity, through } = require('../../src/helpers/stream.js')
+const { buffersShouldEqual, streamToBuffer } = require('../../src/helpers/testing.js')
 
 describe('helpers/stream', () => {
   describe('splitAt', () => {
@@ -124,19 +124,26 @@ describe('helpers/stream', () => {
       })
       it("passes whatever was given as the 1st parameter to the callback's 2nd parameter", () => {
         const handler = transformIdentity()
-        const callback1 = (a, b) => {
+        const callback = (a, b) => {
           assert.strictEqual(b, '#ffffff')
         }
-        handler('#ffffff', '', callback1)
+        handler('#ffffff', '', callback)
       })
-      /*
       it('can be given to a throughstream and will not change the input chunks', () => {
-        Readable.from('this is a test').pipe(streamToBuffer((buf) => {
-          console.log(buf)
-        }))
-        // TODO
+        Readable.from('this is a test')
+          .pipe(through(transformIdentity()))
+          .pipe(
+            streamToBuffer(buffer => {
+              buffersShouldEqual(buffer, Buffer.from('this is a test'))
+            })
+          )
       })
-      */
+    })
+  })
+
+  describe('through', () => {
+    it('is a function', () => {
+      assert.ok(isFunction(through), `${through} is not a function`)
     })
   })
 })
