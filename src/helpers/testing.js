@@ -51,6 +51,9 @@ const bufferToString = (buffer, limit = 20) => {
 }
 
 const buffersShouldEqual = (expected, result, offset = 0) => {
+  if (!Buffer.isBuffer(expected)) {
+    throw new Error('expected is not a Buffer')
+  }
   const diff = report(expected, result, compare(expected, result, offset))
   assert.ok(expected.equals(result), diff)
 }
