@@ -1,7 +1,9 @@
 // const { EOL } = require('os')
 // const fs = require('fs')
 const assert = require('assert')
+const { Writable } = require('stream')
 const { compare, report } = require('binary-comparator')
+const ExpandingBuffer = require('./ExpandingBuffer.js')
 
 /*
 const isPromise = promise => {
@@ -58,8 +60,23 @@ const buffersShouldEqual = (expected, result, offset = 0) => {
   assert.ok(expected.equals(result), diff)
 }
 
+const streamToBuffer = done => {
+  const buffer = new ExpandingBuffer()
+  return new Writable({
+    write(chunk, encoding, callback) {
+      buffer.append(chunk)
+      callback()
+    },
+    final(callback) {
+      done(buffer.getHeap())
+      callback()
+    }
+  })
+}
+
 module.exports = {
   isClass,
   buffersShouldEqual,
-  bufferToString
+  bufferToString,
+  streamToBuffer
 }

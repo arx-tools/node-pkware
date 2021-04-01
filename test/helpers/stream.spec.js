@@ -1,6 +1,7 @@
 /* global describe, it */
 
 const assert = require('assert')
+// const { Readable } = require('stream')
 const { isFunction } = require('ramda-adjunct')
 const { splitAt, transformIdentity } = require('../../src/helpers/stream.js')
 const { buffersShouldEqual } = require('../../src/helpers/testing.js')
@@ -128,6 +129,14 @@ describe('helpers/stream', () => {
         }
         handler('#ffffff', '', callback1)
       })
+      /*
+      it('can be given to a throughstream and will not change the input chunks', () => {
+        Readable.from('this is a test').pipe(streamToBuffer((buf) => {
+          console.log(buf)
+        }))
+        // TODO
+      })
+      */
     })
   })
 })
