@@ -112,7 +112,7 @@ describe('helpers/stream', () => {
         const callback = (a, b) => {
           buffersShouldEqual(b, Buffer.from([1, 2, 3]))
         }
-        handler(Buffer.from([1, 2, 3]), '', callback)
+        handler(Buffer.from([1, 2, 3]), null, callback)
       })
       it('passes null to the given callback function as the 1st parameter when called', () => {
         const handler = transformIdentity()
