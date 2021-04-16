@@ -174,5 +174,6 @@ describe('helpers/stream', () => {
     it('is a function', () => {
       assert.ok(isFunction(through), `${through} is not a function`)
     })
+    // TODO: how to test this?
   })
 })
