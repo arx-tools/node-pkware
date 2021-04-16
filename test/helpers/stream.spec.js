@@ -3,7 +3,7 @@
 const assert = require('assert')
 const { Readable } = require('stream')
 const { isFunction } = require('ramda-adjunct')
-const { splitAt, transformIdentity, through } = require('../../src/helpers/stream.js')
+const { splitAt, transformIdentity, transformEmpty, through } = require('../../src/helpers/stream.js')
 const { buffersShouldEqual, streamToBuffer } = require('../../src/helpers/testing.js')
 
 describe('helpers/stream', () => {
@@ -108,33 +108,62 @@ describe('helpers/stream', () => {
       assert.strictEqual(isFunction(handler), true)
     })
     describe('returned handler', () => {
-      it('takes a Buffer, a string and a callback function and calls it with the given Buffer as the 2nd argument', () => {
+      it('takes a Buffer, an encoding and an error first, data second callback function and calls it with the given Buffer', done => {
         const handler = transformIdentity()
-        const callback = (a, b) => {
-          buffersShouldEqual(b, Buffer.from([1, 2, 3]))
+        const callback = (error, data) => {
+          assert.strictEqual(error, null, '1st parameter (error) in the callback should be null')
+          buffersShouldEqual(data, Buffer.from([1, 2, 3]))
+          done()
         }
         handler(Buffer.from([1, 2, 3]), null, callback)
       })
-      it('passes null to the given callback function as the 1st parameter when called', () => {
+      it("passes whatever was given as the 1st parameter to the callback's 2nd parameter", done => {
         const handler = transformIdentity()
-        const callback = (a, b) => {
-          assert.strictEqual(a, null)
-        }
-        handler(Buffer.from([1, 2, 3, 4]), '', callback)
-      })
-      it("passes whatever was given as the 1st parameter to the callback's 2nd parameter", () => {
-        const handler = transformIdentity()
-        const callback = (a, b) => {
-          assert.strictEqual(b, '#ffffff')
+        const callback = (error, data) => {
+          assert.strictEqual(error, null, '1st parameter (error) in the callback should be null')
+          assert.strictEqual(data, '#ffffff')
+          done()
         }
         handler('#ffffff', '', callback)
       })
-      it('can be given to a throughstream and will not change the input chunks', () => {
+      it('can be given to a throughstream and will not change the input chunks', done => {
         Readable.from('this is a test')
           .pipe(through(transformIdentity()))
           .pipe(
             streamToBuffer(buffer => {
               buffersShouldEqual(buffer, Buffer.from('this is a test'))
+              done()
+            })
+          )
+      })
+    })
+  })
+
+  describe('transformEmpty', () => {
+    it('is a function', () => {
+      assert.ok(isFunction(transformEmpty), `${transformEmpty} is not a function`)
+    })
+    it('takes no argument and returns a function', () => {
+      const handler = transformEmpty()
+      assert.strictEqual(isFunction(handler), true)
+    })
+    describe('returned handler', () => {
+      it('takes a Buffer, an encoding and an error first, data second callback function and calls it with an empty Buffer', done => {
+        const handler = transformEmpty()
+        const callback = (error, data) => {
+          assert.strictEqual(error, null, '1st parameter (error) in the callback should be null')
+          buffersShouldEqual(data, Buffer.from([]))
+          done()
+        }
+        handler(Buffer.from([1, 2, 3]), null, callback)
+      })
+      it('can be given to a throughstream and will always return an empty buffer', done => {
+        Readable.from('this is a test')
+          .pipe(through(transformEmpty()))
+          .pipe(
+            streamToBuffer(buffer => {
+              buffersShouldEqual(buffer, Buffer.from([]))
+              done()
             })
           )
       })

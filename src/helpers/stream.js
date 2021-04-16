@@ -42,6 +42,12 @@ const transformIdentity = () => {
   }
 }
 
+const transformEmpty = () => {
+  return function (chunk, encoding, callback) {
+    callback(null, Buffer.from([]))
+  }
+}
+
 const through = handler => {
   return new Transform({
     transform: handler
@@ -51,5 +57,6 @@ const through = handler => {
 module.exports = {
   splitAt,
   transformIdentity,
+  transformEmpty,
   through
 }
