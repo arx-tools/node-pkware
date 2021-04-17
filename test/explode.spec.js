@@ -2,8 +2,9 @@
 
 const assert = require('assert')
 const { isFunction, isPlainObject } = require('ramda-adjunct')
+const { ChBitsAsc } = require('../src/constants.js')
 const { InvalidDataError, InvalidCompressionTypeError, InvalidDictionarySizeError } = require('../src/errors.js')
-const { explode, readHeader, generateAsciiTables } = require('../src/explode.js')
+const { explode, readHeader, generateAsciiTables, populateAsciiTable } = require('../src/explode.js')
 
 describe('readHeader', () => {
   it('is a function', () => {
@@ -63,9 +64,8 @@ describe('generateAsciiTables', () => {
     before(() => {
       data = generateAsciiTables()
     })
-    it('contains 4 items', () => {
-      const keys = Object.keys(data)
-      assert.strictEqual(keys.length, 4)
+    it('contains 5 items', () => {
+      assert.strictEqual(Object.keys(data).length, 5)
     })
     it('contains the key "asciiTable2C34", which is an array of 0x100 length', () => {
       assert.ok(Array.isArray(data.asciiTable2C34))
@@ -83,8 +83,19 @@ describe('generateAsciiTables', () => {
       assert.ok(Array.isArray(data.asciiTable2EB4))
       assert.strictEqual(data.asciiTable2EB4.length, 0x100)
     })
+    it('contains the key "chBitsAsc", which is an array the same length as ChBitsAsc constant', () => {
+      assert.ok(Array.isArray(data.chBitsAsc))
+      assert.strictEqual(data.chBitsAsc.length, ChBitsAsc.length)
+    })
+    // TODO: more tests
   })
-  // TODO: how to do more tests on the results?
+})
+
+describe('populateAsciiTable', () => {
+  it('is a function', () => {
+    assert.ok(isFunction(populateAsciiTable), `${populateAsciiTable} is not a function`)
+  })
+  // TODO: more tests
 })
 
 describe('explode', () => {
