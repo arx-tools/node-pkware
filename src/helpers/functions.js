@@ -1,3 +1,4 @@
+const { repeat } = require('ramda')
 const { isNumber, isString } = require('ramda-adjunct')
 
 const isBetween = (min, max, num) => {
@@ -29,6 +30,10 @@ const maskBits = (numberOfBits, number) => {
   return number & nBitsOfOnes(numberOfBits)
 }
 
+const getLowestNBits = (numberOfBits, number) => {
+  return number & nBitsOfOnes(numberOfBits)
+}
+
 const isFullHexString = str => {
   if (isString(str)) {
     return /^\s*0x[0-9a-f]+\s*$/.test(str)
@@ -52,10 +57,26 @@ const toHex = (num, digits = 0, withoutPrefix = false) => {
   return `${prefix}${num.toString(16).padStart(digits, '0')}`
 }
 
+const mergeSparseArrays = (a, b) => {
+  if (!Array.isArray(a) || !Array.isArray(b)) {
+    return []
+  }
+
+  const result = [...b, ...(b.length < a.length ? repeat(undefined, a.length - b.length) : [])]
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== undefined) {
+      result[i] = a[i]
+    }
+  }
+  return result
+}
+
 module.exports = {
   isBetween,
   nBitsOfOnes,
   maskBits,
+  getLowestNBits,
   isFullHexString,
-  toHex
+  toHex,
+  mergeSparseArrays
 }

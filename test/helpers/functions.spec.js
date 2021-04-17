@@ -1,8 +1,16 @@
 /* global describe, it */
 
 const assert = require('assert')
-const { isFunction } = require('ramda-adjunct')
-const { isBetween, nBitsOfOnes, maskBits, isFullHexString, toHex } = require('../../src/helpers/functions.js')
+const { isFunction, isNumber } = require('ramda-adjunct')
+const {
+  isBetween,
+  nBitsOfOnes,
+  maskBits,
+  isFullHexString,
+  toHex,
+  getLowestNBits,
+  mergeSparseArrays
+} = require('../../src/helpers/functions.js')
 
 describe('helpers/functions', () => {
   describe('isBetween', () => {
@@ -136,6 +144,71 @@ describe('helpers/functions', () => {
     it('returns only the hex characters without 0x prefix, when 3rd parameter is true', () => {
       assert.strictEqual(toHex(200, 0, true), 'c8')
       assert.strictEqual(toHex(600, 5, true), '00258')
+    })
+  })
+
+  describe('getLowestNBits', () => {
+    it('is a function', () => {
+      assert.ok(isFunction(getLowestNBits), `${getLowestNBits} is not a function`)
+    })
+    it('returns a number', () => {
+      const result = getLowestNBits(3, 0b0111010)
+      assert.ok(isNumber(result), `${result} is not a number`)
+    })
+    it('returns the lowest 3 bits of the number given as the 2nd parameter, when the first parameter is 3', () => {
+      assert.strictEqual(getLowestNBits(3, 0b10001010111101110111010), 2)
+      assert.strictEqual(getLowestNBits(3, 0b1010101000111), 7)
+    })
+    it('returns the lowest 6 bits of a number, when first parameter is 6', () => {
+      assert.strictEqual(getLowestNBits(6, 0b100101011001100), 0b001100)
+    })
+  })
+
+  describe('mergeSparseArrays', () => {
+    it('is a function', () => {
+      assert.ok(isFunction(mergeSparseArrays), `${mergeSparseArrays} is not a function`)
+    })
+    it('accepts two arrays and returns an array', () => {
+      const result = mergeSparseArrays([], [])
+      assert.ok(Array.isArray(result), `${result} is not an array`)
+    })
+    it('returns an empty array, when receives other, than 2 arrays', () => {
+      assert.deepStrictEqual(mergeSparseArrays(null, 7), [])
+    })
+    it('returns [1, undefined, 3], when inputs are [1,,] and [,,3]', () => {
+      assert.deepStrictEqual(mergeSparseArrays([1, ,], [, , 3]), [1, undefined, 3])
+    })
+    it('uses values from the left array, when both arrays have non-undefined values at the same index', () => {
+      assert.deepStrictEqual(mergeSparseArrays([1, ,], [4, 5, 6]), [1, 5, 6])
+    })
+    it('does not truncate arrays ending or starting on undefined', () => {
+      const a = [1, undefined, undefined]
+      const b = [undefined, undefined, undefined]
+      const result = mergeSparseArrays(a, b)
+      const expected = [1, undefined, undefined]
+      assert.deepStrictEqual(result, expected)
+    })
+    it('will use values from both arrays, when first array is longer', () => {
+      const a1 = [1, undefined, 2, undefined]
+      const b1 = [undefined, undefined, 3]
+      const result1 = mergeSparseArrays(a1, b1)
+      const expected1 = [1, undefined, 2, undefined]
+      assert.deepStrictEqual(result1, expected1)
+    })
+    it('will use values from both arrays, when first array is shorter', () => {
+      const a2 = [1, undefined]
+      const b2 = [undefined, undefined, 3]
+      const result2 = mergeSparseArrays(a2, b2)
+      const expected2 = [1, undefined, 3]
+      assert.deepStrictEqual(result2, expected2)
+    })
+    it('returns the 2nd array, when the 1st is empty', () => {
+      const data = [1, 2, 3, undefined, 5]
+      assert.deepStrictEqual(mergeSparseArrays([], data), data)
+    })
+    it('returns the 1st array, when the 2nd is empty', () => {
+      const data = [1, 2, 3, undefined, 5]
+      assert.deepStrictEqual(mergeSparseArrays(data, []), data)
     })
   })
 })
