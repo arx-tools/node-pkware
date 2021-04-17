@@ -1,12 +1,8 @@
 {
-  "extends": [
-    "standard",
-    "prettier-standard"
-  ],
-  "plugins": [
-    "ramda"
-  ],
+  "extends": ["standard", "prettier-standard"],
+  "plugins": ["ramda"],
   "rules": {
+    "no-sparse-arrays": "off",
     "semi": "error",
     "curly": ["error", "all"],
     "no-var": "error",
@@ -59,16 +55,10 @@
     "ramda/when-simplification": "error"
   },
   "settings": {
-    "import/extensions": [
-      ".mjs",
-      ".js"
-    ],
+    "import/extensions": [".mjs", ".js"],
     "import/resolver": {
       "node": {
-        "extensions": [
-          ".mjs",
-          ".js"
-        ]
+        "extensions": [".mjs", ".js"]
       }
     }
   }
