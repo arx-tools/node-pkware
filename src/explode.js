@@ -1,7 +1,7 @@
-const { repeat, clone } = require('ramda')
+const { repeat, clone, unfold, reduce } = require('ramda')
 const { InvalidDataError, InvalidCompressionTypeError, InvalidDictionarySizeError } = require('./errors.js')
 const { isBetween } = require('./helpers/functions.js')
-const { ChBitsAsc } = require('./constants.js')
+const { ChBitsAsc, ChCodeAsc } = require('./constants.js')
 
 const readHeader = buffer => {
   if (!Buffer.isBuffer(buffer) || buffer.length < 4) {
@@ -25,8 +25,19 @@ const createPATIterator = (limit, stepper) => n => {
   return n >= limit ? false : [n, n + (1 << stepper)]
 }
 
-const populateAsciiTable = () => {
-  return []
+const populateAsciiTable = (value, index, bits, limit) => {
+  const iterator = createPATIterator(limit, value - bits)
+  const seed = ChCodeAsc[index] >> bits
+  const idxs = unfold(iterator, seed)
+
+  return reduce(
+    (acc, idx) => {
+      acc[idx] = index
+      return acc
+    },
+    [],
+    idxs
+  )
 }
 
 const generateAsciiTables = () => {

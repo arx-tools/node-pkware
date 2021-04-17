@@ -2,7 +2,7 @@
 
 const assert = require('assert')
 const { isFunction, isPlainObject } = require('ramda-adjunct')
-const { ChBitsAsc } = require('../src/constants.js')
+const { ChBitsAsc, ChCodeAsc } = require('../src/constants.js')
 const { InvalidDataError, InvalidCompressionTypeError, InvalidDictionarySizeError } = require('../src/errors.js')
 const { explode, readHeader, generateAsciiTables, populateAsciiTable, createPATIterator } = require('../src/explode.js')
 
@@ -117,12 +117,25 @@ describe('populateAsciiTable', () => {
   it('is a function', () => {
     assert.ok(isFunction(populateAsciiTable), `${populateAsciiTable} is not a function`)
   })
-  it('returns an array, which is no longer, than the number specified in the 4th parameter', () => {
+  it('returns an array, which is shorter, than the number specified in the 4th parameter', () => {
     const result = populateAsciiTable(0x0b, 0, 0, 5)
     assert.ok(Array.isArray(result))
     assert.ok(result.length <= 5)
   })
-  // TODO: more tests
+  it('uses the 2nd number (index) to read seed value from ChCodeAsc for PATIterator and puts the 1st number into index positions it gave', () => {
+    const index = 0x29
+    assert.strictEqual(ChCodeAsc[index], 2, 'ChCodeAsc[index] should return 2, if not, then change index value')
+
+    const result1 = []
+    result1[2] = index
+    result1[6] = index
+    assert.deepStrictEqual(populateAsciiTable(2, index, 0, 10), result1)
+
+    const result2 = []
+    result2[2] = index
+    result2[4] = index
+    assert.deepStrictEqual(populateAsciiTable(1, index, 0, 5), result2)
+  })
 })
 
 describe('explode', () => {
