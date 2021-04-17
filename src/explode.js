@@ -1,3 +1,4 @@
+const { repeat } = require('ramda')
 const { InvalidDataError, InvalidCompressionTypeError, InvalidDictionarySizeError } = require('./errors.js')
 const { isBetween } = require('./helpers/functions.js')
 
@@ -18,6 +19,15 @@ const readHeader = buffer => {
   }
 }
 
+const generateAsciiTables = () => {
+  return {
+    asciiTable2C34: repeat(0, 0x100),
+    asciiTable2D34: repeat(0, 0x100),
+    asciiTable2E34: repeat(0, 0x80),
+    asciiTable2EB4: repeat(0, 0x100)
+  }
+}
+
 const explode = () => {
   const fn = () => {}
 
@@ -28,5 +38,6 @@ const explode = () => {
 
 module.exports = {
   readHeader,
-  explode
+  explode,
+  generateAsciiTables
 }

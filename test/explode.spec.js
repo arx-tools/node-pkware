@@ -1,9 +1,9 @@
-/* global describe, it */
+/* global describe, it, before */
 
 const assert = require('assert')
 const { isFunction, isPlainObject } = require('ramda-adjunct')
 const { InvalidDataError, InvalidCompressionTypeError, InvalidDictionarySizeError } = require('../src/errors.js')
-const { explode, readHeader } = require('../src/explode.js')
+const { explode, readHeader, generateAsciiTables } = require('../src/explode.js')
 
 describe('readHeader', () => {
   it('is a function', () => {
@@ -36,14 +36,55 @@ describe('readHeader', () => {
     }, InvalidDictionarySizeError)
   })
   it('returns an object', () => {
-    const state = readHeader(Buffer.from([0x00, 0x04, 0x86, 0xbc]))
-    assert.ok(isPlainObject(state), `${state} is not an object`)
+    const data = readHeader(Buffer.from([0x00, 0x04, 0x86, 0xbc]))
+    assert.ok(isPlainObject(data), `${data} is not an object`)
   })
-  it('loads the bytes of the Buffer to the state ', () => {
-    const state = readHeader(Buffer.from([0x00, 0x04, 0x86, 0xbc]))
-    assert.strictEqual(state.compressionType, 0x00)
-    assert.strictEqual(state.dictionarySizeBits, 0x04)
+  it('loads the bytes of the Buffer to the returned object ', () => {
+    const data = readHeader(Buffer.from([0x00, 0x04, 0x86, 0xbc]))
+    assert.strictEqual(data.compressionType, 0x00)
+    assert.strictEqual(data.dictionarySizeBits, 0x04)
   })
+  it('only returns compressionType and dictionarySizeBits in the returned object', () => {
+    const keys = Object.keys(readHeader(Buffer.from([0x00, 0x04, 0x86, 0xbc])))
+    assert.strictEqual(keys.length, 2)
+  })
+})
+
+describe('generateAsciiTables', () => {
+  it('is a function', () => {
+    assert.ok(isFunction(generateAsciiTables), `${generateAsciiTables} is not a function`)
+  })
+  it('returns an object', () => {
+    const data = generateAsciiTables()
+    assert.ok(generateAsciiTables(data), `${data} is not an object`)
+  })
+  describe('returned object', () => {
+    let data
+    before(() => {
+      data = generateAsciiTables()
+    })
+    it('contains 4 items', () => {
+      const keys = Object.keys(data)
+      assert.strictEqual(keys.length, 4)
+    })
+    it('contains the key "asciiTable2C34", which is an array of 0x100 length', () => {
+      assert.ok(Array.isArray(data.asciiTable2C34))
+      assert.strictEqual(data.asciiTable2C34.length, 0x100)
+    })
+    it('contains the key "asciiTable2D34", which is an array of 0x100 length', () => {
+      assert.ok(Array.isArray(data.asciiTable2D34))
+      assert.strictEqual(data.asciiTable2D34.length, 0x100)
+    })
+    it('contains the key "asciiTable2E34", which is an array of 0x100 length', () => {
+      assert.ok(Array.isArray(data.asciiTable2E34))
+      assert.strictEqual(data.asciiTable2E34.length, 0x80)
+    })
+    it('contains the key "asciiTable2EB4", which is an array of 0x100 length', () => {
+      assert.ok(Array.isArray(data.asciiTable2EB4))
+      assert.strictEqual(data.asciiTable2EB4.length, 0x100)
+    })
+  })
+  // TODO: how to do more tests on the results?
 })
 
 describe('explode', () => {
@@ -60,4 +101,5 @@ describe('explode', () => {
       assert.ok(isPlainObject(handler._state), `${handler._state} is not an object`)
     })
   })
+  // TODO: more tests
 })
