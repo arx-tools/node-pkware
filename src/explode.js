@@ -1,3 +1,9 @@
+const { ERROR_INVALID_DATA } = require('./constants')
+
+const readHeader = () => {
+  throw new Error(ERROR_INVALID_DATA)
+}
+
 const explode = () => {
   const fn = () => {}
 
@@ -7,5 +13,6 @@ const explode = () => {
 }
 
 module.exports = {
+  readHeader,
   explode
 }
