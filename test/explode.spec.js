@@ -2,7 +2,7 @@
 
 const assert = require('assert')
 const { isFunction, isPlainObject } = require('ramda-adjunct')
-const { ERROR_INVALID_DATA } = require('../src/constants.js')
+const { InvalidDataError } = require('../src/errors.js')
 const { explode, readHeader } = require('../src/explode.js')
 
 describe('readHeader', () => {
@@ -17,10 +17,10 @@ describe('readHeader', () => {
       readHeader(100.9)
     })
   })
-  it('throws an Error with ERROR_INVALID_DATA message, when given Buffer is less, than 4 bytes', () => {
+  it('throws an InvalidDataError, when given Buffer is less, than 4 bytes', () => {
     assert.throws(() => {
       readHeader(Buffer.from([1, 2, 3]))
-    }, Error(ERROR_INVALID_DATA))
+    }, InvalidDataError)
   })
 })
 

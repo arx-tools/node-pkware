@@ -1,7 +1,7 @@
-const { ERROR_INVALID_DATA } = require('./constants')
+const { InvalidDataError } = require('./errors.js')
 
 const readHeader = () => {
-  throw new Error(ERROR_INVALID_DATA)
+  throw new InvalidDataError()
 }
 
 const explode = () => {
