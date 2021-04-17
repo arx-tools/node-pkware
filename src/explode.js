@@ -20,7 +20,14 @@ const readHeader = buffer => {
   }
 }
 
-const populateAsciiTable = () => {}
+// PAT = populate ascii table
+const createPATIterator = (limit, stepper) => n => {
+  return n >= limit ? false : [n, n + (1 << stepper)]
+}
+
+const populateAsciiTable = () => {
+  return []
+}
 
 const generateAsciiTables = () => {
   const state = {
@@ -45,6 +52,7 @@ const explode = () => {
 module.exports = {
   readHeader,
   explode,
+  createPATIterator,
   populateAsciiTable,
   generateAsciiTables
 }

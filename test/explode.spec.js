@@ -4,7 +4,7 @@ const assert = require('assert')
 const { isFunction, isPlainObject } = require('ramda-adjunct')
 const { ChBitsAsc } = require('../src/constants.js')
 const { InvalidDataError, InvalidCompressionTypeError, InvalidDictionarySizeError } = require('../src/errors.js')
-const { explode, readHeader, generateAsciiTables, populateAsciiTable } = require('../src/explode.js')
+const { explode, readHeader, generateAsciiTables, populateAsciiTable, createPATIterator } = require('../src/explode.js')
 
 describe('readHeader', () => {
   it('is a function', () => {
@@ -91,9 +91,36 @@ describe('generateAsciiTables', () => {
   })
 })
 
+describe('createPATIterator', () => {
+  it('is a function', () => {
+    assert.ok(isFunction(createPATIterator), `${createPATIterator} is not a function`)
+  })
+  it('returns a function (iterator)', () => {
+    const iterator = createPATIterator()
+    assert.ok(isFunction(iterator), `${iterator} is not a function`)
+  })
+  it('takes a number (limit) and the iterator will return an array, when given seed is less, else it will return false', () => {
+    const limit = 10
+    const iterator = createPATIterator(limit)
+    assert.strictEqual(iterator(11), false, `seed is larger, than the limit, expected iterator to return false`)
+    assert.strictEqual(iterator(10), false, `seed is equal to the limit, expected iterator to return false`)
+    assert.ok(Array.isArray(iterator(9)), `seed is less, than the limit, expected iterator to return an array`)
+  })
+  it('takes a second number (stepper) and the iterator will return the seed and seet + 1 << stepper in the array', () => {
+    const limit = 20
+    assert.deepStrictEqual(createPATIterator(limit, 2)(3), [3, 7])
+    assert.deepStrictEqual(createPATIterator(limit, 3)(5), [5, 13])
+  })
+})
+
 describe('populateAsciiTable', () => {
   it('is a function', () => {
     assert.ok(isFunction(populateAsciiTable), `${populateAsciiTable} is not a function`)
+  })
+  it('returns an array, which is no longer, than the number specified in the 4th parameter', () => {
+    const result = populateAsciiTable(0x0b, 0, 0, 5)
+    assert.ok(Array.isArray(result))
+    assert.ok(result.length <= 5)
   })
   // TODO: more tests
 })
