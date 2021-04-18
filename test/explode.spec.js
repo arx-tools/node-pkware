@@ -136,7 +136,9 @@ describe('populateAsciiTable', () => {
     result2[4] = index
     assert.deepStrictEqual(populateAsciiTable(1, index, 0, 5), result2)
   })
-  // TODO: more tests for the 3rd param + error handling (value < bits)
+  // TODO: more tests for the 3rd param
+  // + if value < bits -> []
+  // + if ChCodeAsc[index] > limit -> []
 })
 
 describe('explode', () => {
