@@ -55,20 +55,20 @@ const generateAsciiTables = () => {
     }
 
     const acc = getLowestNBits(8, ChCodeAsc[index])
-    if (acc !== 0) {
-      tables.asciiTable2C34[acc] = 0xff
-
-      if (getLowestNBits(6, ChCodeAsc[index]) === 0) {
-        tables.asciiTable2E34 = mergeSparseArrays(populateAsciiTable(value, index, 6, 0x80), tables.asciiTable2E34)
-        return value - 6
-      } else {
-        tables.asciiTable2D34 = mergeSparseArrays(populateAsciiTable(value, index, 4, 0x100), tables.asciiTable2D34)
-        return value - 4
-      }
+    if (acc === 0) {
+      tables.asciiTable2EB4 = mergeSparseArrays(populateAsciiTable(value, index, 8, 0x100), tables.asciiTable2EB4)
+      return value - 8
     }
 
-    tables.asciiTable2EB4 = mergeSparseArrays(populateAsciiTable(value, index, 8, 0x100), tables.asciiTable2EB4)
-    return value - 8
+    tables.asciiTable2C34[acc] = 0xff
+
+    if (getLowestNBits(6, ChCodeAsc[index]) === 0) {
+      tables.asciiTable2E34 = mergeSparseArrays(populateAsciiTable(value, index, 6, 0x80), tables.asciiTable2E34)
+      return value - 6
+    }
+
+    tables.asciiTable2D34 = mergeSparseArrays(populateAsciiTable(value, index, 4, 0x100), tables.asciiTable2D34)
+    return value - 4
   })
 
   return tables
