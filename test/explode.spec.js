@@ -75,7 +75,7 @@ describe('generateAsciiTables', () => {
       assert.ok(Array.isArray(data.asciiTable2D34))
       assert.strictEqual(data.asciiTable2D34.length, 0x100)
     })
-    it('contains the key "asciiTable2E34", which is an array of 0x100 length', () => {
+    it('contains the key "asciiTable2E34", which is an array of 0x80 length', () => {
       assert.ok(Array.isArray(data.asciiTable2E34))
       assert.strictEqual(data.asciiTable2E34.length, 0x80)
     })

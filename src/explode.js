@@ -1,6 +1,6 @@
-const { repeat, clone, unfold, reduce } = require('ramda')
+const { repeat, unfold, reduce } = require('ramda')
 const { InvalidDataError, InvalidCompressionTypeError, InvalidDictionarySizeError } = require('./errors.js')
-const { isBetween } = require('./helpers/functions.js')
+const { isBetween, mergeSparseArrays, getLowestNBits } = require('./helpers/functions.js')
 const { ChBitsAsc, ChCodeAsc } = require('./constants.js')
 
 const readHeader = buffer => {
@@ -41,15 +41,37 @@ const populateAsciiTable = (value, index, bits, limit) => {
 }
 
 const generateAsciiTables = () => {
-  const state = {
+  const tables = {
     asciiTable2C34: repeat(0, 0x100),
     asciiTable2D34: repeat(0, 0x100),
     asciiTable2E34: repeat(0, 0x80),
-    asciiTable2EB4: repeat(0, 0x100),
-    chBitsAsc: clone(ChBitsAsc)
+    asciiTable2EB4: repeat(0, 0x100)
   }
 
-  return state
+  tables.chBitsAsc = ChBitsAsc.map((value, index) => {
+    if (value <= 8) {
+      tables.asciiTable2C34 = mergeSparseArrays(populateAsciiTable(value, index, 0, 0x100), tables.asciiTable2C34)
+      return value - 0
+    }
+
+    const acc = getLowestNBits(8, ChCodeAsc[index])
+    if (acc !== 0) {
+      tables.asciiTable2C34[acc] = 0xff
+
+      if (getLowestNBits(6, ChCodeAsc[index]) === 0) {
+        tables.asciiTable2E34 = mergeSparseArrays(populateAsciiTable(value, index, 6, 0x80), tables.asciiTable2E34)
+        return value - 6
+      } else {
+        tables.asciiTable2D34 = mergeSparseArrays(populateAsciiTable(value, index, 4, 0x100), tables.asciiTable2D34)
+        return value - 4
+      }
+    }
+
+    tables.asciiTable2EB4 = mergeSparseArrays(populateAsciiTable(value, index, 8, 0x100), tables.asciiTable2EB4)
+    return value - 8
+  })
+
+  return tables
 }
 
 const explode = () => {
