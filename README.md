@@ -26,6 +26,10 @@ _TODO: add documentation_
 
 ## misc
 
+### test files
+
+https://github.com/meszaros-lajos-gyorgy/pkware-test-files
+
 ### sources:
 
 - https://github.com/ladislav-zezula/StormLib/tree/master/src/pklib
