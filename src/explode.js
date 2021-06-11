@@ -2,6 +2,7 @@ const { repeat, unfold, reduce } = require('ramda')
 const { InvalidDataError, InvalidCompressionTypeError, InvalidDictionarySizeError } = require('./errors.js')
 const { isBetween, mergeSparseArrays, getLowestNBits } = require('./helpers/functions.js')
 const { ChBitsAsc, ChCodeAsc } = require('./constants.js')
+const ExpandingBuffer = require('./helpers/ExpandingBuffer.js')
 
 const readHeader = buffer => {
   if (!Buffer.isBuffer(buffer) || buffer.length < 4) {
@@ -74,10 +75,26 @@ const generateAsciiTables = () => {
   return tables
 }
 
-const explode = () => {
-  const fn = () => {}
+const parseFirstChunk = () => {}
 
-  fn._state = {}
+const explode = () => {
+  const fn = (chunk, encoding, callback) => {
+    const state = fn._state
+    state.needMoreInput = false
+    if (!Buffer.isBuffer(chunk)) {
+      // TODO: should this be a separate Error type?
+      callback(new Error('given chunk is not of type Buffer'))
+      return
+    }
+    state.inputBuffer.append(chunk)
+  }
+
+  fn._state = {
+    needMoreInput: false,
+    isFirstChunk: true,
+    inputBuffer: new ExpandingBuffer(),
+    outputBuffer: new ExpandingBuffer()
+  }
 
   return fn
 }
@@ -87,5 +104,6 @@ module.exports = {
   explode,
   createPATIterator,
   populateAsciiTable,
-  generateAsciiTables
+  generateAsciiTables,
+  parseFirstChunk
 }

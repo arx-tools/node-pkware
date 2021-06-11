@@ -1,34 +1,27 @@
-const {
-  ERROR_INVALID_DICTIONARY_SIZE,
-  ERROR_INVALID_COMPRESSION_TYPE,
-  ERROR_INVALID_DATA,
-  ERROR_ABORTED
-} = require('./constants.js')
-
 class InvalidDictionarySizeError extends Error {
   constructor() {
-    super(ERROR_INVALID_DICTIONARY_SIZE)
+    super('Invalid dictionary size')
     this.name = 'InvalidDictionarySizeError'
   }
 }
 
 class InvalidCompressionTypeError extends Error {
   constructor() {
-    super(ERROR_INVALID_COMPRESSION_TYPE)
+    super('Invalid compression type')
     this.name = 'InvalidCompressionTypeError'
   }
 }
 
 class InvalidDataError extends Error {
   constructor() {
-    super(ERROR_INVALID_DATA)
+    super('Invalid data')
     this.name = 'InvalidDataError'
   }
 }
 
 class AbortedError extends Error {
   constructor() {
-    super(ERROR_ABORTED)
+    super('Aborted')
     this.name = 'AbortedError'
   }
 }

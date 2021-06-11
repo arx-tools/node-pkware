@@ -1,10 +1,19 @@
-/* global describe, it, before */
+/* global describe, it, before, beforeEach */
 
 const assert = require('assert')
 const { isFunction, isPlainObject } = require('ramda-adjunct')
 const { ChBitsAsc, ChCodeAsc } = require('../src/constants.js')
 const { InvalidDataError, InvalidCompressionTypeError, InvalidDictionarySizeError } = require('../src/errors.js')
-const { explode, readHeader, generateAsciiTables, populateAsciiTable, createPATIterator } = require('../src/explode.js')
+const {
+  explode,
+  readHeader,
+  generateAsciiTables,
+  populateAsciiTable,
+  createPATIterator,
+  parseFirstChunk
+} = require('../src/explode.js')
+const ExpandingBuffer = require('../src/helpers/ExpandingBuffer.js')
+const { buffersShouldEqual } = require('../src/helpers/testing.js')
 
 describe('readHeader', () => {
   it('is a function', () => {
@@ -141,6 +150,12 @@ describe('populateAsciiTable', () => {
   // + if ChCodeAsc[index] > limit -> []
 })
 
+describe('parseFirstChunk', () => {
+  it('is a function', () => {
+    assert.ok(isFunction(parseFirstChunk), `${parseFirstChunk} is not a function`)
+  })
+})
+
 describe('explode', () => {
   it('is a function', () => {
     assert.ok(isFunction(explode), `${explode} is not a function`)
@@ -154,6 +169,45 @@ describe('explode', () => {
       const handler = explode()
       assert.ok(isPlainObject(handler._state), `${handler._state} is not an object`)
     })
+
+    describe('_state', () => {
+      let state
+      beforeEach(() => {
+        state = explode()._state
+      })
+      it('has an needMoreInput key, which is false by default', () => {
+        assert.strictEqual(state.needMoreInput, false)
+      })
+      it('has an isFirstChunk key, which is true by default', () => {
+        assert.strictEqual(state.isFirstChunk, true)
+      })
+      it('has an inputBuffer key, which is an ExpandingBuffer', () => {
+        assert.ok(state.inputBuffer instanceof ExpandingBuffer)
+      })
+      it('has an outputBuffer key, which is an ExpandingBuffer', () => {
+        assert.ok(state.outputBuffer instanceof ExpandingBuffer)
+      })
+    })
+
+    it('gives an errorous callback when the first parameter is not a buffer', done => {
+      const handler = explode()
+      handler(12, null, err => {
+        assert.ok(err instanceof Error)
+        done()
+      })
+    })
+    it('resets state.needMoreInput to false when called', () => {
+      const handler = explode()
+      handler._state.needMoreInput = 'xxx4'
+      handler(Buffer.from([]))
+      assert.strictEqual(handler._state.needMoreInput, false)
+    })
+    it('appends the chunk given as the first parameter to state.inputBuffer', () => {
+      const handler = explode()
+      handler(Buffer.from([1, 2, 3]))
+      buffersShouldEqual(handler._state.inputBuffer.getHeap(), Buffer.from([1, 2, 3]))
+      handler(Buffer.from([4, 5, 6]))
+      buffersShouldEqual(handler._state.inputBuffer.getHeap(), Buffer.from([1, 2, 3, 4, 5, 6]))
+    })
   })
-  // TODO: more tests
 })
