@@ -26,9 +26,17 @@ class AbortedError extends Error {
   }
 }
 
+class ExpectedBufferError extends TypeError {
+  constructor() {
+    super('Expected variable to be of type Buffer')
+    this.name = 'ExpectedBufferError'
+  }
+}
+
 module.exports = {
   InvalidDictionarySizeError,
   InvalidCompressionTypeError,
   InvalidDataError,
-  AbortedError
+  AbortedError,
+  ExpectedBufferError
 }

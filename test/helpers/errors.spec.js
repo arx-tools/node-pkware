@@ -5,11 +5,12 @@ const {
   InvalidDictionarySizeError,
   InvalidCompressionTypeError,
   InvalidDataError,
-  AbortedError
+  AbortedError,
+  ExpectedBufferError
 } = require('../../src/errors.js')
 
 describe('InvalidDictionarySizeError', () => {
-  it('is an error', () => {
+  it('is an Error', () => {
     assert.ok(InvalidDictionarySizeError.prototype instanceof Error)
   })
   it('contains "Invalid dictionary size" as the message', () => {
@@ -23,7 +24,7 @@ describe('InvalidDictionarySizeError', () => {
 })
 
 describe('InvalidCompressionTypeError', () => {
-  it('is an error', () => {
+  it('is an Error', () => {
     assert.ok(InvalidCompressionTypeError.prototype instanceof Error)
   })
   it('contains "Invalid compression type" as the message', () => {
@@ -37,7 +38,7 @@ describe('InvalidCompressionTypeError', () => {
 })
 
 describe('InvalidDataError', () => {
-  it('is an error', () => {
+  it('is an Error', () => {
     assert.ok(InvalidDataError.prototype instanceof Error)
   })
   it('contains "Invalid data" as the message', () => {
@@ -51,7 +52,7 @@ describe('InvalidDataError', () => {
 })
 
 describe('AbortedError', () => {
-  it('is an error', () => {
+  it('is an Error', () => {
     assert.ok(AbortedError.prototype instanceof Error)
   })
   it('contains "Aborted" as the message', () => {
@@ -61,5 +62,19 @@ describe('AbortedError', () => {
   it('does not change the message, when created with a string specified', () => {
     const e = new AbortedError('hello!')
     assert.strictEqual(e.message, 'Aborted')
+  })
+})
+
+describe('ExpectedBufferError', () => {
+  it('is a TypeError', () => {
+    assert.ok(ExpectedBufferError.prototype instanceof TypeError)
+  })
+  it('contains "Expected variable to be of type Buffer" as the message', () => {
+    const e = new ExpectedBufferError()
+    assert.strictEqual(e.message, 'Expected variable to be of type Buffer')
+  })
+  it('does not change the message, when created with a string specified', () => {
+    const e = new ExpectedBufferError('hello!')
+    assert.strictEqual(e.message, 'Expected variable to be of type Buffer')
   })
 })

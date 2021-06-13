@@ -81,12 +81,11 @@ const explode = () => {
   const fn = (chunk, encoding, callback) => {
     const state = fn._state
     state.needMoreInput = false
-    if (!Buffer.isBuffer(chunk)) {
-      // TODO: should this be a separate Error type?
-      callback(new Error('given chunk is not of type Buffer'))
-      return
+    try {
+      state.inputBuffer.append(chunk)
+    } catch (e) {
+      callback(e)
     }
-    state.inputBuffer.append(chunk)
   }
 
   fn._state = {

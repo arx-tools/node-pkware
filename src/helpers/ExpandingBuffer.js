@@ -1,4 +1,5 @@
 const { clamp } = require('ramda')
+const { ExpectedBufferError } = require('../errors')
 
 class ExpandingBuffer {
   constructor(numberOfBytes = 0) {
@@ -29,6 +30,10 @@ class ExpandingBuffer {
   }
 
   append(buffer) {
+    if (!Buffer.isBuffer(buffer)) {
+      throw new ExpectedBufferError()
+    }
+
     if (this._endIndex + buffer.length < this.heapSize()) {
       buffer.copy(this._heap, this._endIndex)
       this._endIndex += buffer.length

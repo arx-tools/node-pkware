@@ -212,4 +212,14 @@ describe('ExpandingBuffer', () => {
     const result = buffer.read()
     buffersShouldEqual(expected, result)
   })
+  it('throws an error when append gets non-buffer data', () => {
+    assert.throws(
+      () => {
+        buffer.append('Hello')
+      },
+      {
+        name: 'ExpectedBufferError'
+      }
+    )
+  })
 })
