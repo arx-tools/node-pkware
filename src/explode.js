@@ -8,7 +8,7 @@ const {
   ExpectedFunctionError,
   AbortedError
 } = require('./errors.js')
-const { isBetween, mergeSparseArrays, getLowestNBits } = require('./helpers/functions.js')
+const { isBetween, mergeSparseArrays, getLowestNBits, nBitsOfOnes } = require('./helpers/functions.js')
 const { ChBitsAsc, ChCodeAsc, BINARY_COMPRESSION, ASCII_COMPRESSION } = require('./constants.js')
 const ExpandingBuffer = require('./helpers/ExpandingBuffer.js')
 
@@ -85,16 +85,39 @@ const generateAsciiTables = () => {
   return tables
 }
 
-const processChunkData = state => {
-  if (!has('compressionType', state)) {
-    if (state.inputBuffer.size() >= 4) {
-      const { compressionType, dictionarySizeBits } = readHeader(state.inputBuffer.read())
-      state.compressionType = compressionType
-      state.dictionarySizeBits = dictionarySizeBits
-      state.bitBuffer = state.inputBuffer.read(2, 1)
-      state.inputBuffer.dropStart(3)
-    }
+const parseInitialData = state => {
+  if (state.inputBuffer.size() < 4) {
+    return
   }
+
+  const { compressionType, dictionarySizeBits } = readHeader(state.inputBuffer.read())
+
+  state.compressionType = compressionType
+  state.dictionarySizeBits = dictionarySizeBits
+  state.bitBuffer = state.inputBuffer.read(2, 1)
+  state.inputBuffer.dropStart(3)
+  state.dictionarySizeMask = nBitsOfOnes(dictionarySizeBits)
+
+  if (compressionType === ASCII_COMPRESSION) {
+    const tables = generateAsciiTables()
+    Object.entries(tables).forEach(([key, value]) => {
+      state[key] = value
+    })
+  }
+}
+
+const processChunkData = state => {
+  if (state.inputBuffer.isEmpty()) {
+    return
+  }
+
+  if (!has('compressionType', state)) {
+    parseInitialData(state)
+    return
+  }
+
+  // TODO
+  console.log('TODO')
 }
 
 const explode = () => {

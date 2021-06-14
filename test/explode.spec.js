@@ -2,8 +2,9 @@
 
 const assert = require('assert')
 const { Readable } = require('stream')
+const { has } = require('ramda')
 const { isFunction, isPlainObject, noop } = require('ramda-adjunct')
-const { ChBitsAsc, ChCodeAsc } = require('../src/constants.js')
+const { ChBitsAsc, ChCodeAsc, ASCII_COMPRESSION, BINARY_COMPRESSION } = require('../src/constants.js')
 const {
   InvalidDataError,
   InvalidCompressionTypeError,
@@ -274,6 +275,36 @@ describe('explode', () => {
       state.inputBuffer.append(Buffer.from([0, 5, 102, 49, 7]))
       processChunkData(state)
       buffersShouldEqual(Buffer.from([49, 7]), state.inputBuffer.read())
+    })
+    it('sets state.dictionarySizeMask when reading header data', () => {
+      const state1 = {
+        inputBuffer: new ExpandingBuffer()
+      }
+      state1.inputBuffer.append(Buffer.from([0, 5, 102, 4]))
+      processChunkData(state1)
+      assert.strictEqual(state1.dictionarySizeMask, 0b11111)
+
+      const state2 = {
+        inputBuffer: new ExpandingBuffer()
+      }
+      state2.inputBuffer.append(Buffer.from([1, 6, 71, 4]))
+      processChunkData(state2)
+      assert.strictEqual(state2.dictionarySizeMask, 0b111111)
+    })
+    it('adds generated ascii tables to state, when compression type is ascii', () => {
+      const state1 = {
+        inputBuffer: new ExpandingBuffer()
+      }
+      state1.inputBuffer.append(Buffer.from([ASCII_COMPRESSION, 4, 5, 6]))
+      processChunkData(state1)
+      assert.ok(has('asciiTable2E34', state1))
+
+      const state2 = {
+        inputBuffer: new ExpandingBuffer()
+      }
+      state2.inputBuffer.append(Buffer.from([BINARY_COMPRESSION, 4, 5, 6]))
+      processChunkData(state2)
+      assert.ok(!has('asciiTable2E34', state2))
     })
   })
 })
