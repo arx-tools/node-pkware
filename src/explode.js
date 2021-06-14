@@ -78,8 +78,8 @@ const generateAsciiTables = () => {
 const parseFirstChunk = () => {}
 
 const explode = () => {
-  const fn = (chunk, encoding, callback) => {
-    const state = fn._state
+  const handler = (chunk, encoding, callback) => {
+    const state = handler._state
     state.needMoreInput = false
     try {
       state.inputBuffer.append(chunk)
@@ -88,14 +88,14 @@ const explode = () => {
     }
   }
 
-  fn._state = {
+  handler._state = {
     needMoreInput: false,
     isFirstChunk: true,
     inputBuffer: new ExpandingBuffer(),
     outputBuffer: new ExpandingBuffer()
   }
 
-  return fn
+  return handler
 }
 
 module.exports = {
