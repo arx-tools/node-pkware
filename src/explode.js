@@ -1,11 +1,12 @@
-const { repeat, unfold, reduce } = require('ramda')
+const { repeat, unfold, reduce, has } = require('ramda')
 const { isFunction } = require('ramda-adjunct')
 const {
   InvalidDataError,
   InvalidCompressionTypeError,
   InvalidDictionarySizeError,
   ExpectedBufferError,
-  ExpectedFunctionError
+  ExpectedFunctionError,
+  AbortedError
 } = require('./errors.js')
 const { isBetween, mergeSparseArrays, getLowestNBits } = require('./helpers/functions.js')
 const { ChBitsAsc, ChCodeAsc, BINARY_COMPRESSION, ASCII_COMPRESSION } = require('./constants.js')
@@ -84,6 +85,18 @@ const generateAsciiTables = () => {
   return tables
 }
 
+const processChunkData = state => {
+  if (!has('compressionType', state)) {
+    if (state.inputBuffer.size() >= 4) {
+      const { compressionType, dictionarySizeBits } = readHeader(state.inputBuffer.read())
+      state.compressionType = compressionType
+      state.dictionarySizeBits = dictionarySizeBits
+      state.bitBuffer = state.inputBuffer.read(2, 1)
+      state.inputBuffer.dropStart(3)
+    }
+  }
+}
+
 const explode = () => {
   const handler = function (chunk, encoding, callback) {
     if (!isFunction(callback)) {
@@ -91,7 +104,7 @@ const explode = () => {
     }
 
     const state = handler._state
-    state.needMoreInput = false
+    state.needMoreInput = true
 
     try {
       state.inputBuffer.append(chunk)
@@ -99,6 +112,9 @@ const explode = () => {
         state.isFirstChunk = false
         this._flush = state.onInputFinished
       }
+
+      processChunkData(state)
+
       callback(null, Buffer.from([]))
     } catch (e) {
       callback(e)
@@ -106,11 +122,18 @@ const explode = () => {
   }
 
   handler._state = {
-    needMoreInput: false,
+    needMoreInput: true,
     isFirstChunk: true,
     inputBuffer: new ExpandingBuffer(),
     outputBuffer: new ExpandingBuffer(),
-    onInputFinished: () => {}
+    onInputFinished: callback => {
+      const state = handler._state
+      if (state.needMoreInput) {
+        callback(new AbortedError())
+      } else {
+        callback(null, state.outputBuffer.read())
+      }
+    }
   }
 
   return handler
@@ -121,5 +144,6 @@ module.exports = {
   explode,
   createPATIterator,
   populateAsciiTable,
-  generateAsciiTables
+  generateAsciiTables,
+  processChunkData
 }

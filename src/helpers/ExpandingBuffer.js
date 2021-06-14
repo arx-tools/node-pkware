@@ -59,6 +59,8 @@ class ExpandingBuffer {
     return this._getActualData(offset)
   }
 
+  // hard delete
+  // removes data from the buffer by copying bytes to lower indices
   flushStart(numberOfBytes) {
     numberOfBytes = clamp(0, this.heapSize(), numberOfBytes)
     if (numberOfBytes > 0) {
@@ -77,6 +79,8 @@ class ExpandingBuffer {
     }
   }
 
+  // soft delete
+  // removes data from the buffer by moving the startIndex forward
   dropStart(numberOfBytes) {
     if (numberOfBytes > 0) {
       this._startIndex += numberOfBytes

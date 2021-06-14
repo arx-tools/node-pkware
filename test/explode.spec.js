@@ -11,7 +11,14 @@ const {
   ExpectedBufferError,
   ExpectedFunctionError
 } = require('../src/errors.js')
-const { explode, readHeader, generateAsciiTables, populateAsciiTable, createPATIterator } = require('../src/explode.js')
+const {
+  explode,
+  readHeader,
+  generateAsciiTables,
+  populateAsciiTable,
+  createPATIterator,
+  processChunkData
+} = require('../src/explode.js')
 const ExpandingBuffer = require('../src/helpers/ExpandingBuffer.js')
 const { through } = require('../src/helpers/stream.js')
 const { buffersShouldEqual } = require('../src/helpers/testing.js')
@@ -170,8 +177,8 @@ describe('explode', () => {
       beforeEach(() => {
         state = explode()._state
       })
-      it('has an needMoreInput key, which is false by default', () => {
-        assert.strictEqual(state.needMoreInput, false)
+      it('has an needMoreInput key, which is true by default', () => {
+        assert.strictEqual(state.needMoreInput, true)
       })
       it('has an isFirstChunk key, which is true by default', () => {
         assert.strictEqual(state.isFirstChunk, true)
@@ -198,10 +205,10 @@ describe('explode', () => {
         done()
       })
     })
-    it('resets state.needMoreInput to false when called', () => {
+    it('resets state.needMoreInput to true when first called', () => {
       handler._state.needMoreInput = 'xxx4'
       handler(Buffer.from([]), null, noop)
-      assert.strictEqual(handler._state.needMoreInput, false)
+      assert.strictEqual(handler._state.needMoreInput, true)
     })
     it('appends the chunk given as the first parameter to state.inputBuffer', () => {
       handler(Buffer.from([1, 2, 3]), null, noop)
@@ -227,6 +234,46 @@ describe('explode', () => {
         .pipe(through(handler).on('error', checkIfWasCalled))
         .on('finish', checkIfWasCalled)
         .on('error', checkIfWasCalled)
+    })
+  })
+
+  describe('processChunkData', () => {
+    it('is a function', () => {
+      assert.ok(isFunction(processChunkData), `${processChunkData} is not a function`)
+    })
+    it('gets a state object and if state.inputBuffer is big enough, then reads header data', () => {
+      const state = {
+        inputBuffer: new ExpandingBuffer()
+      }
+      state.inputBuffer.append(Buffer.from([1, 4, 0, 0]))
+      processChunkData(state)
+      assert.strictEqual(state.compressionType, 1)
+      assert.strictEqual(state.dictionarySizeBits, 4)
+    })
+    it('leaves state unchanged, when header is not read yet and we have less, than 4 bytes', () => {
+      const state = {
+        inputBuffer: new ExpandingBuffer()
+      }
+      state.inputBuffer.append(Buffer.from([1, 4, 0]))
+      processChunkData(state)
+      assert.strictEqual(Object.keys(state).length, 1)
+      assert.strictEqual(state.inputBuffer.size(), 3)
+    })
+    it('sets state.bitBuffer to the 3rd byte of inputBuffer, when reading header data', () => {
+      const state = {
+        inputBuffer: new ExpandingBuffer()
+      }
+      state.inputBuffer.append(Buffer.from([1, 4, 52, 5]))
+      processChunkData(state)
+      assert.strictEqual(state.bitBuffer, 52)
+    })
+    it('trims off the first 3 bytes from the inputBuffer once the header is read', () => {
+      const state = {
+        inputBuffer: new ExpandingBuffer()
+      }
+      state.inputBuffer.append(Buffer.from([0, 5, 102, 49, 7]))
+      processChunkData(state)
+      buffersShouldEqual(Buffer.from([49, 7]), state.inputBuffer.read())
     })
   })
 })
