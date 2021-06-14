@@ -1,6 +1,7 @@
 /* global describe, it, beforeEach */
 
 const assert = require('assert')
+const { ExpectedBufferError } = require('../../src/errors.js')
 const ExpandingBuffer = require('../../src/helpers/ExpandingBuffer.js')
 const { isClass, buffersShouldEqual, bufferToString } = require('../../src/helpers/testing.js')
 
@@ -213,13 +214,8 @@ describe('ExpandingBuffer', () => {
     buffersShouldEqual(expected, result)
   })
   it('throws an error when append gets non-buffer data', () => {
-    assert.throws(
-      () => {
-        buffer.append('Hello')
-      },
-      {
-        name: 'ExpectedBufferError'
-      }
-    )
+    assert.throws(() => {
+      buffer.append('Hello')
+    }, ExpectedBufferError)
   })
 })

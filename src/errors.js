@@ -33,10 +33,18 @@ class ExpectedBufferError extends TypeError {
   }
 }
 
+class ExpectedFunctionError extends TypeError {
+  constructor() {
+    super('Expected variable to be a Function')
+    this.name = 'ExpectedFunctionError'
+  }
+}
+
 module.exports = {
   InvalidDictionarySizeError,
   InvalidCompressionTypeError,
   InvalidDataError,
   AbortedError,
-  ExpectedBufferError
+  ExpectedBufferError,
+  ExpectedFunctionError
 }

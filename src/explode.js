@@ -1,20 +1,29 @@
 const { repeat, unfold, reduce } = require('ramda')
-const { InvalidDataError, InvalidCompressionTypeError, InvalidDictionarySizeError } = require('./errors.js')
+const { isFunction } = require('ramda-adjunct')
+const {
+  InvalidDataError,
+  InvalidCompressionTypeError,
+  InvalidDictionarySizeError,
+  ExpectedBufferError,
+  ExpectedFunctionError
+} = require('./errors.js')
 const { isBetween, mergeSparseArrays, getLowestNBits } = require('./helpers/functions.js')
-const { ChBitsAsc, ChCodeAsc } = require('./constants.js')
+const { ChBitsAsc, ChCodeAsc, BINARY_COMPRESSION, ASCII_COMPRESSION } = require('./constants.js')
 const ExpandingBuffer = require('./helpers/ExpandingBuffer.js')
 
 const readHeader = buffer => {
-  if (!Buffer.isBuffer(buffer) || buffer.length < 4) {
+  if (!Buffer.isBuffer(buffer)) {
+    throw new ExpectedBufferError()
+  }
+  if (buffer.length < 4) {
     throw new InvalidDataError()
   }
-  if (buffer.readUInt8(0) !== 0 && buffer.readUInt8(0) !== 1) {
+  if (buffer.readUInt8(0) !== BINARY_COMPRESSION && buffer.readUInt8(0) !== ASCII_COMPRESSION) {
     throw new InvalidCompressionTypeError()
   }
   if (!isBetween(4, 6, buffer.readUInt8(1))) {
     throw new InvalidDictionarySizeError()
   }
-
   return {
     compressionType: buffer.readUInt8(0),
     dictionarySizeBits: buffer.readUInt8(1)
@@ -75,14 +84,22 @@ const generateAsciiTables = () => {
   return tables
 }
 
-const parseFirstChunk = () => {}
-
 const explode = () => {
-  const handler = (chunk, encoding, callback) => {
+  const handler = function (chunk, encoding, callback) {
+    if (!isFunction(callback)) {
+      throw new ExpectedFunctionError()
+    }
+
     const state = handler._state
     state.needMoreInput = false
+
     try {
       state.inputBuffer.append(chunk)
+      if (state.isFirstChunk) {
+        state.isFirstChunk = false
+        this._flush = state.onInputFinished
+      }
+      callback(null, Buffer.from([]))
     } catch (e) {
       callback(e)
     }
@@ -92,7 +109,8 @@ const explode = () => {
     needMoreInput: false,
     isFirstChunk: true,
     inputBuffer: new ExpandingBuffer(),
-    outputBuffer: new ExpandingBuffer()
+    outputBuffer: new ExpandingBuffer(),
+    onInputFinished: () => {}
   }
 
   return handler
@@ -103,6 +121,5 @@ module.exports = {
   explode,
   createPATIterator,
   populateAsciiTable,
-  generateAsciiTables,
-  parseFirstChunk
+  generateAsciiTables
 }

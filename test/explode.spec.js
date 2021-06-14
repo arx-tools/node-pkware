@@ -1,34 +1,32 @@
 /* global describe, it, before, beforeEach */
 
 const assert = require('assert')
-const { isFunction, isPlainObject } = require('ramda-adjunct')
+const { Readable } = require('stream')
+const { isFunction, isPlainObject, noop } = require('ramda-adjunct')
 const { ChBitsAsc, ChCodeAsc } = require('../src/constants.js')
-const { InvalidDataError, InvalidCompressionTypeError, InvalidDictionarySizeError } = require('../src/errors.js')
 const {
-  explode,
-  readHeader,
-  generateAsciiTables,
-  populateAsciiTable,
-  createPATIterator,
-  parseFirstChunk
-} = require('../src/explode.js')
+  InvalidDataError,
+  InvalidCompressionTypeError,
+  InvalidDictionarySizeError,
+  ExpectedBufferError,
+  ExpectedFunctionError
+} = require('../src/errors.js')
+const { explode, readHeader, generateAsciiTables, populateAsciiTable, createPATIterator } = require('../src/explode.js')
 const ExpandingBuffer = require('../src/helpers/ExpandingBuffer.js')
+const { through } = require('../src/helpers/stream.js')
 const { buffersShouldEqual } = require('../src/helpers/testing.js')
 
 describe('readHeader', () => {
   it('is a function', () => {
     assert.ok(isFunction(readHeader), `${readHeader} is not a function`)
   })
-  it('throws an InvalidDataError if given parameter is not a Buffer or no parameter is given at all', () => {
+  it('expects first parameter to be a buffer', () => {
+    assert.throws(() => {
+      readHeader(123)
+    }, ExpectedBufferError)
     assert.throws(() => {
       readHeader()
-    }, InvalidDataError)
-    assert.throws(() => {
-      readHeader(100.9)
-    }, InvalidDataError)
-    assert.throws(() => {
-      readHeader([1, 2, 3, 4, 5])
-    }, InvalidDataError)
+    }, ExpectedBufferError)
   })
   it('throws an InvalidDataError, when given Buffer is less, than 4 bytes', () => {
     assert.throws(() => {
@@ -96,7 +94,7 @@ describe('generateAsciiTables', () => {
       assert.ok(Array.isArray(data.chBitsAsc))
       assert.strictEqual(data.chBitsAsc.length, ChBitsAsc.length)
     })
-    // TODO: more tests
+    // TODO: more tests once it's understand what the generated data is
   })
 })
 
@@ -150,12 +148,6 @@ describe('populateAsciiTable', () => {
   // + if ChCodeAsc[index] > limit -> []
 })
 
-describe('parseFirstChunk', () => {
-  it('is a function', () => {
-    assert.ok(isFunction(parseFirstChunk), `${parseFirstChunk} is not a function`)
-  })
-})
-
 describe('explode', () => {
   it('is a function', () => {
     assert.ok(isFunction(explode), `${explode} is not a function`)
@@ -165,8 +157,11 @@ describe('explode', () => {
     assert.ok(isFunction(handler), `${handler} is not a function`)
   })
   describe('returned handler', () => {
+    let handler
+    beforeEach(() => {
+      handler = explode()
+    })
     it('has a _state variable, which is an object', () => {
-      const handler = explode()
       assert.ok(isPlainObject(handler._state), `${handler._state} is not an object`)
     })
 
@@ -187,27 +182,51 @@ describe('explode', () => {
       it('has an outputBuffer key, which is an ExpandingBuffer', () => {
         assert.ok(state.outputBuffer instanceof ExpandingBuffer)
       })
+      it('has an onOutputFinished key, which is a function', () => {
+        assert.ok(isFunction(state.onInputFinished))
+      })
     })
 
+    it('expects 3rd parameter to be a function', () => {
+      assert.throws(() => {
+        handler(Buffer.from([]))
+      }, ExpectedFunctionError)
+    })
     it('gives an errorous callback when the first parameter is not a buffer', done => {
-      const handler = explode()
       handler(12, null, err => {
         assert.ok(err instanceof Error)
         done()
       })
     })
     it('resets state.needMoreInput to false when called', () => {
-      const handler = explode()
       handler._state.needMoreInput = 'xxx4'
-      handler(Buffer.from([]))
+      handler(Buffer.from([]), null, noop)
       assert.strictEqual(handler._state.needMoreInput, false)
     })
     it('appends the chunk given as the first parameter to state.inputBuffer', () => {
-      const handler = explode()
-      handler(Buffer.from([1, 2, 3]))
+      handler(Buffer.from([1, 2, 3]), null, noop)
       buffersShouldEqual(handler._state.inputBuffer.getHeap(), Buffer.from([1, 2, 3]))
-      handler(Buffer.from([4, 5, 6]))
+      handler(Buffer.from([4, 5, 6]), null, noop)
       buffersShouldEqual(handler._state.inputBuffer.getHeap(), Buffer.from([1, 2, 3, 4, 5, 6]))
+    })
+    it('sets state.isFirstChunk to false after the first call', () => {
+      handler(Buffer.from([1, 2, 3]), null, noop)
+      assert.strictEqual(handler._state.isFirstChunk, false)
+    })
+    it('calling the handler via streams will call state.onInputFinished once the stream have finished', done => {
+      let wasCalled = false
+      handler._state.onInputFinished = () => {
+        wasCalled = true
+      }
+      const checkIfWasCalled = () => {
+        if (wasCalled) {
+          done()
+        }
+      }
+      Readable.from('123')
+        .pipe(through(handler).on('error', checkIfWasCalled))
+        .on('finish', checkIfWasCalled)
+        .on('error', checkIfWasCalled)
     })
   })
 })
