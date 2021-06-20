@@ -18,7 +18,11 @@ const {
   generateAsciiTables,
   populateAsciiTable,
   createPATIterator,
-  processChunkData
+  processChunkData,
+  wasteBits,
+  decodeNextLiteral,
+  decodeDistance,
+  generateDecodeTables
 } = require('../src/explode.js')
 const ExpandingBuffer = require('../src/helpers/ExpandingBuffer.js')
 const { through } = require('../src/helpers/stream.js')
@@ -151,9 +155,42 @@ describe('populateAsciiTable', () => {
     result2[4] = index
     assert.deepStrictEqual(populateAsciiTable(1, index, 0, 5), result2)
   })
+
   // TODO: more tests for the 3rd param
   // + if value < bits -> []
   // + if ChCodeAsc[index] > limit -> []
+})
+
+describe('wasteBits', () => {
+  it('is a function', () => {
+    assert.ok(isFunction(wasteBits), `${wasteBits} is not a function`)
+  })
+
+  // TODO: create tests
+})
+
+describe('decodeNextLiteral', () => {
+  it('is a function', () => {
+    assert.ok(isFunction(decodeNextLiteral), `${decodeNextLiteral} is not a function`)
+  })
+
+  // TODO: create tests
+})
+
+describe('generateDecodeTables', () => {
+  it('is a function', () => {
+    assert.ok(isFunction(generateDecodeTables), `${generateDecodeTables} is not a function`)
+  })
+
+  // TODO: create tests
+})
+
+describe('decodeDistance', () => {
+  it('is a function', () => {
+    assert.ok(isFunction(decodeDistance), `${decodeDistance} is not a function`)
+  })
+
+  // TODO: create tests
 })
 
 describe('explode', () => {

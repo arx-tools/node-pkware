@@ -9,7 +9,22 @@ const {
   AbortedError
 } = require('./errors.js')
 const { isBetween, mergeSparseArrays, getLowestNBits, nBitsOfOnes } = require('./helpers/functions.js')
-const { ChBitsAsc, ChCodeAsc, BINARY_COMPRESSION, ASCII_COMPRESSION } = require('./constants.js')
+const {
+  ChBitsAsc,
+  ChCodeAsc,
+  BINARY_COMPRESSION,
+  ASCII_COMPRESSION,
+  PKDCL_OK,
+  PKDCL_STREAM_END,
+  LITERAL_STREAM_ABORTED,
+  LITERAL_END_STREAM,
+  LenBits,
+  LenBase,
+  ExLenBits,
+  DistBits,
+  LenCode,
+  DistCode
+} = require('./constants.js')
 const ExpandingBuffer = require('./helpers/ExpandingBuffer.js')
 
 const readHeader = buffer => {
@@ -106,6 +121,114 @@ const parseInitialData = state => {
   }
 }
 
+const wasteBits = (state, numberOfBits) => {
+  if (numberOfBits > state.extraBits && state.inputBuffer.isEmpty()) {
+    return PKDCL_STREAM_END
+  }
+
+  if (numberOfBits <= state.extraBits) {
+    state.bitBuffer = state.bitBuffer >> numberOfBits
+    state.extraBits = state.extraBits - numberOfBits
+  } else {
+    const nextByte = state.inputBuffer.read(0, 1)
+    state.inputBuffer.dropStart(1)
+
+    state.bitBuffer = ((state.bitBuffer >> state.extraBits) | (nextByte << 8)) >> (numberOfBits - state.extraBits)
+    state.extraBits = state.extraBits + 8 - numberOfBits
+  }
+
+  return PKDCL_OK
+}
+
+const decodeNextLiteral = state => {
+  const lastBit = state.bitBuffer & 1
+
+  if (wasteBits(state, 1) === PKDCL_STREAM_END) {
+    return LITERAL_STREAM_ABORTED
+  }
+
+  if (lastBit) {
+    let lengthCode = state.lengthCodes[getLowestNBits(8, state.bitBuffer)]
+
+    if (wasteBits(state, LenBits[lengthCode]) === PKDCL_STREAM_END) {
+      return LITERAL_STREAM_ABORTED
+    }
+
+    const extraLenghtBits = ExLenBits[lengthCode]
+    if (extraLenghtBits !== 0) {
+      const extraLength = getLowestNBits(extraLenghtBits, state.bitBuffer)
+
+      if (wasteBits(state, extraLenghtBits) === PKDCL_STREAM_END && lengthCode + extraLength !== 0x10e) {
+        return LITERAL_STREAM_ABORTED
+      }
+
+      lengthCode = LenBase[lengthCode] + extraLength
+    }
+
+    return lengthCode + 0x100
+  } else {
+    const lastByte = getLowestNBits(8, state.bitBuffer)
+
+    if (state.compressionType === BINARY_COMPRESSION) {
+      return wasteBits(state, 8) === PKDCL_STREAM_END ? LITERAL_STREAM_ABORTED : lastByte
+    } else {
+      let value
+      if (lastByte > 0) {
+        value = state.asciiTable2C34[lastByte]
+
+        if (value === 0xff) {
+          if (getLowestNBits(6, state.bitBuffer)) {
+            if (wasteBits(state, 4) === PKDCL_STREAM_END) {
+              return LITERAL_STREAM_ABORTED
+            }
+
+            value = state.asciiTable2D34[getLowestNBits(8, state.bitBuffer)]
+          } else {
+            if (wasteBits(state, 6) === PKDCL_STREAM_END) {
+              return LITERAL_STREAM_ABORTED
+            }
+
+            value = state.asciiTable2E34[getLowestNBits(7, state.bitBuffer)]
+          }
+        }
+      } else {
+        if (wasteBits(state, 8) === PKDCL_STREAM_END) {
+          return LITERAL_STREAM_ABORTED
+        }
+
+        value = state.asciiTable2EB4[getLowestNBits(8, state.bitBuffer)]
+      }
+
+      return wasteBits(state, state.chBitsAsc[value]) === PKDCL_STREAM_END ? LITERAL_STREAM_ABORTED : value
+    }
+  }
+}
+
+const decodeDistance = (state, repeatLength) => {
+  const distPosCode = state.distPosCodes[getLowestNBits(8, state.bitBuffer)]
+  const distPosBits = DistBits[distPosCode]
+  if (wasteBits(state, distPosBits) === PKDCL_STREAM_END) {
+    return 0
+  }
+
+  let distance
+  let bitsToWaste
+
+  if (repeatLength === 2) {
+    distance = (distPosCode << 2) | getLowestNBits(2, state.bitBuffer)
+    bitsToWaste = 2
+  } else {
+    distance = (distPosCode << state.dictionarySizeBits) | (state.bitBuffer & state.dictionarySizeMask)
+    bitsToWaste = state.dictionarySizeBits
+  }
+
+  if (wasteBits(state, bitsToWaste) === PKDCL_STREAM_END) {
+    return 0
+  }
+
+  return distance + 1
+}
+
 const processChunkData = state => {
   if (state.inputBuffer.isEmpty()) {
     return
@@ -116,8 +239,57 @@ const processChunkData = state => {
     return
   }
 
-  // TODO
-  console.log('TODO')
+  let nextLiteral
+  state.needMoreInput = false
+
+  state.backup()
+  nextLiteral = decodeNextLiteral(state)
+
+  while (nextLiteral !== LITERAL_END_STREAM && nextLiteral !== LITERAL_STREAM_ABORTED) {
+    let addition
+    if (nextLiteral >= 0x100) {
+      const repeatLength = nextLiteral - 0xfe
+      const minusDistance = decodeDistance(state, repeatLength)
+      if (minusDistance === 0) {
+        state.needMoreInput = true
+        break
+      }
+
+      const availableData = state.outputBuffer.read(state.outputBuffer.size() - minusDistance, repeatLength)
+
+      if (repeatLength > minusDistance) {
+        const multipliedData = repeat(availableData, Math.ceil(repeatLength / availableData.length))
+        addition = Buffer.concat(multipliedData).slice(0, repeatLength)
+      } else {
+        addition = availableData
+      }
+    } else {
+      addition = Buffer.from([nextLiteral])
+    }
+
+    state.outputBuffer.append(addition)
+
+    state.backup()
+    nextLiteral = decodeNextLiteral(state)
+  }
+
+  if (nextLiteral === LITERAL_STREAM_ABORTED) {
+    state.needMoreInput = true
+  }
+
+  if (state.needMoreInput) {
+    state.restore()
+  }
+}
+
+const generateDecodeTables = (startIndexes, lengthBits) => {
+  return lengthBits.reduce((acc, lengthBit, i) => {
+    for (let index = startIndexes[i]; index < 0x100; index += 1 << lengthBit) {
+      acc[index] = i
+    }
+
+    return acc
+  }, repeat(0, 0x100))
 }
 
 const explode = () => {
@@ -138,15 +310,28 @@ const explode = () => {
 
       processChunkData(state)
 
-      callback(null, Buffer.from([]))
+      const blockSize = 0x1000
+      const numberOfBytes = Math.floor(state.outputBuffer.size() / blockSize) * blockSize
+      const output = Buffer.from(state.outputBuffer.read(0, numberOfBytes))
+      state.outputBuffer.flushStart(numberOfBytes)
+
+      callback(null, output)
     } catch (e) {
       callback(e)
     }
   }
 
   handler._state = {
+    _backup: {
+      extraBits: null,
+      bitBuffer: null
+    },
     needMoreInput: true,
     isFirstChunk: true,
+    extraBits: 0,
+    chBitsAsc: repeat(0, 0x100), // DecodeLit and GenAscTabs uses this
+    lengthCodes: generateDecodeTables(LenCode, LenBits),
+    distPosCodes: generateDecodeTables(DistCode, DistBits),
     inputBuffer: new ExpandingBuffer(),
     outputBuffer: new ExpandingBuffer(),
     onInputFinished: callback => {
@@ -156,6 +341,18 @@ const explode = () => {
       } else {
         callback(null, state.outputBuffer.read())
       }
+    },
+    backup: () => {
+      const state = handler._state
+      state._backup.extraBits = state.extraBits
+      state._backup.bitBuffer = state.bitBuffer
+      state.inputBuffer._saveIndices()
+    },
+    restore: () => {
+      const state = handler._state
+      state.extraBits = state._backup.extraBits
+      state.bitBuffer = state._backup.bitBuffer
+      state.inputBuffer._restoreIndices()
     }
   }
 
@@ -168,5 +365,9 @@ module.exports = {
   createPATIterator,
   populateAsciiTable,
   generateAsciiTables,
-  processChunkData
+  processChunkData,
+  wasteBits,
+  decodeNextLiteral,
+  decodeDistance,
+  generateDecodeTables
 }

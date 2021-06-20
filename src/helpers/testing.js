@@ -2,6 +2,7 @@
 // const fs = require('fs')
 const assert = require('assert')
 const { Writable } = require('stream')
+const fs = require('fs')
 const { compare, report } = require('binary-comparator')
 const ExpandingBuffer = require('./ExpandingBuffer.js')
 
@@ -74,9 +75,19 @@ const streamToBuffer = done => {
   })
 }
 
+const fileExists = async filename => {
+  try {
+    await fs.promises.access(filename, fs.constants.R_OK)
+    return true
+  } catch (error) {
+    return false
+  }
+}
+
 module.exports = {
   isClass,
   buffersShouldEqual,
   bufferToString,
-  streamToBuffer
+  streamToBuffer,
+  fileExists
 }

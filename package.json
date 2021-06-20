@@ -7,9 +7,11 @@
   "scripts": {
     "lint": "eslint \"src/**/*.js\"",
     "lint:fix": "npm run lint -- --fix",
-    "unit": "set FORCE_COLOR=true && mocha test/**/*.spec.js --timeout 5000",
-    "unit:watch": "nodemon --exec \"npm run unit\" --watch test --watch src",
-    "lint:staged": "lint-staged"
+    "lint:staged": "lint-staged",
+    "test:unit": "set FORCE_COLOR=true && mocha test/**/*.spec.js --timeout 5000",
+    "test:unit:watch": "nodemon --exec \"npm run test:unit\" --watch test --watch src",
+    "test:files": "set FORCE_COLOR=true && mocha test/**/*.files.js --timeout 5000",
+    "test:files:watch": "nodemon --exec \"npm run test:files\" --watch test --watch src"
   },
   "repository": {
     "type": "git",
@@ -48,7 +50,8 @@
   },
   "pre-commit": [
     "lint:staged",
-    "unit"
+    "test:unit",
+    "test:files"
   ],
   "lint-staged": {
     "*.js": "eslint --fix"
