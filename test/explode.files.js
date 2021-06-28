@@ -1,19 +1,21 @@
 /* global describe, it */
 
+const assert = require('assert')
 const { before } = require('mocha')
-// const { fileExists } = require('../src/helpers/testing.js')
+const { fileExists } = require('../src/helpers/testing.js')
+
+const TEST_FILE_FOLDER = '../pkware-test-files'
+
+// only run the tests, if the other repo is present
+// https://mochajs.org/#inclusive-tests
+before(async function () {
+  if (!(await fileExists(TEST_FILE_FOLDER))) {
+    this.skip()
+  }
+})
 
 describe('explode', () => {
-  before(() => {
-    // TODO
-    /*
-    if (!(await fileExists('../pkware-test-files'))) {
-      return
-    }
-    */
-  })
-
-  it('should only run, if pkware-test-files repo is present', () => {
-    // TODO
+  it('works', () => {
+    assert.ok(true)
   })
 })
