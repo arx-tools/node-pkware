@@ -3,7 +3,7 @@
 const assert = require('assert')
 const { Readable } = require('stream')
 const { isFunction } = require('ramda-adjunct')
-const { splitAt, transformIdentity, transformEmpty, through } = require('../../src/helpers/stream.js')
+const { splitAt, transformIdentity, transformEmpty, through, transformSplitBy } = require('../../src/helpers/stream.js')
 const { buffersShouldEqual, streamToBuffer } = require('../../src/helpers/testing.js')
 
 describe('helpers/stream', () => {
@@ -175,5 +175,11 @@ describe('helpers/stream', () => {
       assert.ok(isFunction(through), `${through} is not a function`)
     })
     // TODO: how to test this?
+  })
+
+  describe('transformSplitBy', () => {
+    it('is a function', () => {
+      assert.ok(isFunction(transformSplitBy), `${transformSplitBy} is not a function`)
+    })
   })
 })

@@ -54,9 +54,14 @@ const through = handler => {
   })
 }
 
+const transformSplitBy = () => {
+  // TODO: add implementation
+}
+
 module.exports = {
   splitAt,
   transformIdentity,
   transformEmpty,
-  through
+  through,
+  transformSplitBy
 }
