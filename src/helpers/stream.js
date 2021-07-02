@@ -1,4 +1,6 @@
 const { Transform } = require('stream')
+// import { promisify } from 'util'
+const { promisify } = require('util')
 
 const splitAt = index => {
   let cntr = 0
@@ -32,6 +34,7 @@ const splitAt = index => {
     }
 
     cntr += chunk.length
+
     return [left, right]
   }
 }
@@ -54,8 +57,21 @@ const through = handler => {
   })
 }
 
-const transformSplitBy = () => {
-  // TODO: add implementation
+const transformSplitBy = (predicate, leftHandler, rightHandler) => {
+  return (chunk, encoding, callback) => {
+    const [left, right] = predicate(chunk)
+
+    Promise.all([
+      promisify(leftHandler).call(this, left, encoding),
+      promisify(rightHandler).call(this, right, encoding)
+    ])
+      .then(buffers => {
+        callback(null, Buffer.concat(buffers))
+      })
+      .catch(err => {
+        callback(err)
+      })
+  }
 }
 
 module.exports = {

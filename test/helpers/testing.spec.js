@@ -89,9 +89,10 @@ describe('helpers/testing', () => {
         done()
       }, 100)
     })
-    it('calls the callback with the data accumulated via piping once the stream is finished', () => {
+    it('calls the callback with the data accumulated via piping once the stream is finished', done => {
       const handler = streamToBuffer(data => {
         buffersShouldEqual(data, Buffer.from('lorem ipsum dolor sit amet'))
+        done()
       })
       const stream = new Readable({
         read() {

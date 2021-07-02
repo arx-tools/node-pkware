@@ -88,7 +88,7 @@ describe('helpers/stream', () => {
         assert.strictEqual(handler(16), null)
         assert.strictEqual(handler(['a', 'b', 'c']), null)
       })
-      it('does not increate the internal counter, when handler gets non-buffer-data', () => {
+      it('does not increase the internal counter, when handler gets non-buffer-data', () => {
         const handler = splitAt(4)
         const result1 = handler('abcdef')
         const result2 = handler(Buffer.from([1, 2, 3, 4, 5]))
@@ -180,6 +180,52 @@ describe('helpers/stream', () => {
   describe('transformSplitBy', () => {
     it('is a function', () => {
       assert.ok(isFunction(transformSplitBy), `${transformSplitBy} is not a function`)
+    })
+    it("takes a predicate, an identity and empty transformers and returns a handler, which only let's through the first part of data", done => {
+      const handler = transformSplitBy(splitAt(3), transformIdentity(), transformEmpty())
+
+      Readable.from('abcde')
+        .pipe(through(handler))
+        .pipe(
+          streamToBuffer(buffer => {
+            buffersShouldEqual(Buffer.from('abc'), buffer)
+            done()
+          })
+        )
+    })
+
+    it("takes a predicate, an empty and identity transformers and returns a handler, which only let's through the second part of data", done => {
+      const handler = transformSplitBy(splitAt(3), transformEmpty(), transformIdentity())
+
+      Readable.from('abcde')
+        .pipe(through(handler))
+        .pipe(
+          streamToBuffer(buffer => {
+            buffersShouldEqual(Buffer.from('de'), buffer)
+            done()
+          })
+        )
+    })
+
+    it('only splits data once, when splitAt is used as predicate', done => {
+      const handler = transformSplitBy(splitAt(10), transformEmpty(), transformIdentity())
+
+      const stream = new Readable({
+        read() {
+          return null
+        }
+      })
+      stream.pipe(through(handler)).pipe(
+        streamToBuffer(buffer => {
+          buffersShouldEqual(Buffer.from('klmnopqrstuvwx'), buffer)
+          done()
+        })
+      )
+      stream.push('abcdef')
+      stream.push('ghijkl')
+      stream.push('mnopqr')
+      stream.push('stuvwx')
+      stream.push(null)
     })
   })
 })
