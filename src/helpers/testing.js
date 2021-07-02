@@ -53,11 +53,11 @@ const bufferToString = (buffer, limit = 20) => {
   return `<Buffer ${hexString}${ellipsisNecessary ? '...' : ''}>`
 }
 
-const buffersShouldEqual = (expected, result, offset = 0) => {
+const buffersShouldEqual = (expected, result, offset = 0, displayAsHex = false) => {
   if (!Buffer.isBuffer(expected)) {
     throw new Error('expected is not a Buffer')
   }
-  const diff = report(expected, result, compare(expected, result, offset))
+  const diff = report(expected, result, compare(expected, result, offset), displayAsHex)
   assert.ok(expected.equals(result), diff)
 }
 
