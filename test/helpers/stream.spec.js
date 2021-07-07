@@ -4,7 +4,7 @@ const assert = require('assert')
 const { Readable } = require('stream')
 const { isFunction } = require('ramda-adjunct')
 const { splitAt, transformIdentity, transformEmpty, through, transformSplitBy } = require('../../src/helpers/stream.js')
-const { buffersShouldEqual, streamToBuffer } = require('../../src/helpers/testing.js')
+const { buffersShouldEqual, streamToBuffer, transformToABC } = require('../../src/helpers/testing.js')
 
 describe('helpers/stream', () => {
   describe('splitAt', () => {
@@ -208,7 +208,7 @@ describe('helpers/stream', () => {
     })
 
     it('only splits data once, when splitAt is used as predicate', done => {
-      const handler = transformSplitBy(splitAt(10), transformEmpty(), transformIdentity())
+      const handler = transformSplitBy(splitAt(10), transformEmpty(), transformToABC())
 
       const stream = new Readable({
         read() {
@@ -217,7 +217,7 @@ describe('helpers/stream', () => {
       })
       stream.pipe(through(handler)).pipe(
         streamToBuffer(buffer => {
-          buffersShouldEqual(Buffer.from('klmnopqrstuvwx'), buffer)
+          buffersShouldEqual(Buffer.from('ABCD'), buffer)
           done()
         })
       )
@@ -229,3 +229,5 @@ describe('helpers/stream', () => {
     })
   })
 })
+
+// TODO: add tests for _flush being called or not

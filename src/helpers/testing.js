@@ -84,10 +84,18 @@ const fileExists = async filename => {
   }
 }
 
+const transformToABC = () => {
+  let cntr = 0
+  return function (chunk, encoding, callback) {
+    callback(null, Buffer.from([65 + (cntr++ % 26)]))
+  }
+}
+
 module.exports = {
   isClass,
   buffersShouldEqual,
   bufferToString,
   streamToBuffer,
-  fileExists
+  fileExists,
+  transformToABC
 }

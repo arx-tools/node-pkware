@@ -3,7 +3,13 @@
 const assert = require('assert')
 const { Writable, Readable } = require('stream')
 const { isFunction } = require('ramda-adjunct')
-const { isClass, bufferToString, buffersShouldEqual, streamToBuffer } = require('../../src/helpers/testing.js')
+const {
+  isClass,
+  bufferToString,
+  buffersShouldEqual,
+  streamToBuffer,
+  transformToABC
+} = require('../../src/helpers/testing.js')
 
 describe('helpers/testing', () => {
   describe('isClass', () => {
@@ -106,6 +112,47 @@ describe('helpers/testing', () => {
       stream.push('sit ')
       stream.push('amet')
       stream.push(null)
+    })
+  })
+
+  describe('transformToABC', () => {
+    it('is a function', () => {
+      assert.ok(isFunction(transformToABC), `${transformToABC} is not a function`)
+    })
+    it('takes no argument and returns a function', () => {
+      const handler = transformToABC()
+      assert.strictEqual(isFunction(handler), true)
+    })
+    describe('returned handler', () => {
+      it('it always outputs a single character to the callback parameter', done => {
+        const handler = transformToABC()
+        const callback = (error, data) => {
+          assert.strictEqual(error, null, '1st parameter (error) in the callback should be null')
+          buffersShouldEqual(data, Buffer.from('A'))
+          done()
+        }
+        handler(Buffer.from([1, 2, 3, 4, 5]), null, callback)
+      })
+      it('always gives a different single character from the alphabet at every call', done => {
+        const handler = transformToABC()
+        const responses = []
+        const callback = (_error, data) => {
+          responses.push(data)
+
+          if (responses.length === 4) {
+            buffersShouldEqual(responses[0], Buffer.from('A'))
+            buffersShouldEqual(responses[1], Buffer.from('B'))
+            buffersShouldEqual(responses[2], Buffer.from('C'))
+            buffersShouldEqual(responses[3], Buffer.from('D'))
+            done()
+          }
+        }
+
+        handler(Buffer.from([1, 1, 1]), null, callback)
+        handler(Buffer.from([2]), null, callback)
+        handler(Buffer.from([]), null, callback)
+        handler(Buffer.from('44444'), null, callback)
+      })
     })
   })
 })

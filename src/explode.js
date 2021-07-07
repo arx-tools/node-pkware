@@ -8,7 +8,7 @@ const {
   ExpectedFunctionError,
   AbortedError
 } = require('./errors.js')
-const { isBetween, mergeSparseArrays, getLowestNBits, nBitsOfOnes } = require('./helpers/functions.js')
+const { isBetween, mergeSparseArrays, getLowestNBits, nBitsOfOnes, toHex } = require('./helpers/functions.js')
 const {
   ChBitsAsc,
   ChCodeAsc,
@@ -26,6 +26,8 @@ const {
   DistCode
 } = require('./constants.js')
 const ExpandingBuffer = require('./helpers/ExpandingBuffer.js')
+
+const debug = true
 
 const readHeader = buffer => {
   if (!Buffer.isBuffer(buffer)) {
@@ -118,6 +120,15 @@ const parseInitialData = state => {
     Object.entries(tables).forEach(([key, value]) => {
       state[key] = value
     })
+  }
+
+  if (debug) {
+    console.log(`compression type: ${state.compressionType === BINARY_COMPRESSION ? 'binary' : 'ascii'}`)
+    console.log(
+      `compression level: ${
+        state.dictionarySizeBits === 4 ? 'small' : state.dictionarySizeBits === 5 ? 'medium' : 'large'
+      }`
+    )
   }
 }
 
@@ -308,6 +319,10 @@ const explode = () => {
         this._flush = state.onInputFinished
       }
 
+      if (debug) {
+        console.log(`reading ${toHex(chunk.length)} bytes from chunk #${state.stats.chunkCounter++}`)
+      }
+
       processChunkData(state)
 
       const blockSize = 0x1000
@@ -336,6 +351,14 @@ const explode = () => {
     outputBuffer: new ExpandingBuffer(),
     onInputFinished: callback => {
       const state = handler._state
+
+      if (debug) {
+        console.log('---------------')
+        console.log('total number of chunks read:', state.stats.chunkCounter)
+        console.log('inputBuffer heap size', toHex(state.inputBuffer.heapSize()))
+        console.log('outputBuffer heap size', toHex(state.outputBuffer.heapSize()))
+      }
+
       if (state.needMoreInput) {
         callback(new AbortedError())
       } else {
@@ -353,6 +376,9 @@ const explode = () => {
       state.extraBits = state._backup.extraBits
       state.bitBuffer = state._backup.bitBuffer
       state.inputBuffer._restoreIndices()
+    },
+    stats: {
+      chunkCounter: 0
     }
   }
 
