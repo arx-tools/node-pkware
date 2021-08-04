@@ -174,7 +174,33 @@ describe('helpers/stream', () => {
     it('is a function', () => {
       assert.ok(isFunction(through), `${through} is not a function`)
     })
-    // TODO: how to test this?
+    it('calls _flush when the input stream have finished', done => {
+      let isFirstChunk = true
+      const handler = function (chunk, encoding, callback) {
+        if (isFirstChunk) {
+          isFirstChunk = false
+          this._flush = () => {
+            done()
+          }
+        }
+        callback(null, chunk)
+      }
+
+      const stream = new Readable({
+        read() {
+          return null
+        }
+      })
+
+      stream.pipe(through(handler))
+
+      stream.push('abcdef')
+      stream.push('ghijkl')
+      stream.push('mnopqr')
+      stream.push('stuvwx')
+      stream.push(null)
+    })
+    // TODO: add more tests
   })
 
   describe('transformSplitBy', () => {
@@ -227,7 +253,58 @@ describe('helpers/stream', () => {
       stream.push('stuvwx')
       stream.push(null)
     })
+
+    /*
+    it('calls both leftHandler._flush and rightHandler._flush when they no longer receive data', done => {
+      const A = () => {
+        let isFirstChunk = true
+        return function (chunk, encoding, callback) {
+          if (isFirstChunk) {
+            isFirstChunk = false
+            this._flush = flushCallback => {
+              flushCallback(null, Buffer.from('A'))
+            }
+          }
+
+          callback(null, chunk)
+        }
+      }
+
+      const B = () => {
+        let isFirstChunk = true
+        return function (chunk, encoding, callback) {
+          if (isFirstChunk) {
+            isFirstChunk = false
+            this._flush = flushCallback => {
+              flushCallback(null, Buffer.from('B'))
+            }
+          }
+
+          callback(null, chunk)
+        }
+      }
+
+      const handler = transformSplitBy(splitAt(10), A(), B())
+
+      const stream = new Readable({
+        read() {
+          return null
+        }
+      })
+
+      stream.pipe(through(handler)).pipe(
+        streamToBuffer(buffer => {
+          buffersShouldEqual(Buffer.from('abcdefghijAklmnopqrstuvwxB'), buffer)
+          done()
+        })
+      )
+
+      stream.push('abcdef')
+      stream.push('ghijkl')
+      stream.push('mnopqr')
+      stream.push('stuvwx')
+      stream.push(null)
+    })
+    */
   })
 })
-
-// TODO: add tests for _flush being called or not
