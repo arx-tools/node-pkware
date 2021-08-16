@@ -15,7 +15,7 @@ const splitAt = index => {
   return chunk => {
     let left
     let right
-    // let isLeftDone = false
+    let isLeftDone = true
 
     if (!Buffer.isBuffer(chunk)) {
       return null
@@ -29,16 +29,16 @@ const splitAt = index => {
       // cntr ..... chunk.length ..... index
       left = chunk
       right = Buffer.from([])
+      isLeftDone = index === cntr + chunk.length
     } else {
       // cntr ..... index ..... chunk.length
       left = chunk.slice(0, index - cntr)
       right = chunk.slice(index - cntr)
-      // isLeftDone = true
     }
 
     cntr += chunk.length
 
-    return [left, right /* , isLeftDone */]
+    return [left, right, isLeftDone]
   }
 }
 
@@ -83,8 +83,18 @@ const transformSplitBy = (predicate, leftHandler, rightHandler) => {
       }
     }
 
+    /*
+    // TODO: this is good for the last test, but breaks the others
+    let filler = Buffer.from('')
+    if (isLeftDone && !wasLeftFlushCalled) {
+      wasLeftFlushCalled = true
+      filler = Buffer.from('A')
+    }
+    */
+
     Promise.all([
       promisify(leftHandler).call(this, left, encoding),
+      // Promise.resolve(filler),
       promisify(rightHandler).call(this, right, encoding)
     ])
       .then(buffers => {
