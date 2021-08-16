@@ -85,7 +85,7 @@ const transformSplitBy = (predicate, leftHandler, rightHandler) => {
 
     /*
     // TODO: this is good for the last test, but breaks the others
-    let filler = Buffer.from('')
+    let filler = Buffer.from([])
     if (isLeftDone && !wasLeftFlushCalled) {
       wasLeftFlushCalled = true
       filler = Buffer.from('A')
