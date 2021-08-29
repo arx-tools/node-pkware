@@ -1,5 +1,4 @@
 const { Transform } = require('stream')
-// import { promisify } from 'util'
 const { promisify } = require('util')
 const { isFunction } = require('ramda-adjunct')
 
@@ -60,43 +59,84 @@ const through = handler => {
   })
 }
 
+class QuasiTransform {
+  constructor(handler) {
+    this.handler = handler
+  }
+
+  handle(chunk, encoding) {
+    return promisify(this.handler).call(this, chunk, encoding)
+  }
+}
+
 const transformSplitBy = (predicate, leftHandler, rightHandler) => {
   let isFirstChunk = true
-  let hasHandler = false
-  // let wasLeftFlushCalled = false
+  let wasLeftFlushCalled = false
+
+  const leftTransform = new QuasiTransform(leftHandler)
+  const rightTransform = new QuasiTransform(rightHandler)
 
   return function (chunk, encoding, callback) {
-    const [left, right /*, isLeftDone */] = predicate(chunk)
+    const [left, right, isLeftDone] = predicate(chunk)
+
+    const _left = leftTransform.handle(left, encoding)
+    const _right = rightTransform.handle(right, encoding)
 
     if (isFirstChunk) {
       isFirstChunk = false
       this._flush = flushCallback => {
-        // meg volt már hívva a leftHandler? ha nem, akkor itt az ideje
-        if (isFunction(rightHandler._flush)) {
-          hasHandler = true
-          rightHandler._flush(flushCallback)
+        let leftFiller = Promise.resolve(Buffer.from([]))
+        let rightFiller = Promise.resolve(Buffer.from([]))
+
+        if (!wasLeftFlushCalled && isFunction(leftTransform._flush)) {
+          leftFiller = new Promise((resolve, reject) => {
+            leftTransform._flush((err, data) => {
+              if (err) {
+                reject(err)
+              } else {
+                resolve(data)
+              }
+            })
+          })
         }
 
-        if (!hasHandler) {
-          flushCallback(null, Buffer.from([]))
+        if (isFunction(rightTransform._flush)) {
+          rightFiller = new Promise((resolve, reject) => {
+            rightTransform._flush((err, data) => {
+              if (err) {
+                reject(err)
+              } else {
+                resolve(data)
+              }
+            })
+          })
         }
+
+        Promise.all([leftFiller, rightFiller])
+          .then(buffers => {
+            flushCallback(null, Buffer.concat(buffers))
+          })
+          .catch(err => {
+            flushCallback(err)
+          })
       }
     }
 
-    /*
-    // TODO: this is good for the last test, but breaks the others
-    let filler = Buffer.from([])
-    if (isLeftDone && !wasLeftFlushCalled) {
+    let filler = Promise.resolve(Buffer.from([]))
+    if (isLeftDone && !wasLeftFlushCalled && isFunction(leftTransform._flush)) {
       wasLeftFlushCalled = true
-      filler = Buffer.from('A')
+      filler = new Promise((resolve, reject) => {
+        leftTransform._flush((err, data) => {
+          if (err) {
+            reject(err)
+          } else {
+            resolve(data)
+          }
+        })
+      })
     }
-    */
 
-    Promise.all([
-      promisify(leftHandler).call(this, left, encoding),
-      // Promise.resolve(filler),
-      promisify(rightHandler).call(this, right, encoding)
-    ])
+    Promise.all([_left, filler, _right])
       .then(buffers => {
         callback(null, Buffer.concat(buffers))
       })

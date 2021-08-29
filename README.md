@@ -47,7 +47,7 @@ Implode was removed from Arx Libertatis at this commit: https://github.com/arx/A
 
 ### notes:
 
-**Analogue code on how stream handling should look like with higher order functions**
+#### Analogue code on how stream handling should look like with higher order functions
 
 ```javascript
 const { compose, apply, useWith, concat, splitAt } = require('ramda')
@@ -71,4 +71,40 @@ const inputData = 'abcdefghijklmnopq'
 const outputData = handler(inputData)
 
 console.log(outputData) // 'abcdefGHIJKLMNOPQ'
+```
+
+#### Example on how this.\_flush is accessible when defined inside a transform handler
+
+```javascript
+const A = () => {
+  let firstChunk = true
+  return function (chunk, encoding, callback) {
+    if (firstChunk) {
+      firstChunk = false
+      this._flush = x => {
+        x(null, 'B')
+      }
+    }
+
+    callback(null, 'A')
+  }
+}
+
+class Transform {
+  constructor(handler) {
+    this.handler = handler
+  }
+
+  run() {
+    this.handler('XXXX', null, () => {})
+  }
+}
+
+const handler = A()
+const tmp = new Transform(handler)
+console.log(handler._flush) // undefined
+console.log(tmp._flush) // undefined
+tmp.run()
+console.log(handler._flush) // undefined
+console.log(tmp._flush) // function
 ```

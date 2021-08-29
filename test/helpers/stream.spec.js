@@ -266,8 +266,7 @@ describe('helpers/stream', () => {
       stream.push(null)
     })
 
-    /*
-    it('calls both leftHandler._flush and rightHandler._flush when they no longer receive data', done => {
+    it('calls both leftHandler._flush at split point and rightHandler._flush when they no longer receive data', done => {
       const A = () => {
         let isFirstChunk = true
         return function (chunk, encoding, callback) {
@@ -317,6 +316,56 @@ describe('helpers/stream', () => {
       stream.push('stuvwx')
       stream.push(null)
     })
-    */
+
+    it('calls both leftHandler._flush and rightHandler._flush when they no longer receive data', done => {
+      const A = () => {
+        let isFirstChunk = true
+        return function (chunk, encoding, callback) {
+          if (isFirstChunk) {
+            isFirstChunk = false
+            this._flush = flushCallback => {
+              flushCallback(null, Buffer.from('A'))
+            }
+          }
+
+          callback(null, chunk)
+        }
+      }
+
+      const B = () => {
+        let isFirstChunk = true
+        return function (chunk, encoding, callback) {
+          if (isFirstChunk) {
+            isFirstChunk = false
+            this._flush = flushCallback => {
+              flushCallback(null, Buffer.from('B'))
+            }
+          }
+
+          callback(null, chunk)
+        }
+      }
+
+      const handler = transformSplitBy(splitAt(1000), A(), B())
+
+      const stream = new Readable({
+        read() {
+          return null
+        }
+      })
+
+      stream.pipe(through(handler)).pipe(
+        streamToBuffer(buffer => {
+          buffersShouldEqual(Buffer.from('abcdefghijklmnopqrstuvwxAB'), buffer)
+          done()
+        })
+      )
+
+      stream.push('abcdef')
+      stream.push('ghijkl')
+      stream.push('mnopqr')
+      stream.push('stuvwx')
+      stream.push(null)
+    })
   })
 })
