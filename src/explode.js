@@ -27,7 +27,13 @@ const {
 } = require('./constants.js')
 const ExpandingBuffer = require('./helpers/ExpandingBuffer.js')
 
+// TODO: should be passed as a config parameter instead of having it hardcoded here
 const debug = true
+
+// jynx is how I call the nasty issue of having 0 bytes in the output buffer, where we would like to read repeats from
+// happens when we have accumulated an exact multiple of blockSize (0x1000) and dumped everything into the callback
+// TODO: this is probably solved for good by leaving some data in the output buffer after dumping it into the callback
+let jynxCounter = 0
 
 const readHeader = buffer => {
   if (!Buffer.isBuffer(buffer)) {
@@ -104,7 +110,7 @@ const generateAsciiTables = () => {
 
 const parseInitialData = state => {
   if (state.inputBuffer.size() < 4) {
-    return
+    return false
   }
 
   const { compressionType, dictionarySizeBits } = readHeader(state.inputBuffer.read())
@@ -130,6 +136,8 @@ const parseInitialData = state => {
       }`
     )
   }
+
+  return true
 }
 
 const wasteBits = (state, numberOfBits) => {
@@ -246,15 +254,20 @@ const processChunkData = state => {
   }
 
   if (!has('compressionType', state)) {
+    /*
+    const parsedHeader = parseInitialData(state)
+    if (!parsedHeader || state.inputBuffer.isEmpty()) {
+      return
+    }
+    */
     parseInitialData(state)
     return
   }
 
-  let nextLiteral
   state.needMoreInput = false
 
   state.backup()
-  nextLiteral = decodeNextLiteral(state)
+  let nextLiteral = decodeNextLiteral(state)
 
   while (nextLiteral !== LITERAL_END_STREAM && nextLiteral !== LITERAL_STREAM_ABORTED) {
     let addition
@@ -267,6 +280,9 @@ const processChunkData = state => {
       }
 
       const availableData = state.outputBuffer.read(state.outputBuffer.size() - minusDistance, repeatLength)
+      if (availableData.length === 0) {
+        jynxCounter++
+      }
 
       if (repeatLength > minusDistance) {
         const multipliedData = repeat(availableData, Math.ceil(repeatLength / availableData.length))
@@ -326,11 +342,15 @@ const explode = () => {
       processChunkData(state)
 
       const blockSize = 0x1000
-      const numberOfBytes = Math.floor(state.outputBuffer.size() / blockSize) * blockSize
-      const output = Buffer.from(state.outputBuffer.read(0, numberOfBytes))
-      state.outputBuffer.flushStart(numberOfBytes)
+      if (state.outputBuffer.size() > blockSize) {
+        const numberOfBytes = (Math.floor(state.outputBuffer.size() / blockSize) - 1) * blockSize
+        const output = Buffer.from(state.outputBuffer.read(0, numberOfBytes))
+        state.outputBuffer.flushStart(numberOfBytes)
 
-      callback(null, output)
+        callback(null, output)
+      } else {
+        callback(null, Buffer.from([]))
+      }
     } catch (e) {
       callback(e)
     }
@@ -354,6 +374,11 @@ const explode = () => {
 
       if (debug) {
         console.log('---------------')
+        if (jynxCounter > 0) {
+          console.log('number of JYNXes:', jynxCounter)
+        } else {
+          console.log('no JYNXes')
+        }
         console.log('total number of chunks read:', state.stats.chunkCounter)
         console.log('inputBuffer heap size', toHex(state.inputBuffer.heapSize()))
         console.log('outputBuffer heap size', toHex(state.outputBuffer.heapSize()))

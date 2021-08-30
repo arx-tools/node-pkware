@@ -3,7 +3,7 @@
 const fs = require('fs')
 const { before } = require('mocha')
 const { fileExists, streamToBuffer, buffersShouldEqual } = require('../src/helpers/testing.js')
-const { through /*, splitAt, transformSplitBy, transformIdentity */ } = require('../src/helpers/stream.js')
+const { through, splitAt, transformSplitBy, transformIdentity } = require('../src/helpers/stream.js')
 const { explode } = require('../src/explode.js')
 
 const TEST_FILE_FOLDER = '../pkware-test-files/'
@@ -24,7 +24,6 @@ const defineTestForSimpleFiles = (folder, compressedFile, decompressedFile) => {
   })
 }
 
-/*
 const defineTestForFilesWithOffset = (folder, compressedFile, decompressedFile, offset) => {
   it(`can decompress ${folder}/${compressedFile}`, done => {
     ;(async () => {
@@ -40,7 +39,6 @@ const defineTestForFilesWithOffset = (folder, compressedFile, decompressedFile, 
     })()
   })
 }
-*/
 
 // only run the tests, if the other repo is present
 // https://mochajs.org/#inclusive-tests
@@ -50,12 +48,16 @@ before(async function () {
   }
 })
 
+// TODO: test everything with small, medium and large highwatermarks
 describe('explode', () => {
-  defineTestForSimpleFiles('implode-decoder', 'small', 'small.unpacked')
+  defineTestForSimpleFiles('implode-decoder', 'small', 'small.unpacked') // fails at 0x198 highwatermark
   defineTestForSimpleFiles('implode-decoder', 'medium', 'medium.unpacked')
   defineTestForSimpleFiles('implode-decoder', 'large', 'large.unpacked')
   defineTestForSimpleFiles('implode-decoder', 'binary', 'binary.unpacked')
+  defineTestForSimpleFiles('arx-fatalis/level8', 'level8.llf', 'level8.llf.unpacked')
 
-  // defineTestForFilesWithOffset('arx-fatalis/level8', 'fast.fts', 'fast.fts.unpacked', 0x718)
-  // defineTestForFilesWithOffset('arx-fatalis/level8', 'level8.dlf', 'level8.dlf.unpacked', 8520)
+  defineTestForFilesWithOffset('arx-fatalis/level8', 'fast.fts', 'fast.fts.unpacked', 0x718)
+  // defineTestForFilesWithOffset('arx-fatalis/level8', 'level8.dlf', 'level8.dlf.unpacked', 8520) // fails at 0x1000 highwatermark
+
+  // TODO: if sum of chunks passed to explode() < highwatermark, then error?
 })
