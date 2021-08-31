@@ -1,6 +1,17 @@
-const { Transform } = require('stream')
+const { Transform, Writable } = require('stream')
 const { promisify } = require('util')
 const { isFunction } = require('ramda-adjunct')
+const ExpandingBuffer = require('./ExpandingBuffer.js')
+
+class QuasiTransform {
+  constructor(handler) {
+    this.handler = handler
+  }
+
+  handle(chunk, encoding) {
+    return promisify(this.handler).call(this, chunk, encoding)
+  }
+}
 
 const splitAt = index => {
   let cntr = 0
@@ -57,16 +68,6 @@ const through = handler => {
   return new Transform({
     transform: handler
   })
-}
-
-class QuasiTransform {
-  constructor(handler) {
-    this.handler = handler
-  }
-
-  handle(chunk, encoding) {
-    return promisify(this.handler).call(this, chunk, encoding)
-  }
 }
 
 const transformSplitBy = (predicate, leftHandler, rightHandler) => {
@@ -146,6 +147,20 @@ const transformSplitBy = (predicate, leftHandler, rightHandler) => {
   }
 }
 
+const streamToBuffer = done => {
+  const buffer = new ExpandingBuffer()
+  return new Writable({
+    write(chunk, encoding, callback) {
+      buffer.append(chunk)
+      callback()
+    },
+    final(callback) {
+      done(buffer.getHeap())
+      callback()
+    }
+  })
+}
+
 /*
 export const splitAtMatch = (matches, skipBytes = 0, debug = false) => {
   let alreadyMatched = false
@@ -186,5 +201,6 @@ module.exports = {
   transformIdentity,
   transformEmpty,
   through,
-  transformSplitBy
+  transformSplitBy,
+  streamToBuffer
 }

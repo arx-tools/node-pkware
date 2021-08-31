@@ -1,10 +1,8 @@
 // const { EOL } = require('os')
 // const fs = require('fs')
 const assert = require('assert')
-const { Writable } = require('stream')
 const fs = require('fs')
 const { compare, report } = require('binary-comparator')
-const ExpandingBuffer = require('./ExpandingBuffer.js')
 
 /*
 const isPromise = promise => {
@@ -61,20 +59,6 @@ const buffersShouldEqual = (expected, result, offset = 0, displayAsHex = false) 
   assert.ok(expected.equals(result), diff)
 }
 
-const streamToBuffer = done => {
-  const buffer = new ExpandingBuffer()
-  return new Writable({
-    write(chunk, encoding, callback) {
-      buffer.append(chunk)
-      callback()
-    },
-    final(callback) {
-      done(buffer.getHeap())
-      callback()
-    }
-  })
-}
-
 const fileExists = async filename => {
   try {
     await fs.promises.access(filename, fs.constants.R_OK)
@@ -95,7 +79,6 @@ module.exports = {
   isClass,
   buffersShouldEqual,
   bufferToString,
-  streamToBuffer,
   fileExists,
   transformToABC
 }

@@ -58,6 +58,8 @@ Takes an optional config object, which has the following properties:
 
 `stream.transformSplitBy(predicate: predicate, left: transform._transform, right: transform._transform): transform._transform` - higher order function for introducing conditional logic to transform.\_transform functions. This is used internally to handle offsets for explode()
 
+`stream.streamToBuffer(callback: function): writable._write` - data can be piped to the returned function from a stream and it will concatenate all chunks into a single buffer. Takes a callback function, which will receive the concatenated buffer as a parameter
+
 ### examples
 
 #### decompressing file with no offset into a file
@@ -77,21 +79,7 @@ fs.createReadStream(`path-to-compressed-file`)
 ```javascript
 const { Readable } = require('stream')
 const { explode, stream } = require('node-pkware')
-const { through } = stream
-
-const streamToBuffer = done => {
-  const buffers = []
-  return new Writable({
-    write(chunk, encoding, callback) {
-      buffers.push(chunk)
-      callback()
-    },
-    final(callback) {
-      done(Buffer.concat(buffers))
-      callback()
-    }
-  })
-}
+const { through, streamToBuffer } = stream
 
 Readable.from(buffer) // buffer is of type Buffer with compressed data
   .pipe(through(explode()))
@@ -109,7 +97,7 @@ const fs = require('fs')
 const { explode, stream } = require('node-pkware')
 const { through, transformSplitBy, splitAt, transformIdentity } = stream
 
-const offset = 150 // 150 bytes of data will be skipped and explode will decompress data afterwards
+const offset = 150 // 150 bytes of data will be skipped and explode will decompress the data that comes afterwards
 
 fs.createReadStream(`path-to-compressed-file`)
   .pipe(through(transformSplitBy(splitAt(offset), transformIdentity(), explode())))
@@ -123,7 +111,7 @@ const fs = require('fs')
 const { explode, stream } = require('node-pkware')
 const { through, transformSplitBy, splitAt, transformEmpty } = stream
 
-const offset = 150 // 150 bytes of data will be skipped and explode will decompress data afterwards
+const offset = 150 // 150 bytes of data will be skipped and explode will decompress the data that comes afterwards
 
 fs.createReadStream(`path-to-compressed-file`)
   .pipe(through(transformSplitBy(splitAt(offset), transformEmpty(), explode())))
@@ -150,3 +138,4 @@ Implode was removed from Arx Libertatis at this commit: https://github.com/arx/A
 
 - https://stackoverflow.com/questions/2094666/pointers-in-c-when-to-use-the-ampersand-and-the-asterisk
 - https://stackoverflow.com/a/49394095/1806628
+- https://nodejs.org/api/stream.html

@@ -2,8 +2,8 @@
 
 const fs = require('fs')
 const { before } = require('mocha')
-const { fileExists, streamToBuffer, buffersShouldEqual } = require('../src/helpers/testing.js')
-const { through, splitAt, transformSplitBy, transformIdentity } = require('../src/helpers/stream.js')
+const { fileExists, buffersShouldEqual } = require('../src/helpers/testing.js')
+const { through, splitAt, transformSplitBy, transformIdentity, streamToBuffer } = require('../src/helpers/stream.js')
 const { explode } = require('../src/explode.js')
 const { toHex } = require('../src/helpers/functions.js')
 
