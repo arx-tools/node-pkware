@@ -22,6 +22,76 @@ _TODO: add documentation_
 
 _TODO: add documentation_
 
+### decompressing file with no offset into a file
+
+```javascript
+const fs = require('fs')
+const { explode, stream } = require('node-pkware')
+const { through } = stream
+
+fs.createReadStream(`path-to-compressed-file`)
+  .pipe(through(explode()))
+  .pipe(fs.createWriteStream(`path-to-write-decompressed-data`))
+```
+
+### decompressing buffer with no offset into a buffer
+
+```javascript
+const { Readable } = require('stream')
+const { explode, stream } = require('node-pkware')
+const { through } = stream
+
+const streamToBuffer = done => {
+  const buffers = []
+  return new Writable({
+    write(chunk, encoding, callback) {
+      buffers.push(chunk)
+      callback()
+    },
+    final(callback) {
+      done(Buffer.concat(buffers))
+      callback()
+    }
+  })
+}
+
+Readable.from(buffer) // buffer is of type Buffer with compressed data
+  .pipe(through(explode()))
+  .pipe(
+    streamToBuffer(decompressedData => {
+      // decompressedData holds the decompressed buffer
+    })
+  )
+```
+
+### decompressing file with offset into a file, keeping initial part intact
+
+```javascript
+const fs = require('fs')
+const { explode, stream } = require('node-pkware')
+const { through, transformSplitBy, splitAt, transformIdentity } = stream
+
+const offset = 150 // 150 bytes of data will be skipped and explode will decompress data afterwards
+
+fs.createReadStream(`path-to-compressed-file`)
+  .pipe(through(transformSplitBy(splitAt(offset), transformIdentity(), explode())))
+  .pipe(fs.createWriteStream(`path-to-write-decompressed-data`))
+```
+
+### decompressing file with offset into a file, discarding initial part
+
+```javascript
+const fs = require('fs')
+const { explode, stream } = require('node-pkware')
+const { through, transformSplitBy, splitAt, transformEmpty } = stream
+
+const offset = 150 // 150 bytes of data will be skipped and explode will decompress data afterwards
+
+fs.createReadStream(`path-to-compressed-file`)
+  .pipe(through(transformSplitBy(splitAt(offset), transformEmpty(), explode())))
+  .pipe(fs.createWriteStream(`path-to-write-decompressed-data`))
+```
+
 ---
 
 ## misc
