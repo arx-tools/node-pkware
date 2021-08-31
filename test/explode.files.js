@@ -77,4 +77,7 @@ describe('explode', () => {
   defineTestForFilesWithOffset(0x100)('arx-fatalis/level8', 'level8.dlf', 'level8.dlf.unpacked', 8520)
   defineTestForFilesWithOffset(0x1000)('arx-fatalis/level8', 'level8.dlf', 'level8.dlf.unpacked', 8520)
   defineTestForFilesWithOffset(0x10000)('arx-fatalis/level8', 'level8.dlf', 'level8.dlf.unpacked', 8520)
+
+  defineTestForFilesWithOffset(0x1000)('arx-fatalis/level4', 'fast.fts', 'fast.fts.unpacked', 0x718)
+  defineTestForFilesWithOffset(0x1000)('arx-fatalis/level1', 'level1.dlf', 'level1.dlf.unpacked', 8520)
 })
