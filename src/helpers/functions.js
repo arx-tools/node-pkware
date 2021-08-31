@@ -1,4 +1,6 @@
-const { repeat } = require('ramda')
+const fs = require('fs')
+const path = require('path')
+const { repeat, test } = require('ramda')
 const { isNumber, isString } = require('ramda-adjunct')
 
 const isBetween = (min, max, num) => {
@@ -33,6 +35,8 @@ const maskBits = (numberOfBits, number) => {
 const getLowestNBits = (numberOfBits, number) => {
   return number & nBitsOfOnes(numberOfBits)
 }
+
+const isDecimalString = test(/^\d+$/)
 
 const isFullHexString = str => {
   if (isString(str)) {
@@ -80,6 +84,34 @@ export const dumpBytes = bytes => {
 }
 */
 
+const parseNumberString = (n, defaultValue = 0) => {
+  if (isDecimalString(n)) {
+    return parseInt(n)
+  } else if (isFullHexString(n)) {
+    return parseInt(n.replace(/^0x/, ''), 16)
+  } else {
+    return defaultValue
+  }
+}
+
+const getPackageVersion = async () => {
+  try {
+    const { version } = JSON.parse(await fs.promises.readFile(path.resolve('./package.json')))
+    return version
+  } catch (error) {
+    return 'unknown'
+  }
+}
+
+const fileExists = async filename => {
+  try {
+    await fs.promises.access(filename, fs.constants.R_OK)
+    return true
+  } catch (error) {
+    return false
+  }
+}
+
 module.exports = {
   isBetween,
   nBitsOfOnes,
@@ -87,5 +119,8 @@ module.exports = {
   getLowestNBits,
   isFullHexString,
   toHex,
-  mergeSparseArrays
+  mergeSparseArrays,
+  parseNumberString,
+  getPackageVersion,
+  fileExists
 }

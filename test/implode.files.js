@@ -1,7 +1,7 @@
 /* global describe */
 
 const { before } = require('mocha')
-const { fileExists } = require('../src/helpers/testing.js')
+const { fileExists } = require('../src/helpers/functions.js')
 
 const TEST_FILE_FOLDER = '../pkware-test-files/'
 

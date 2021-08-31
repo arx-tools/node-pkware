@@ -16,7 +16,47 @@ tested in node version 14.9.0
 
 ## command line interface
 
-_TODO: add documentation_
+**implode and --auto-detect is WIP**
+
+`implode <filename> --output=<filename> --ascii|--binary --level=1|2|3` - compresses file. if `--output` is omitted, then output will be placed next to input and names as `<filename>.compressed`. optionally you can specify an offset from which the compressed data starts with the `--offset=<int|hex>`, which is useful for mixed files, such as the fts files of Arx Fatalis
+
+`explode <filename> --output=<filename>` - decompresses file. if `--output` is omitted, then output will be placed next to input and names as `<filename>.decompressed`. optionally you can specify an offset from which the compressed data starts with the `--offset=<int|hex>`, which is useful for mixed files, such as the fts files of Arx Fatalis
+
+The `--drop-before-offset` flag tells node-pkware to drop the portion before `--offset`, otherwise it will keep it untouched and attach it to the output file.
+
+There is an `--auto-detect` flag, which will search for the first pkware header starting from the beginning of the file. If `--offset` is defined, then it will start searching from that point.
+
+## examples
+
+**implode and --auto-detect is WIP**
+
+`explode test/files/fast.fts --output=C:/fast.fts.decompressed --offset=1816`
+
+`explode test/files/fast.fts --output=C:/fast.fts.decompressed --offset=0x718`
+
+`implode test/files/fast.fts.unpacked --output=C:/fast.fts --binary --level=3 --offset=1816`
+
+`explode test/files/fast.fts --auto-detect --debug --output=E:/fast.fts.unpacked`
+
+`explode test/files/fast.fts --auto-detect --debug --output=E:/fast.fts.unpacked --offset=2000`
+
+### piping also works
+
+**implode and --auto-detect is WIP**
+
+**don't use --debug when piping, because it will be mixed with the decompressed data**
+
+`cat c:/arx/level8.llf | explode > c:/arx/level8.llf.unpacked`
+
+`explode c:/arx/level8.llf > c:/arx/level8.llf.unpacked`
+
+`cat c:/arx/level8.llf | explode --output=c:/arx/level8.llf.unpacked`
+
+`cat e:/piping/level8.llf.unpacked | implode --binary --level=3 > e:/piping/level8.llf.comp2`
+
+`implode e:/piping/level8.llf.unpacked --binary --level=3 > e:/piping/level8.llf.comp`
+
+`cat e:/piping/level8.llf.unpacked | implode --binary --level=3 --output="e:/piping/level8.llf.comp2"`
 
 ## using as a library
 
@@ -38,7 +78,9 @@ Takes an optional config object, which has the following properties:
 
 `decompress(config: object): transform._transform` - alias for explode
 
-`stream` - a set of helper functions for channeling streams to and from explode/implode
+_TODO: describe implode once it's implemented_
+
+`stream` - an object of helper functions for channeling streams to and from explode/implode
 
 `stream.through(transformer: function): Transform` - a function, which takes a `transform._transform` type function and turns it into a Transform stream instance
 
@@ -59,6 +101,8 @@ Takes an optional config object, which has the following properties:
 `stream.transformSplitBy(predicate: predicate, left: transform._transform, right: transform._transform): transform._transform` - higher order function for introducing conditional logic to transform.\_transform functions. This is used internally to handle offsets for explode()
 
 `stream.streamToBuffer(callback: function): writable._write` - data can be piped to the returned function from a stream and it will concatenate all chunks into a single buffer. Takes a callback function, which will receive the concatenated buffer as a parameter
+
+_TODO: describe constants and errors_
 
 ### examples
 

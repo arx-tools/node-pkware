@@ -2,10 +2,10 @@
 
 const fs = require('fs')
 const { before } = require('mocha')
-const { fileExists, buffersShouldEqual } = require('../src/helpers/testing.js')
+const { buffersShouldEqual } = require('../src/helpers/testing.js')
 const { through, splitAt, transformSplitBy, transformIdentity, streamToBuffer } = require('../src/helpers/stream.js')
 const { explode } = require('../src/explode.js')
-const { toHex } = require('../src/helpers/functions.js')
+const { toHex, fileExists } = require('../src/helpers/functions.js')
 
 const TEST_FILE_FOLDER = '../pkware-test-files/'
 

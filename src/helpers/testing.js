@@ -1,7 +1,6 @@
 // const { EOL } = require('os')
 // const fs = require('fs')
 const assert = require('assert')
-const fs = require('fs')
 const { compare, report } = require('binary-comparator')
 
 /*
@@ -59,15 +58,6 @@ const buffersShouldEqual = (expected, result, offset = 0, displayAsHex = false) 
   assert.ok(expected.equals(result), diff)
 }
 
-const fileExists = async filename => {
-  try {
-    await fs.promises.access(filename, fs.constants.R_OK)
-    return true
-  } catch (error) {
-    return false
-  }
-}
-
 const transformToABC = () => {
   let cntr = 0
   return function (chunk, encoding, callback) {
@@ -79,6 +69,5 @@ module.exports = {
   isClass,
   buffersShouldEqual,
   bufferToString,
-  fileExists,
   transformToABC
 }

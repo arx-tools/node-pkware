@@ -1,50 +1,45 @@
 #!/usr/bin/env node
 
-// TODO
-/*
-import fs from 'fs'
-import minimist from 'minimist'
-import { explode } from '../src/index.mjs'
-import {
-  splitAtIndex,
-  splitAtMatch,
-  transformSplitBy,
-  transformIdentity,
-  through,
-  transformEmpty
-} from '../src/helpers.mjs'
-import { BINARY_COMPRESSION, ASCII_COMPRESSION } from '../src/constants.mjs'
-import { fileExists, getPackageVersion, parseNumberString } from './helpers.mjs'
+const fs = require('fs')
+const minimist = require('minimist')
+const { getPackageVersion, parseNumberString, fileExists } = require('../src/helpers/functions.js')
+const { transformEmpty, transformIdentity, transformSplitBy, splitAt, through } = require('../src/helpers/stream.js')
+const { explode } = require('../src/explode.js')
 
-const decompress = (input, output, offset, autoDetect, keepHeader, params) => {
+const args = minimist(process.argv.slice(2), {
+  string: ['output', 'offset', 'input-buffer-size', 'output-buffer-size'],
+  boolean: ['version', 'drop-before-offset', 'debug' /*, 'auto-detect' */],
+  alias: {
+    v: 'version'
+  }
+})
+
+// import { BINARY_COMPRESSION, ASCII_COMPRESSION } from '../src/constants.mjs'
+
+const decompress = (input, output, offset, /* autoDetect, */ keepHeader, params) => {
   const leftHandler = keepHeader ? transformIdentity() : transformEmpty()
   const rightHandler = explode(params)
 
   let handler = rightHandler
 
-  if (autoDetect) {
-    const everyPkwareHeader = [
-      Buffer.from([BINARY_COMPRESSION, 4]),
-      Buffer.from([BINARY_COMPRESSION, 5]),
-      Buffer.from([BINARY_COMPRESSION, 6]),
-      Buffer.from([ASCII_COMPRESSION, 4]),
-      Buffer.from([ASCII_COMPRESSION, 5]),
-      Buffer.from([ASCII_COMPRESSION, 6])
-    ]
-    handler = transformSplitBy(splitAtMatch(everyPkwareHeader, offset, params.debug), leftHandler, rightHandler)
-  } else if (offset > 0) {
-    handler = transformSplitBy(splitAtIndex(offset), leftHandler, rightHandler)
-  }
+  // if (autoDetect) {
+  //   const everyPkwareHeader = [
+  //     Buffer.from([BINARY_COMPRESSION, 4]),
+  //     Buffer.from([BINARY_COMPRESSION, 5]),
+  //     Buffer.from([BINARY_COMPRESSION, 6]),
+  //     Buffer.from([ASCII_COMPRESSION, 4]),
+  //     Buffer.from([ASCII_COMPRESSION, 5]),
+  //     Buffer.from([ASCII_COMPRESSION, 6])
+  //   ]
+  //   handler = transformSplitBy(splitAtMatch(everyPkwareHeader, offset, params.debug), leftHandler, rightHandler)
+  // } else if (offset > 0) {
+  handler = transformSplitBy(splitAt(offset), leftHandler, rightHandler)
+  // }
 
   return new Promise((resolve, reject) => {
     input.pipe(through(handler).on('error', reject)).pipe(output).on('finish', resolve).on('error', reject)
   })
 }
-
-const args = minimist(process.argv.slice(2), {
-  string: ['output', 'offset', 'input-buffer-size', 'output-buffer-size'],
-  boolean: ['version', 'drop-before-offset', 'debug', 'auto-detect']
-})
 
 ;(async () => {
   if (args.version) {
@@ -79,7 +74,7 @@ const args = minimist(process.argv.slice(2), {
   }
 
   const offset = parseNumberString(args.offset, 0)
-  const autoDetect = args['auto-detect']
+  // const autoDetect = args['auto-detect']
 
   const keepHeader = !args['drop-before-offset']
   const params = {
@@ -88,7 +83,7 @@ const args = minimist(process.argv.slice(2), {
     outputBufferSize: parseNumberString(args['output-buffer-size'], 0x40000)
   }
 
-  decompress(input, output, offset, autoDetect, keepHeader, params)
+  decompress(input, output, offset, /* autoDetect, */ keepHeader, params)
     .then(() => {
       process.exit(0)
     })
@@ -97,4 +92,3 @@ const args = minimist(process.argv.slice(2), {
       process.exit(1)
     })
 })()
-*/
