@@ -30,11 +30,6 @@ const ExpandingBuffer = require('./helpers/ExpandingBuffer.js')
 // TODO: should be passed as a config parameter instead of having it hardcoded here
 const debug = true
 
-// jynx is how I call the nasty issue of having 0 bytes in the output buffer, where we would like to read repeats from
-// happens when we have accumulated an exact multiple of blockSize (0x1000) and dumped everything into the callback
-// TODO: this is probably solved for good by leaving some data in the output buffer after dumping it into the callback
-let jynxCounter = 0
-
 const readHeader = buffer => {
   if (!Buffer.isBuffer(buffer)) {
     throw new ExpectedBufferError()
@@ -254,14 +249,10 @@ const processChunkData = state => {
   }
 
   if (!has('compressionType', state)) {
-    /*
     const parsedHeader = parseInitialData(state)
     if (!parsedHeader || state.inputBuffer.isEmpty()) {
       return
     }
-    */
-    parseInitialData(state)
-    return
   }
 
   state.needMoreInput = false
@@ -280,9 +271,6 @@ const processChunkData = state => {
       }
 
       const availableData = state.outputBuffer.read(state.outputBuffer.size() - minusDistance, repeatLength)
-      if (availableData.length === 0) {
-        jynxCounter++
-      }
 
       if (repeatLength > minusDistance) {
         const multipliedData = repeat(availableData, Math.ceil(repeatLength / availableData.length))
@@ -374,11 +362,6 @@ const explode = () => {
 
       if (debug) {
         console.log('---------------')
-        if (jynxCounter > 0) {
-          console.log('number of JYNXes:', jynxCounter)
-        } else {
-          console.log('no JYNXes')
-        }
         console.log('total number of chunks read:', state.stats.chunkCounter)
         console.log('inputBuffer heap size', toHex(state.inputBuffer.heapSize()))
         console.log('outputBuffer heap size', toHex(state.outputBuffer.heapSize()))

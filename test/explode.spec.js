@@ -2,9 +2,9 @@
 
 const assert = require('assert')
 const { Readable } = require('stream')
-const { has } = require('ramda')
+// const { has } = require('ramda')
 const { isFunction, isPlainObject, noop } = require('ramda-adjunct')
-const { ChBitsAsc, ChCodeAsc, ASCII_COMPRESSION, BINARY_COMPRESSION } = require('../src/constants.js')
+const { ChBitsAsc, ChCodeAsc /*, ASCII_COMPRESSION, BINARY_COMPRESSION */ } = require('../src/constants.js')
 const {
   InvalidDataError,
   InvalidCompressionTypeError,
@@ -279,6 +279,7 @@ describe('explode', () => {
     it('is a function', () => {
       assert.ok(isFunction(processChunkData), `${processChunkData} is not a function`)
     })
+    /*
     it('gets a state object and if state.inputBuffer is big enough, then reads header data', () => {
       const state = {
         inputBuffer: new ExpandingBuffer()
@@ -288,6 +289,7 @@ describe('explode', () => {
       assert.strictEqual(state.compressionType, 1)
       assert.strictEqual(state.dictionarySizeBits, 4)
     })
+    */
     it('leaves state unchanged, when header is not read yet and we have less, than 4 bytes', () => {
       const state = {
         inputBuffer: new ExpandingBuffer()
@@ -297,6 +299,7 @@ describe('explode', () => {
       assert.strictEqual(Object.keys(state).length, 1)
       assert.strictEqual(state.inputBuffer.size(), 3)
     })
+    /*
     it('sets state.bitBuffer to the 3rd byte of inputBuffer, when reading header data', () => {
       const state = {
         inputBuffer: new ExpandingBuffer()
@@ -305,6 +308,8 @@ describe('explode', () => {
       processChunkData(state)
       assert.strictEqual(state.bitBuffer, 52)
     })
+    */
+    /*
     it('trims off the first 3 bytes from the inputBuffer once the header is read', () => {
       const state = {
         inputBuffer: new ExpandingBuffer()
@@ -313,6 +318,8 @@ describe('explode', () => {
       processChunkData(state)
       buffersShouldEqual(Buffer.from([49, 7]), state.inputBuffer.read())
     })
+    */
+    /*
     it('sets state.dictionarySizeMask when reading header data', () => {
       const state1 = {
         inputBuffer: new ExpandingBuffer()
@@ -328,6 +335,8 @@ describe('explode', () => {
       processChunkData(state2)
       assert.strictEqual(state2.dictionarySizeMask, 0b111111)
     })
+    */
+    /*
     it('adds generated ascii tables to state, when compression type is ascii', () => {
       const state1 = {
         inputBuffer: new ExpandingBuffer()
@@ -343,5 +352,6 @@ describe('explode', () => {
       processChunkData(state2)
       assert.ok(!has('asciiTable2E34', state2))
     })
+    */
   })
 })

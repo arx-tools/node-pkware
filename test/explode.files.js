@@ -5,14 +5,15 @@ const { before } = require('mocha')
 const { fileExists, streamToBuffer, buffersShouldEqual } = require('../src/helpers/testing.js')
 const { through, splitAt, transformSplitBy, transformIdentity } = require('../src/helpers/stream.js')
 const { explode } = require('../src/explode.js')
+const { toHex } = require('../src/helpers/functions.js')
 
 const TEST_FILE_FOLDER = '../pkware-test-files/'
 
-const defineTestForSimpleFiles = (folder, compressedFile, decompressedFile) => {
-  it(`can decompress ${folder}/${compressedFile}`, done => {
+const defineTestForSimpleFiles = highWaterMark => (folder, compressedFile, decompressedFile) => {
+  it(`can decompress ${folder}/${compressedFile} with ${toHex(highWaterMark)} byte chunks`, done => {
     ;(async () => {
       const expected = await fs.promises.readFile(`${TEST_FILE_FOLDER}${folder}/${decompressedFile}`)
-      fs.createReadStream(`${TEST_FILE_FOLDER}${folder}/${compressedFile}`, { highWaterMark: 0x100 })
+      fs.createReadStream(`${TEST_FILE_FOLDER}${folder}/${compressedFile}`, { highWaterMark })
         .pipe(through(explode()))
         .pipe(
           streamToBuffer(buffer => {
@@ -24,11 +25,11 @@ const defineTestForSimpleFiles = (folder, compressedFile, decompressedFile) => {
   })
 }
 
-const defineTestForFilesWithOffset = (folder, compressedFile, decompressedFile, offset) => {
+const defineTestForFilesWithOffset = highWaterMark => (folder, compressedFile, decompressedFile, offset) => {
   it(`can decompress ${folder}/${compressedFile}`, done => {
     ;(async () => {
       const expected = await fs.promises.readFile(`${TEST_FILE_FOLDER}${folder}/${decompressedFile}`)
-      fs.createReadStream(`${TEST_FILE_FOLDER}${folder}/${compressedFile}`, { highWaterMark: 0x1000 })
+      fs.createReadStream(`${TEST_FILE_FOLDER}${folder}/${compressedFile}`, { highWaterMark })
         .pipe(through(transformSplitBy(splitAt(offset), transformIdentity(), explode())))
         .pipe(
           streamToBuffer(buffer => {
@@ -48,16 +49,32 @@ before(async function () {
   }
 })
 
-// TODO: test everything with small, medium and large highwatermarks
 describe('explode', () => {
-  defineTestForSimpleFiles('implode-decoder', 'small', 'small.unpacked') // fails at 0x198 highwatermark
-  defineTestForSimpleFiles('implode-decoder', 'medium', 'medium.unpacked')
-  defineTestForSimpleFiles('implode-decoder', 'large', 'large.unpacked')
-  defineTestForSimpleFiles('implode-decoder', 'binary', 'binary.unpacked')
-  defineTestForSimpleFiles('arx-fatalis/level8', 'level8.llf', 'level8.llf.unpacked')
+  defineTestForSimpleFiles(0x100)('implode-decoder', 'small', 'small.unpacked')
+  defineTestForSimpleFiles(0x1000)('implode-decoder', 'small', 'small.unpacked')
+  defineTestForSimpleFiles(0x10000)('implode-decoder', 'small', 'small.unpacked')
 
-  defineTestForFilesWithOffset('arx-fatalis/level8', 'fast.fts', 'fast.fts.unpacked', 0x718)
-  // defineTestForFilesWithOffset('arx-fatalis/level8', 'level8.dlf', 'level8.dlf.unpacked', 8520) // fails at 0x1000 highwatermark
+  defineTestForSimpleFiles(0x100)('implode-decoder', 'medium', 'medium.unpacked')
+  defineTestForSimpleFiles(0x1000)('implode-decoder', 'medium', 'medium.unpacked')
+  defineTestForSimpleFiles(0x10000)('implode-decoder', 'medium', 'medium.unpacked')
 
-  // TODO: if sum of chunks passed to explode() < highwatermark, then error?
+  defineTestForSimpleFiles(0x100)('implode-decoder', 'large', 'large.unpacked')
+  defineTestForSimpleFiles(0x1000)('implode-decoder', 'large', 'large.unpacked')
+  defineTestForSimpleFiles(0x10000)('implode-decoder', 'large', 'large.unpacked')
+
+  defineTestForSimpleFiles(0x100)('implode-decoder', 'binary', 'binary.unpacked')
+  defineTestForSimpleFiles(0x1000)('implode-decoder', 'binary', 'binary.unpacked')
+  defineTestForSimpleFiles(0x10000)('implode-decoder', 'binary', 'binary.unpacked')
+
+  defineTestForSimpleFiles(0x100)('arx-fatalis/level8', 'level8.llf', 'level8.llf.unpacked')
+  defineTestForSimpleFiles(0x1000)('arx-fatalis/level8', 'level8.llf', 'level8.llf.unpacked')
+  defineTestForSimpleFiles(0x10000)('arx-fatalis/level8', 'level8.llf', 'level8.llf.unpacked')
+
+  defineTestForFilesWithOffset(0x100)('arx-fatalis/level8', 'fast.fts', 'fast.fts.unpacked', 0x718)
+  defineTestForFilesWithOffset(0x1000)('arx-fatalis/level8', 'fast.fts', 'fast.fts.unpacked', 0x718)
+  defineTestForFilesWithOffset(0x10000)('arx-fatalis/level8', 'fast.fts', 'fast.fts.unpacked', 0x718)
+
+  defineTestForFilesWithOffset(0x100)('arx-fatalis/level8', 'level8.dlf', 'level8.dlf.unpacked', 8520)
+  defineTestForFilesWithOffset(0x1000)('arx-fatalis/level8', 'level8.dlf', 'level8.dlf.unpacked', 8520)
+  defineTestForFilesWithOffset(0x10000)('arx-fatalis/level8', 'level8.dlf', 'level8.dlf.unpacked', 8520)
 })
