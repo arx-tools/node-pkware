@@ -20,8 +20,6 @@ _TODO: add documentation_
 
 ## using as a library
 
-_TODO: add documentation_
-
 ### decompressing file with no offset into a file
 
 ```javascript
@@ -114,67 +112,3 @@ Implode was removed from Arx Libertatis at this commit: https://github.com/arx/A
 
 - https://stackoverflow.com/questions/2094666/pointers-in-c-when-to-use-the-ampersand-and-the-asterisk
 - https://stackoverflow.com/a/49394095/1806628
-
-### notes:
-
-#### Analogue code on how stream handling should look like with higher order functions
-
-```javascript
-const { compose, apply, useWith, concat, splitAt } = require('ramda')
-
-const splitAtIndex = idx => input => {
-  return splitAt(idx)(input)
-}
-
-const parseString = (splitter, left, right) => input => {
-  return compose(apply(useWith(concat, [left, right])), splitter)(input)
-}
-
-const headerSize = 6
-
-let handler = toUpper // toUpper will be substituted with explode and implode
-if (headerSize > 0) {
-  handler = parseString(splitAtIndex(headerSize), identity, handler)
-}
-
-const inputData = 'abcdefghijklmnopq'
-const outputData = handler(inputData)
-
-console.log(outputData) // 'abcdefGHIJKLMNOPQ'
-```
-
-#### Example on how this.\_flush is accessible when defined inside a transform handler
-
-```javascript
-const A = () => {
-  let firstChunk = true
-  return function (chunk, encoding, callback) {
-    if (firstChunk) {
-      firstChunk = false
-      this._flush = x => {
-        x(null, 'B')
-      }
-    }
-
-    callback(null, 'A')
-  }
-}
-
-class Transform {
-  constructor(handler) {
-    this.handler = handler
-  }
-
-  run() {
-    this.handler('XXXX', null, () => {})
-  }
-}
-
-const handler = A()
-const tmp = new Transform(handler)
-console.log(handler._flush) // undefined
-console.log(tmp._flush) // undefined
-tmp.run()
-console.log(handler._flush) // undefined
-console.log(tmp._flush) // function
-```
