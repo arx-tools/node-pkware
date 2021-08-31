@@ -20,7 +20,47 @@ _TODO: add documentation_
 
 ## using as a library
 
-### decompressing file with no offset into a file
+### API (named imports of node-pkware)
+
+`explode(config: object): transform._transform` - decompresses stream
+
+Returns a function, that you can use as a [transform.\_transform](https://nodejs.org/api/stream.html#stream_transform_transform_chunk_encoding_callback) method. The returned function has the `(chunk: Buffer, encoding: string, callback: function)` parameter signature.
+
+Takes an optional config object, which has the following properties:
+
+```
+{
+  debug: boolean, // whether the code should display debug messages on the console or not (default = false)
+  inputBufferSize: int, // the starting size of the input buffer, may expand later as needed. not having to expand may have performance impact (default 0)
+  outputBufferSize: int // same as inputBufferSize, but for the outputBuffer (default 0)
+}
+```
+
+`decompress(config: object): transform._transform` - alias for explode
+
+`stream` - a set of helper functions for channeling streams to and from explode/implode
+
+`stream.through(transformer: function): Transform` - a function, which takes a `transform._transform` type function and turns it into a Transform stream instance
+
+`stream.transformEmpty(chunk: Buffer, encoding: string, callback: function)` - a `transform._transform` type function, which for every input chunk will output an empty buffer
+
+`stream.transformIdentity(chunk: Buffer, encoding: string, callback: function)` - a `transform._transform` type function, which lets the input chunks through without any change
+
+`stream.splitAt(index: int): function` - creates a **"predicate"** function, that awaits Buffers, keeps an internal counter of the bytes from them and splits the appropriate buffer at the given index. Splitting is done by returning an array with `[left: Buffer, right: Buffer, isLeftDone: bool]`. If you want to split data at the 100th byte and you keep feeding 60 byte long buffers to the function returned by splitAt(100), then it will return arrays in the following manner:
+
+```
+1) [inputBuffer, emptyBuffer, false]
+2) [inputBuffer.slice(0, 40), inputBuffer.slice(40, 60), true]
+3) [emptyBuffer, inputBuffer, true]
+4) [emptyBuffer, inputBuffer, true]
+... and so on
+```
+
+`stream.transformSplitBy(predicate: predicate, left: transform._transform, right: transform._transform): transform._transform` - higher order function for introducing conditional logic to transform.\_transform functions. This is used internally to handle offsets for explode()
+
+### examples
+
+#### decompressing file with no offset into a file
 
 ```javascript
 const fs = require('fs')
@@ -32,7 +72,7 @@ fs.createReadStream(`path-to-compressed-file`)
   .pipe(fs.createWriteStream(`path-to-write-decompressed-data`))
 ```
 
-### decompressing buffer with no offset into a buffer
+#### decompressing buffer with no offset into a buffer
 
 ```javascript
 const { Readable } = require('stream')
@@ -62,7 +102,7 @@ Readable.from(buffer) // buffer is of type Buffer with compressed data
   )
 ```
 
-### decompressing file with offset into a file, keeping initial part intact
+#### decompressing file with offset into a file, keeping initial part intact
 
 ```javascript
 const fs = require('fs')
@@ -76,7 +116,7 @@ fs.createReadStream(`path-to-compressed-file`)
   .pipe(fs.createWriteStream(`path-to-write-decompressed-data`))
 ```
 
-### decompressing file with offset into a file, discarding initial part
+#### decompressing file with offset into a file, discarding initial part
 
 ```javascript
 const fs = require('fs')
@@ -90,15 +130,13 @@ fs.createReadStream(`path-to-compressed-file`)
   .pipe(fs.createWriteStream(`path-to-write-decompressed-data`))
 ```
 
----
-
-## misc
+## Useful links
 
 ### test files
 
 https://github.com/meszaros-lajos-gyorgy/pkware-test-files
 
-### sources:
+### sources
 
 - https://github.com/ladislav-zezula/StormLib/tree/master/src/pklib
 - https://github.com/ShieldBattery/implode-decoder
@@ -108,7 +146,7 @@ https://github.com/meszaros-lajos-gyorgy/pkware-test-files
 
 Implode was removed from Arx Libertatis at this commit: https://github.com/arx/ArxLibertatis/commit/2db9f0dd023fdd5d4da6f06c08a92d932e218187
 
-### helpful links:
+### helpful info
 
 - https://stackoverflow.com/questions/2094666/pointers-in-c-when-to-use-the-ampersand-and-the-asterisk
 - https://stackoverflow.com/a/49394095/1806628
