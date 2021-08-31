@@ -71,6 +71,15 @@ const mergeSparseArrays = (a, b) => {
   return result
 }
 
+/*
+export const dumpBytes = bytes => {
+  const formattedBytes = Array.from(bytes)
+    .map(byte => toHex(byte, 2, true))
+    .join(' ')
+  return `<${formattedBytes}>`
+}
+*/
+
 module.exports = {
   isBetween,
   nBitsOfOnes,
