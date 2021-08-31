@@ -27,9 +27,6 @@ const {
 } = require('./constants.js')
 const ExpandingBuffer = require('./helpers/ExpandingBuffer.js')
 
-// TODO: should be passed as a config parameter instead of having it hardcoded here
-const debug = true
-
 const readHeader = buffer => {
   if (!Buffer.isBuffer(buffer)) {
     throw new ExpectedBufferError()
@@ -103,7 +100,7 @@ const generateAsciiTables = () => {
   return tables
 }
 
-const parseInitialData = state => {
+const parseInitialData = (state, debug = false) => {
   if (state.inputBuffer.size() < 4) {
     return false
   }
@@ -243,13 +240,13 @@ const decodeDistance = (state, repeatLength) => {
   return distance + 1
 }
 
-const processChunkData = state => {
+const processChunkData = (state, debug = false) => {
   if (state.inputBuffer.isEmpty()) {
     return
   }
 
   if (!has('compressionType', state)) {
-    const parsedHeader = parseInitialData(state)
+    const parsedHeader = parseInitialData(state, debug)
     if (!parsedHeader || state.inputBuffer.isEmpty()) {
       return
     }
@@ -307,7 +304,7 @@ const generateDecodeTables = (startIndexes, lengthBits) => {
   }, repeat(0, 0x100))
 }
 
-const explode = () => {
+const explode = (debug = false) => {
   const handler = function (chunk, encoding, callback) {
     if (!isFunction(callback)) {
       throw new ExpectedFunctionError()
@@ -327,7 +324,7 @@ const explode = () => {
         console.log(`reading ${toHex(chunk.length)} bytes from chunk #${state.stats.chunkCounter++}`)
       }
 
-      processChunkData(state)
+      processChunkData(state, debug)
 
       const blockSize = 0x1000
       if (state.outputBuffer.size() > blockSize) {
