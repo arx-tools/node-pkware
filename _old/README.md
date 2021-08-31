@@ -1,17 +1,3 @@
-# node-pkware
-
-nodejs implementation of StormLib compression/decompression algorithm
-
-it was the de-facto compression for games from around Y2K, like Arx Fatalis
-
-## installation / update existing version
-
-`npm i -g node-pkware`
-
-recommended node version: 8.5+
-
-tested in node version 12.7.0
-
 ## command line interface
 
 `implode <filename> --output=<filename> --ascii|--binary --level=1|2|3` - compresses file.
@@ -50,19 +36,8 @@ beginning of the file. If `--offset` is defined, then it will start searching fr
 
 `cat c:/arx/level8.llf | explode --output=c:/arx/level8.llf.unpacked`
 
-
 `cat e:/piping/level8.llf.unpacked | implode --binary --level=3 > e:/piping/level8.llf.comp2`
 
 `implode e:/piping/level8.llf.unpacked --binary --level=3 > e:/piping/level8.llf.comp`
 
 `cat e:/piping/level8.llf.unpacked | implode --binary --level=3 --output="e:/piping/level8.llf.comp2"`
-
-## sources:
-
-* https://github.com/ladislav-zezula/StormLib/tree/master/src/pklib
-* https://github.com/ShieldBattery/implode-decoder
-
-### helpful links:
-
-* https://stackoverflow.com/questions/2094666/pointers-in-c-when-to-use-the-ampersand-and-the-asterisk
-* https://stackoverflow.com/a/49394095/1806628

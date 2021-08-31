@@ -304,7 +304,7 @@ const generateDecodeTables = (startIndexes, lengthBits) => {
   }, repeat(0, 0x100))
 }
 
-const explode = (debug = false) => {
+const explode = ({ debug = false, inputBufferSize = 0x0, outputBufferSize = 0x0 } = {}) => {
   const handler = function (chunk, encoding, callback) {
     if (!isFunction(callback)) {
       throw new ExpectedFunctionError()
@@ -352,8 +352,8 @@ const explode = (debug = false) => {
     chBitsAsc: repeat(0, 0x100), // DecodeLit and GenAscTabs uses this
     lengthCodes: generateDecodeTables(LenCode, LenBits),
     distPosCodes: generateDecodeTables(DistCode, DistBits),
-    inputBuffer: new ExpandingBuffer(),
-    outputBuffer: new ExpandingBuffer(),
+    inputBuffer: new ExpandingBuffer(inputBufferSize),
+    outputBuffer: new ExpandingBuffer(outputBufferSize),
     onInputFinished: callback => {
       const state = handler._state
 

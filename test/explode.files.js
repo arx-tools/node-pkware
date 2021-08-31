@@ -9,14 +9,12 @@ const { toHex } = require('../src/helpers/functions.js')
 
 const TEST_FILE_FOLDER = '../pkware-test-files/'
 
-const DEBUG_ENABLED = true
-
 const defineTestForSimpleFiles = highWaterMark => (folder, compressedFile, decompressedFile) => {
   it(`can decompress ${folder}/${compressedFile} with ${toHex(highWaterMark)} byte chunks`, done => {
     ;(async () => {
       const expected = await fs.promises.readFile(`${TEST_FILE_FOLDER}${folder}/${decompressedFile}`)
       fs.createReadStream(`${TEST_FILE_FOLDER}${folder}/${compressedFile}`, { highWaterMark })
-        .pipe(through(explode(DEBUG_ENABLED)))
+        .pipe(through(explode({ debug: true })))
         .pipe(
           streamToBuffer(buffer => {
             buffersShouldEqual(buffer, expected, 0, true)
@@ -32,7 +30,7 @@ const defineTestForFilesWithOffset = highWaterMark => (folder, compressedFile, d
     ;(async () => {
       const expected = await fs.promises.readFile(`${TEST_FILE_FOLDER}${folder}/${decompressedFile}`)
       fs.createReadStream(`${TEST_FILE_FOLDER}${folder}/${compressedFile}`, { highWaterMark })
-        .pipe(through(transformSplitBy(splitAt(offset), transformIdentity(), explode(DEBUG_ENABLED))))
+        .pipe(through(transformSplitBy(splitAt(offset), transformIdentity(), explode({ debug: true }))))
         .pipe(
           streamToBuffer(buffer => {
             buffersShouldEqual(buffer, expected, 0, false)
