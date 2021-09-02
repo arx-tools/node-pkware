@@ -1,4 +1,4 @@
-const { repeat, unfold, reduce, has } = require('ramda')
+const { repeat, unfold, reduce, has, includes } = require('ramda')
 const { isFunction } = require('ramda-adjunct')
 const {
   InvalidDataError,
@@ -8,12 +8,15 @@ const {
   ExpectedFunctionError,
   AbortedError
 } = require('./errors.js')
-const { isBetween, mergeSparseArrays, getLowestNBits, nBitsOfOnes, toHex } = require('./helpers/functions.js')
+const { mergeSparseArrays, getLowestNBits, nBitsOfOnes, toHex } = require('./helpers/functions.js')
 const {
   ChBitsAsc,
   ChCodeAsc,
   BINARY_COMPRESSION,
   ASCII_COMPRESSION,
+  DICTIONARY_SIZE_SMALL,
+  DICTIONARY_SIZE_MEDIUM,
+  DICTIONARY_SIZE_LARGE,
   PKDCL_OK,
   PKDCL_STREAM_END,
   LITERAL_STREAM_ABORTED,
@@ -34,15 +37,19 @@ const readHeader = buffer => {
   if (buffer.length < 4) {
     throw new InvalidDataError()
   }
-  if (buffer.readUInt8(0) !== BINARY_COMPRESSION && buffer.readUInt8(0) !== ASCII_COMPRESSION) {
+
+  const compressionType = buffer.readUInt8(0)
+  const dictionarySizeBits = buffer.readUInt8(1)
+  if (compressionType !== BINARY_COMPRESSION && compressionType !== ASCII_COMPRESSION) {
     throw new InvalidCompressionTypeError()
   }
-  if (!isBetween(4, 6, buffer.readUInt8(1))) {
+  if (!includes(dictionarySizeBits, [DICTIONARY_SIZE_SMALL, DICTIONARY_SIZE_MEDIUM, DICTIONARY_SIZE_LARGE])) {
     throw new InvalidDictionarySizeError()
   }
+
   return {
-    compressionType: buffer.readUInt8(0),
-    dictionarySizeBits: buffer.readUInt8(1)
+    compressionType,
+    dictionarySizeBits
   }
 }
 
@@ -304,7 +311,9 @@ const generateDecodeTables = (startIndexes, lengthBits) => {
   }, repeat(0, 0x100))
 }
 
-const explode = ({ debug = false, inputBufferSize = 0x0, outputBufferSize = 0x0 } = {}) => {
+const explode = (config = {}) => {
+  const { debug = false, inputBufferSize = 0x0, outputBufferSize = 0x0 } = config
+
   const handler = function (chunk, encoding, callback) {
     if (!isFunction(callback)) {
       throw new ExpectedFunctionError()
