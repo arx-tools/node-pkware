@@ -5,6 +5,13 @@ const minimist = require('minimist')
 const { getPackageVersion, parseNumberString, fileExists } = require('../src/helpers/functions.js')
 const { transformEmpty, transformIdentity, transformSplitBy, splitAt, through } = require('../src/helpers/stream.js')
 const { explode } = require('../src/explode.js')
+// const {
+//   BINARY_COMPRESSION,
+//   ASCII_COMPRESSION,
+//   DICTIONARY_SIZE_SMALL,
+//   DICTIONARY_SIZE_MEDIUM,
+//   DICTIONARY_SIZE_LARGE
+// } = require('../src/constants.js')
 
 const args = minimist(process.argv.slice(2), {
   string: ['output', 'offset', 'input-buffer-size', 'output-buffer-size'],
@@ -14,8 +21,6 @@ const args = minimist(process.argv.slice(2), {
   }
 })
 
-// import { BINARY_COMPRESSION, ASCII_COMPRESSION } from '../src/constants.mjs'
-
 const decompress = (input, output, offset, /* autoDetect, */ keepHeader, params) => {
   const leftHandler = keepHeader ? transformIdentity() : transformEmpty()
   const rightHandler = explode(params)
@@ -24,12 +29,12 @@ const decompress = (input, output, offset, /* autoDetect, */ keepHeader, params)
 
   // if (autoDetect) {
   //   const everyPkwareHeader = [
-  //     Buffer.from([BINARY_COMPRESSION, 4]),
-  //     Buffer.from([BINARY_COMPRESSION, 5]),
-  //     Buffer.from([BINARY_COMPRESSION, 6]),
-  //     Buffer.from([ASCII_COMPRESSION, 4]),
-  //     Buffer.from([ASCII_COMPRESSION, 5]),
-  //     Buffer.from([ASCII_COMPRESSION, 6])
+  //     Buffer.from([BINARY_COMPRESSION, DICTIONARY_SIZE_SMALL]),
+  //     Buffer.from([BINARY_COMPRESSION, DICTIONARY_SIZE_MEDIUM]),
+  //     Buffer.from([BINARY_COMPRESSION, DICTIONARY_SIZE_LARGE]),
+  //     Buffer.from([ASCII_COMPRESSION, DICTIONARY_SIZE_SMALL]),
+  //     Buffer.from([ASCII_COMPRESSION, DICTIONARY_SIZE_MEDIUM]),
+  //     Buffer.from([ASCII_COMPRESSION, DICTIONARY_SIZE_LARGE])
   //   ]
   //   handler = transformSplitBy(splitAtMatch(everyPkwareHeader, offset, params.debug), leftHandler, rightHandler)
   // } else if (offset > 0) {
@@ -88,7 +93,7 @@ const decompress = (input, output, offset, /* autoDetect, */ keepHeader, params)
       process.exit(0)
     })
     .catch(e => {
-      console.error(`Error: ${e.message}`)
+      console.error(`error: ${e.message}`)
       process.exit(1)
     })
 })()

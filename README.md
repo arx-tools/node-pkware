@@ -16,8 +16,6 @@ tested in node version 14.9.0
 
 ## command line interface
 
-**implode and --auto-detect is WIP**
-
 `implode <filename> --output=<filename> --ascii|--binary --level=1|2|3` - compresses file. if `--output` is omitted, then output will be placed next to input and names as `<filename>.compressed`. optionally you can specify an offset from which the compressed data starts with the `--offset=<int|hex>`, which is useful for mixed files, such as the fts files of Arx Fatalis
 
 `explode <filename> --output=<filename>` - decompresses file. if `--output` is omitted, then output will be placed next to input and names as `<filename>.decompressed`. optionally you can specify an offset from which the compressed data starts with the `--offset=<int|hex>`, which is useful for mixed files, such as the fts files of Arx Fatalis
@@ -26,9 +24,9 @@ The `--drop-before-offset` flag tells node-pkware to drop the portion before `--
 
 There is an `--auto-detect` flag, which will search for the first pkware header starting from the beginning of the file. If `--offset` is defined, then it will start searching from that point.
 
-## examples
+Calling either explode or implode with the `-v` or `--version` flag will display the package's version
 
-**implode and --auto-detect is WIP**
+## examples
 
 `explode test/files/fast.fts --output=C:/fast.fts.decompressed --offset=1816`
 
@@ -41,8 +39,6 @@ There is an `--auto-detect` flag, which will search for the first pkware header 
 `explode test/files/fast.fts --auto-detect --debug --output=E:/fast.fts.unpacked --offset=2000`
 
 ### piping also works
-
-**implode and --auto-detect is WIP**
 
 **don't use --debug when piping, because it will be mixed with the decompressed data**
 
@@ -78,7 +74,7 @@ Takes an optional config object, which has the following properties:
 
 `decompress(config: object): transform._transform` - alias for explode
 
-_TODO: describe implode once it's implemented_
+_TODO: describe implode_
 
 `stream` - an object of helper functions for channeling streams to and from explode/implode
 
