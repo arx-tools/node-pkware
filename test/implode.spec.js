@@ -2,7 +2,7 @@
 
 const assert = require('assert')
 const { isFunction, isPlainObject } = require('ramda-adjunct')
-const { BINARY_COMPRESSION, DICTIONARY_SIZE_LARGE } = require('../src/constants.js')
+const { COMPRESSION_BINARY, DICTIONARY_SIZE_LARGE } = require('../src/constants.js')
 const { InvalidDictionarySizeError, InvalidCompressionTypeError } = require('../src/errors.js')
 const ExpandingBuffer = require('../src/helpers/ExpandingBuffer.js')
 const { setup, outputBits, processChunkData, implode } = require('../src/implode.js')
@@ -14,7 +14,7 @@ describe('setup', () => {
       inputBuffer: new ExpandingBuffer(),
       outputBuffer: new ExpandingBuffer(),
       dictionarySizeBits: DICTIONARY_SIZE_LARGE,
-      compressionType: BINARY_COMPRESSION
+      compressionType: COMPRESSION_BINARY
     }
   })
   it('is a function', () => {

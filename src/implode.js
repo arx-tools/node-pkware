@@ -8,8 +8,8 @@ const {
   DICTIONARY_SIZE_LARGE,
   DICTIONARY_SIZE_MEDIUM,
   DICTIONARY_SIZE_SMALL,
-  BINARY_COMPRESSION,
-  ASCII_COMPRESSION,
+  COMPRESSION_BINARY,
+  COMPRESSION_ASCII,
   ExLenBits,
   LenBits,
   LenCode,
@@ -36,14 +36,14 @@ const setup = state => {
   }
 
   switch (state.compressionType) {
-    case BINARY_COMPRESSION:
+    case COMPRESSION_BINARY:
       for (let nChCode = 0, nCount = 0; nCount < 0x100; nCount++) {
         state.nChBits[nCount] = 9
         state.nChCodes[nCount] = nChCode
         nChCode = getLowestNBits(16, nChCode) + 2
       }
       break
-    case ASCII_COMPRESSION:
+    case COMPRESSION_ASCII:
       for (let nCount = 0; nCount < 0x100; nCount++) {
         state.nChBits[nCount] = ChBitsAsc[nCount] + 1
         state.nChCodes[nCount] = ChCodeAsc[nCount] * 2

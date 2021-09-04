@@ -4,7 +4,7 @@ const assert = require('assert')
 const { Readable } = require('stream')
 // const { has } = require('ramda')
 const { isFunction, isPlainObject, noop } = require('ramda-adjunct')
-const { ChBitsAsc, ChCodeAsc /*, ASCII_COMPRESSION, BINARY_COMPRESSION */ } = require('../src/constants.js')
+const { ChBitsAsc, ChCodeAsc /*, COMPRESSION_ASCII, COMPRESSION_BINARY */ } = require('../src/constants.js')
 const {
   InvalidDataError,
   InvalidCompressionTypeError,
@@ -341,14 +341,14 @@ describe('explode', () => {
       const state1 = {
         inputBuffer: new ExpandingBuffer()
       }
-      state1.inputBuffer.append(Buffer.from([ASCII_COMPRESSION, 4, 5, 6]))
+      state1.inputBuffer.append(Buffer.from([COMPRESSION_ASCII, 4, 5, 6]))
       processChunkData(state1)
       assert.ok(has('asciiTable2E34', state1))
 
       const state2 = {
         inputBuffer: new ExpandingBuffer()
       }
-      state2.inputBuffer.append(Buffer.from([BINARY_COMPRESSION, 4, 5, 6]))
+      state2.inputBuffer.append(Buffer.from([COMPRESSION_BINARY, 4, 5, 6]))
       processChunkData(state2)
       assert.ok(!has('asciiTable2E34', state2))
     })

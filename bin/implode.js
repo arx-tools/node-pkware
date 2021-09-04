@@ -3,8 +3,8 @@
 const fs = require('fs')
 const minimist = require('minimist')
 const {
-  BINARY_COMPRESSION,
-  ASCII_COMPRESSION,
+  COMPRESSION_BINARY,
+  COMPRESSION_ASCII,
   DICTIONARY_SIZE_SMALL,
   DICTIONARY_SIZE_MEDIUM,
   DICTIONARY_SIZE_LARGE
@@ -86,7 +86,7 @@ const args = minimist(process.argv.slice(2), {
     process.exit(1)
   }
 
-  const compressionType = args.ascii ? ASCII_COMPRESSION : BINARY_COMPRESSION
+  const compressionType = args.ascii ? COMPRESSION_ASCII : COMPRESSION_BINARY
   const dictionarySize = args.small
     ? DICTIONARY_SIZE_SMALL
     : args.medium

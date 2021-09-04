@@ -12,8 +12,8 @@ const { mergeSparseArrays, getLowestNBits, nBitsOfOnes, toHex } = require('./hel
 const {
   ChBitsAsc,
   ChCodeAsc,
-  BINARY_COMPRESSION,
-  ASCII_COMPRESSION,
+  COMPRESSION_BINARY,
+  COMPRESSION_ASCII,
   DICTIONARY_SIZE_SMALL,
   DICTIONARY_SIZE_MEDIUM,
   DICTIONARY_SIZE_LARGE,
@@ -40,7 +40,7 @@ const readHeader = buffer => {
 
   const compressionType = buffer.readUInt8(0)
   const dictionarySizeBits = buffer.readUInt8(1)
-  if (compressionType !== BINARY_COMPRESSION && compressionType !== ASCII_COMPRESSION) {
+  if (compressionType !== COMPRESSION_BINARY && compressionType !== COMPRESSION_ASCII) {
     throw new InvalidCompressionTypeError()
   }
   if (!includes(dictionarySizeBits, [DICTIONARY_SIZE_SMALL, DICTIONARY_SIZE_MEDIUM, DICTIONARY_SIZE_LARGE])) {
@@ -120,7 +120,7 @@ const parseInitialData = (state, debug = false) => {
   state.inputBuffer.dropStart(3)
   state.dictionarySizeMask = nBitsOfOnes(dictionarySizeBits)
 
-  if (compressionType === ASCII_COMPRESSION) {
+  if (compressionType === COMPRESSION_ASCII) {
     const tables = generateAsciiTables()
     Object.entries(tables).forEach(([key, value]) => {
       state[key] = value
@@ -128,7 +128,7 @@ const parseInitialData = (state, debug = false) => {
   }
 
   if (debug) {
-    console.log(`compression type: ${state.compressionType === BINARY_COMPRESSION ? 'binary' : 'ascii'}`)
+    console.log(`compression type: ${state.compressionType === COMPRESSION_BINARY ? 'binary' : 'ascii'}`)
     console.log(
       `compression level: ${
         state.dictionarySizeBits === 4 ? 'small' : state.dictionarySizeBits === 5 ? 'medium' : 'large'
@@ -187,7 +187,7 @@ const decodeNextLiteral = state => {
   } else {
     const lastByte = getLowestNBits(8, state.bitBuffer)
 
-    if (state.compressionType === BINARY_COMPRESSION) {
+    if (state.compressionType === COMPRESSION_BINARY) {
       return wasteBits(state, 8) === PKDCL_STREAM_END ? LITERAL_STREAM_ABORTED : lastByte
     } else {
       let value

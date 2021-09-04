@@ -6,8 +6,8 @@ const { getPackageVersion, parseNumberString, fileExists } = require('../src/hel
 const { transformEmpty, transformIdentity, transformSplitBy, splitAt, through } = require('../src/helpers/stream.js')
 const { explode } = require('../src/explode.js')
 // const {
-//   BINARY_COMPRESSION,
-//   ASCII_COMPRESSION,
+//   COMPRESSION_BINARY,
+//   COMPRESSION_ASCII,
 //   DICTIONARY_SIZE_SMALL,
 //   DICTIONARY_SIZE_MEDIUM,
 //   DICTIONARY_SIZE_LARGE
@@ -29,12 +29,12 @@ const decompress = (input, output, offset, /* autoDetect, */ keepHeader, params)
 
   // if (autoDetect) {
   //   const everyPkwareHeader = [
-  //     Buffer.from([BINARY_COMPRESSION, DICTIONARY_SIZE_SMALL]),
-  //     Buffer.from([BINARY_COMPRESSION, DICTIONARY_SIZE_MEDIUM]),
-  //     Buffer.from([BINARY_COMPRESSION, DICTIONARY_SIZE_LARGE]),
-  //     Buffer.from([ASCII_COMPRESSION, DICTIONARY_SIZE_SMALL]),
-  //     Buffer.from([ASCII_COMPRESSION, DICTIONARY_SIZE_MEDIUM]),
-  //     Buffer.from([ASCII_COMPRESSION, DICTIONARY_SIZE_LARGE])
+  //     Buffer.from([COMPRESSION_BINARY, DICTIONARY_SIZE_SMALL]),
+  //     Buffer.from([COMPRESSION_BINARY, DICTIONARY_SIZE_MEDIUM]),
+  //     Buffer.from([COMPRESSION_BINARY, DICTIONARY_SIZE_LARGE]),
+  //     Buffer.from([COMPRESSION_ASCII, DICTIONARY_SIZE_SMALL]),
+  //     Buffer.from([COMPRESSION_ASCII, DICTIONARY_SIZE_MEDIUM]),
+  //     Buffer.from([COMPRESSION_ASCII, DICTIONARY_SIZE_LARGE])
   //   ]
   //   handler = transformSplitBy(splitAtMatch(everyPkwareHeader, offset, params.debug), leftHandler, rightHandler)
   // } else if (offset > 0) {
