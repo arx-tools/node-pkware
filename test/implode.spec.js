@@ -2,7 +2,31 @@
 
 const assert = require('assert')
 const { isFunction, isPlainObject } = require('ramda-adjunct')
-const { implode } = require('../src/implode.js')
+const { setup, outputBits, processChunkData, implode } = require('../src/implode.js')
+
+describe('setup', () => {
+  it('is a function', () => {
+    assert.ok(isFunction(setup), `${setup} is not a function`)
+  })
+
+  // TODO: create tests
+})
+
+describe('outputBits', () => {
+  it('is a function', () => {
+    assert.ok(isFunction(outputBits), `${outputBits} is not a function`)
+  })
+
+  // TODO: create tests
+})
+
+describe('processChunkData', () => {
+  it('is a function', () => {
+    assert.ok(isFunction(processChunkData), `${processChunkData} is not a function`)
+  })
+
+  // TODO: create tests
+})
 
 describe('implode', () => {
   it('is a function', () => {

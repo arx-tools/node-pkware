@@ -194,5 +194,8 @@ const implode = (compressionType, dictionarySizeBits, config = {}) => {
 }
 
 module.exports = {
+  setup,
+  outputBits,
+  processChunkData,
   implode
 }
