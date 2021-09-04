@@ -1,15 +1,41 @@
-/* global describe, it */
+/* global describe, it, beforeEach */
 
 const assert = require('assert')
 const { isFunction, isPlainObject } = require('ramda-adjunct')
+const { BINARY_COMPRESSION, DICTIONARY_SIZE_LARGE } = require('../src/constants.js')
+const { InvalidDictionarySizeError, InvalidCompressionTypeError } = require('../src/errors.js')
+const ExpandingBuffer = require('../src/helpers/ExpandingBuffer.js')
 const { setup, outputBits, processChunkData, implode } = require('../src/implode.js')
 
 describe('setup', () => {
+  let state
+  beforeEach(() => {
+    state = {
+      inputBuffer: new ExpandingBuffer(),
+      outputBuffer: new ExpandingBuffer(),
+      dictionarySizeBits: DICTIONARY_SIZE_LARGE,
+      compressionType: BINARY_COMPRESSION
+    }
+  })
   it('is a function', () => {
     assert.ok(isFunction(setup), `${setup} is not a function`)
   })
-
-  // TODO: create tests
+  it('throws an InvalidDictionarySizeError, when given state has dictionarySizeBits out of the range of 4..6', () => {
+    state.dictionarySizeBits = 12
+    assert.throws(() => {
+      setup(state)
+    }, InvalidDictionarySizeError)
+  })
+  it('throws an InvalidCompressionTypeError, when given state has compressionType other than 0 or 1', () => {
+    state.compressionType = -7
+    assert.throws(() => {
+      setup(state)
+    }, InvalidCompressionTypeError)
+  })
+  it('gets a state object and sets nChBits key to it', () => {
+    setup(state)
+    assert.ok(typeof state.nChBits !== 'undefined')
+  })
 })
 
 describe('outputBits', () => {

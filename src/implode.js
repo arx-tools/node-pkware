@@ -23,15 +23,12 @@ const setup = state => {
 
   switch (state.dictionarySizeBits) {
     case DICTIONARY_SIZE_LARGE:
-      state.dictionarySizeBits = 6
       state.dictionarySizeMask = nBitsOfOnes(6)
       break
     case DICTIONARY_SIZE_MEDIUM:
-      state.dictionarySizeBits = 5
       state.dictionarySizeMask = nBitsOfOnes(5)
       break
     case DICTIONARY_SIZE_SMALL:
-      state.dictionarySizeBits = 4
       state.dictionarySizeMask = nBitsOfOnes(4)
       break
     default:
