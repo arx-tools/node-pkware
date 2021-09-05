@@ -1,6 +1,5 @@
-/* global describe, it */
-
 const assert = require('assert')
+const { describe, it } = require('mocha')
 const { isFunction, isNumber } = require('ramda-adjunct')
 const {
   isBetween,

@@ -1,6 +1,5 @@
-/* global describe, it, beforeEach */
-
 const assert = require('assert')
+const { describe, it, beforeEach } = require('mocha')
 const { ExpectedBufferError } = require('../../src/errors.js')
 const ExpandingBuffer = require('../../src/helpers/ExpandingBuffer.js')
 const { isClass, buffersShouldEqual, bufferToString } = require('../../src/helpers/testing.js')

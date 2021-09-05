@@ -1,7 +1,6 @@
-/* global describe, it, before, beforeEach */
-
 const assert = require('assert')
 const { Readable } = require('stream')
+const { describe, it, before, beforeEach } = require('mocha')
 // const { has } = require('ramda')
 const { isFunction, isPlainObject, noop } = require('ramda-adjunct')
 const { ChBitsAsc, ChCodeAsc /*, COMPRESSION_ASCII, COMPRESSION_BINARY */ } = require('../src/constants.js')

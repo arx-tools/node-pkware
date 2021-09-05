@@ -1,7 +1,5 @@
-/* global describe, it */
-
 const fs = require('fs')
-const { before } = require('mocha')
+const { describe, it, before } = require('mocha')
 const { buffersShouldEqual } = require('../src/helpers/testing.js')
 const { through, splitAt, transformSplitBy, transformIdentity, streamToBuffer } = require('../src/helpers/stream.js')
 const { explode } = require('../src/explode.js')

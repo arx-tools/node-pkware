@@ -1,7 +1,6 @@
-/* global describe, it */
-
 const assert = require('assert')
 const { Writable, Readable } = require('stream')
+const { describe, it } = require('mocha')
 const { isFunction } = require('ramda-adjunct')
 const {
   splitAt,

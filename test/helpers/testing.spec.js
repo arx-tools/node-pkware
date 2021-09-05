@@ -1,6 +1,5 @@
-/* global describe, it */
-
 const assert = require('assert')
+const { describe, it } = require('mocha')
 const { isFunction } = require('ramda-adjunct')
 const { isClass, bufferToString, buffersShouldEqual, transformToABC } = require('../../src/helpers/testing.js')
 

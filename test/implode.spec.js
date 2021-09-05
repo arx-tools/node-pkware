@@ -1,6 +1,5 @@
-/* global describe, it, beforeEach */
-
 const assert = require('assert')
+const { beforeEach, describe, it } = require('mocha')
 const { isFunction, isPlainObject } = require('ramda-adjunct')
 const {
   COMPRESSION_BINARY,
