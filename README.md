@@ -76,7 +76,17 @@ Takes an optional config object, which has the following properties:
 
 `implode(compressionType: int, dictionarySize: int, config: object): transform._transform` - compresses stream
 
-_TODO: describe implode's features and configuration_
+Takes an optional config object, which has the following properties:
+
+```
+{
+  debug: boolean, // whether the code should display debug messages on the console or not (default = false)
+  inputBufferSize: int, // the starting size of the input buffer, may expand later as needed. not having to expand may have performance impact (default 0)
+  outputBufferSize: int // same as inputBufferSize, but for the outputBuffer (default 0)
+}
+```
+
+Returns a function, that you can use as a [transform.\_transform](https://nodejs.org/api/stream.html#stream_transform_transform_chunk_encoding_callback) method. The returned function has the `(chunk: Buffer, encoding: string, callback: function)` parameter signature.
 
 `compress(compressionType: int, dictionarySize: int, config: object): transform._transform` - aliasa for implode
 
@@ -102,7 +112,17 @@ _TODO: describe implode's features and configuration_
 
 `stream.streamToBuffer(callback: function): writable._write` - data can be piped to the returned function from a stream and it will concatenate all chunks into a single buffer. Takes a callback function, which will receive the concatenated buffer as a parameter
 
-_TODO: describe constants and errors_
+`constants.COMPRESSION_BINARY` and `constants.COMPRESSION_ASCII` - compression types for implode
+
+`constants.DICTIONARY_SIZE_SMALL`, `constants.DICTIONARY_SIZE_MEDIUM` and `constants.DICTIONARY_SIZE_LARGE` - dictionary sizes for implode, determines how well the file get compressed. Small dictionary size means less memory to lookback in data for repetitions, meaning it will be less effective, the file stays larger, less compressed. On the other hand, large compression allows more lookback allowing more effective compression, thus generating smaller, more compressed files.
+
+`errors.InvalidDictionarySizeError` - thrown by implode when invalid dictionary size was specified or by explode when it encounters invalid data in the header section (the first 2 bytes of a compressed files)
+
+`errors.InvalidCompressionTypeError` - thrown by implode when invalid compression type was specified or by explode when it encounters invalid data in the header section (the first 2 bytes of a compressed files)
+
+`errors.InvalidDataError` - thrown by explode, when compressed data is less, than 5 bytes long. pkware compressed files have 2 bytes header followed by at lest 2 bytes of data and an end literal.
+
+`errors.AbortedError` - thrown by explode when compressed data ends without reaching the end literal or in mid decompression
 
 ### examples
 
