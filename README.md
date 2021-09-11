@@ -40,7 +40,7 @@ Calling either explode or implode with the `-v` or `--version` flag will display
 
 ### piping also works
 
-**don't use --debug when piping, because it will be mixed with the decompressed data**
+**Don't use --debug when piping, because debug messages will be outputted to where the decompressed data is being outputted!**
 
 `cat c:/arx/level8.llf | explode > c:/arx/level8.llf.unpacked`
 
