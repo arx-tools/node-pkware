@@ -182,6 +182,29 @@ fs.createReadStream(`path-to-compressed-file`)
   .pipe(fs.createWriteStream(`path-to-write-decompressed-data`))
 ```
 
+### Catching errors
+
+```javascript
+const fs = require('fs')
+const { explode, stream } = require('node-pkware')
+const { through } = stream
+
+fs.createReadStream(`path-to-compressed-file`)
+  .on('error', err => {
+    console.error('readstream error')
+  })
+  .pipe(
+    through(explode()).on('error', err => {
+      console.error('explode error')
+    })
+  )
+  .pipe(
+    fs.createWriteStream(`path-to-write-decompressed-data`).on('error', err => {
+      console.error('writestream error')
+    })
+  )
+```
+
 ## Useful links
 
 ### test files
