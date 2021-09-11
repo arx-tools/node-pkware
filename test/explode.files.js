@@ -10,9 +10,19 @@ const TEST_FILE_FOLDER = '../pkware-test-files/'
 const defineTestForSimpleFiles = highWaterMark => (folder, compressedFile, decompressedFile) => {
   it(`can decompress ${folder}/${compressedFile} with ${toHex(highWaterMark)} byte chunks`, done => {
     ;(async () => {
-      const expected = await fs.promises.readFile(`${TEST_FILE_FOLDER}${folder}/${decompressedFile}`)
+      let expected
+      try {
+        expected = await fs.promises.readFile(`${TEST_FILE_FOLDER}${folder}/${decompressedFile}`)
+      } catch (e) {
+        done(e)
+      }
+
+      if (!expected) {
+        return
+      }
       fs.createReadStream(`${TEST_FILE_FOLDER}${folder}/${compressedFile}`, { highWaterMark })
-        .pipe(through(explode({ debug: true })))
+        .on('error', done)
+        .pipe(through(explode({ debug: true })).on('error', done))
         .pipe(
           streamToBuffer(buffer => {
             buffersShouldEqual(buffer, expected, 0, true)
@@ -26,9 +36,21 @@ const defineTestForSimpleFiles = highWaterMark => (folder, compressedFile, decom
 const defineTestForFilesWithOffset = highWaterMark => (folder, compressedFile, decompressedFile, offset) => {
   it(`can decompress ${folder}/${compressedFile}`, done => {
     ;(async () => {
-      const expected = await fs.promises.readFile(`${TEST_FILE_FOLDER}${folder}/${decompressedFile}`)
+      let expected
+      try {
+        expected = await fs.promises.readFile(`${TEST_FILE_FOLDER}${folder}/${decompressedFile}`)
+      } catch (e) {
+        done(e)
+      }
+
+      if (!expected) {
+        return
+      }
       fs.createReadStream(`${TEST_FILE_FOLDER}${folder}/${compressedFile}`, { highWaterMark })
-        .pipe(through(transformSplitBy(splitAt(offset), transformIdentity(), explode({ debug: true }))))
+        .on('error', done)
+        .pipe(
+          through(transformSplitBy(splitAt(offset), transformIdentity(), explode({ debug: true }))).on('error', done)
+        )
         .pipe(
           streamToBuffer(buffer => {
             buffersShouldEqual(buffer, expected, 0, false)
