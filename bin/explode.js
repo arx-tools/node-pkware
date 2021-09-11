@@ -21,9 +21,9 @@ const args = minimist(process.argv.slice(2), {
   }
 })
 
-const decompress = (input, output, offset, /* autoDetect, */ keepHeader, params) => {
+const decompress = (input, output, offset, /* autoDetect, */ keepHeader, config) => {
   const leftHandler = keepHeader ? transformIdentity() : transformEmpty()
-  const rightHandler = explode(params)
+  const rightHandler = explode(config)
 
   let handler = rightHandler
 
@@ -36,7 +36,7 @@ const decompress = (input, output, offset, /* autoDetect, */ keepHeader, params)
   //     Buffer.from([COMPRESSION_ASCII, DICTIONARY_SIZE_MEDIUM]),
   //     Buffer.from([COMPRESSION_ASCII, DICTIONARY_SIZE_LARGE])
   //   ]
-  //   handler = transformSplitBy(splitAtMatch(everyPkwareHeader, offset, params.debug), leftHandler, rightHandler)
+  //   handler = transformSplitBy(splitAtMatch(everyPkwareHeader, offset, config.debug), leftHandler, rightHandler)
   // } else if (offset > 0) {
   handler = transformSplitBy(splitAt(offset), leftHandler, rightHandler)
   // }
@@ -82,13 +82,13 @@ const decompress = (input, output, offset, /* autoDetect, */ keepHeader, params)
   // const autoDetect = args['auto-detect']
 
   const keepHeader = !args['drop-before-offset']
-  const params = {
+  const config = {
     debug: args.debug,
     inputBufferSize: parseNumberString(args['input-buffer-size'], 0x10000),
     outputBufferSize: parseNumberString(args['output-buffer-size'], 0x40000)
   }
 
-  decompress(input, output, offset, /* autoDetect, */ keepHeader, params)
+  decompress(input, output, offset, /* autoDetect, */ keepHeader, config)
     .then(() => {
       process.exit(0)
     })

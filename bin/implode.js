@@ -13,9 +13,9 @@ const { getPackageVersion, parseNumberString, fileExists } = require('../src/hel
 const { implode } = require('../src/implode.js')
 const { transformEmpty, transformIdentity, transformSplitBy, splitAt, through } = require('../src/helpers/stream.js')
 
-const decompress = (input, output, offset, keepHeader, compressionType, dictionarySize, params) => {
+const decompress = (input, output, offset, keepHeader, compressionType, dictionarySize, config) => {
   const leftHandler = keepHeader ? transformIdentity() : transformEmpty()
-  const rightHandler = implode(compressionType, dictionarySize, params)
+  const rightHandler = implode(compressionType, dictionarySize, config)
 
   const handler = transformSplitBy(splitAt(offset), leftHandler, rightHandler)
 
@@ -96,13 +96,13 @@ const args = minimist(process.argv.slice(2), {
   const offset = parseNumberString(args.offset, 0)
 
   const keepHeader = !args['drop-before-offset']
-  const params = {
+  const config = {
     debug: args.debug,
     inputBufferSize: parseNumberString(args['input-buffer-size'], 0x10000),
     outputBufferSize: parseNumberString(args['output-buffer-size'], 0x12000)
   }
 
-  decompress(input, output, offset, keepHeader, compressionType, dictionarySize, params)
+  decompress(input, output, offset, keepHeader, compressionType, dictionarySize, config)
     .then(() => {
       process.exit(0)
     })

@@ -16,7 +16,7 @@ tested in node version 14.9.0
 
 ## command line interface
 
-`implode <filename> --output=<filename> --ascii|--binary --level=1|2|3` - compresses file. if `--output` is omitted, then output will be placed next to input and names as `<filename>.compressed`. optionally you can specify an offset from which the compressed data starts with the `--offset=<int|hex>`, which is useful for mixed files, such as the fts files of Arx Fatalis
+`implode <filename> --output=<filename> --ascii|-a|--binary|-b --small|-s|--medium|-m|--large|-l` - compresses file. if `--output` is omitted, then output will be placed next to input and names as `<filename>.compressed`. optionally you can specify an offset from which the compressed data starts with the `--offset=<int|hex>`, which is useful for mixed files, such as the fts files of Arx Fatalis
 
 `explode <filename> --output=<filename>` - decompresses file. if `--output` is omitted, then output will be placed next to input and names as `<filename>.decompressed`. optionally you can specify an offset from which the compressed data starts with the `--offset=<int|hex>`, which is useful for mixed files, such as the fts files of Arx Fatalis
 
@@ -32,7 +32,7 @@ Calling either explode or implode with the `-v` or `--version` flag will display
 
 `explode test/files/fast.fts --output=C:/fast.fts.decompressed --offset=0x718`
 
-`implode test/files/fast.fts.unpacked --output=C:/fast.fts --binary --level=3 --offset=1816`
+`implode test/files/fast.fts.unpacked --output=C:/fast.fts --binary --large --offset=1816`
 
 `explode test/files/fast.fts --auto-detect --debug --output=E:/fast.fts.unpacked`
 
@@ -48,11 +48,11 @@ Calling either explode or implode with the `-v` or `--version` flag will display
 
 `cat c:/arx/level8.llf | explode --output=c:/arx/level8.llf.unpacked`
 
-`cat e:/piping/level8.llf.unpacked | implode --binary --level=3 > e:/piping/level8.llf.comp2`
+`cat e:/piping/level8.llf.unpacked | implode --binary --large > e:/piping/level8.llf`
 
-`implode e:/piping/level8.llf.unpacked --binary --level=3 > e:/piping/level8.llf.comp`
+`implode e:/piping/level8.llf.unpacked --binary --large > e:/piping/level8.llf.comp`
 
-`cat e:/piping/level8.llf.unpacked | implode --binary --level=3 --output="e:/piping/level8.llf.comp2"`
+`cat e:/piping/level8.llf.unpacked | implode --binary --large --output="e:/piping/level8.llf"`
 
 ## using as a library
 
@@ -74,7 +74,11 @@ Takes an optional config object, which has the following properties:
 
 `decompress(config: object): transform._transform` - alias for explode
 
-_TODO: describe implode_
+`implode(compressionType: int, dictionarySize: int, config: object): transform._transform` - compresses stream
+
+_TODO: describe implode's features and configuration_
+
+`compress(compressionType: int, dictionarySize: int, config: object): transform._transform` - aliasa for implode
 
 `stream` - an object of helper functions for channeling streams to and from explode/implode
 

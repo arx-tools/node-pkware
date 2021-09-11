@@ -60,6 +60,10 @@ describe('explode', () => {
   defineTestForSimpleFiles(0x1000)('implode-decoder', 'large', 'large.unpacked')
   defineTestForSimpleFiles(0x10000)('implode-decoder', 'large', 'large.unpacked')
 
+  defineTestForSimpleFiles(0x100)('implode-decoder', 'large.ascii', 'large.unpacked')
+  defineTestForSimpleFiles(0x1000)('implode-decoder', 'large.ascii', 'large.unpacked')
+  defineTestForSimpleFiles(0x10000)('implode-decoder', 'large.ascii', 'large.unpacked')
+
   defineTestForSimpleFiles(0x100)('implode-decoder', 'binary', 'binary.unpacked')
   defineTestForSimpleFiles(0x1000)('implode-decoder', 'binary', 'binary.unpacked')
   defineTestForSimpleFiles(0x10000)('implode-decoder', 'binary', 'binary.unpacked')
