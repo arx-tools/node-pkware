@@ -316,6 +316,7 @@ const explode = (config = {}) => {
 
   const handler = function (chunk, encoding, callback) {
     if (!isFunction(callback)) {
+      // can't call callback to pass in data or errors, so we throw up
       throw new ExpectedFunctionError()
     }
 
