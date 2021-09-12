@@ -16,13 +16,13 @@ tested in node version 14.9.0
 
 ## command line interface
 
-`implode <filename> --output=<filename> --ascii|-a|--binary|-b --small|-s|--medium|-m|--large|-l` - compresses file. if `--output` is omitted, then output will be placed next to input and names as `<filename>.compressed`. optionally you can specify an offset from which the compressed data starts with the `--offset=<int|hex>`, which is useful for mixed files, such as the fts files of Arx Fatalis
+`implode <filename> --output=<filename> --ascii|-a|--binary|-b --small|-s|--medium|-m|--large|-l` - compresses file. If `--output` is omitted, then output will be placed next to input and names as `<filename>.compressed`. Optionally you can specify an offset from which the compressed data starts with the `--offset=<int|hex>`, which is useful for mixed files, such as the fts files of Arx Fatalis
 
-`explode <filename> --output=<filename>` - decompresses file. if `--output` is omitted, then output will be placed next to input and names as `<filename>.decompressed`. optionally you can specify an offset from which the compressed data starts with the `--offset=<int|hex>`, which is useful for mixed files, such as the fts files of Arx Fatalis
+`explode <filename> --output=<filename>` - decompresses file. If `--output` is omitted, then output will be placed next to input and names as `<filename>.decompressed`. Optionally you can specify an offset from which the compressed data starts with the `--offset=<int|hex>`, which is useful for mixed files, such as the fts files of Arx Fatalis
 
 The `--drop-before-offset` flag tells node-pkware to drop the portion before `--offset`, otherwise it will keep it untouched and attach it to the output file.
 
-There is an `--auto-detect` flag, which will search for the first pkware header starting from the beginning of the file. If `--offset` is defined, then it will start searching from that point.
+**currently disabled, WIP** There is an `--auto-detect` flag, which will search for the first pkware header starting from the beginning of the file. If `--offset` is defined, then it will start searching from that point.
 
 Calling either explode or implode with the `-v` or `--version` flag will display the package's version
 
@@ -67,7 +67,7 @@ Takes an optional config object, which has the following properties:
 ```
 {
   debug: boolean, // whether the code should display debug messages on the console or not (default = false)
-  inputBufferSize: int, // the starting size of the input buffer, may expand later as needed. not having to expand may have performance impact (default 0)
+  inputBufferSize: int, // the starting size of the input buffer, may expand later as needed. Not having to expand may have performance impact (default 0)
   outputBufferSize: int // same as inputBufferSize, but for the outputBuffer (default 0)
 }
 ```
@@ -81,7 +81,7 @@ Takes an optional config object, which has the following properties:
 ```
 {
   debug: boolean, // whether the code should display debug messages on the console or not (default = false)
-  inputBufferSize: int, // the starting size of the input buffer, may expand later as needed. not having to expand may have performance impact (default 0)
+  inputBufferSize: int, // the starting size of the input buffer, may expand later as needed. Not having to expand may have performance impact (default 0)
   outputBufferSize: int // same as inputBufferSize, but for the outputBuffer (default 0)
 }
 ```
@@ -120,7 +120,7 @@ Returns a function, that you can use as a [transform.\_transform](https://nodejs
 
 `errors.InvalidCompressionTypeError` - thrown by implode when invalid compression type was specified or by explode when it encounters invalid data in the header section (the first 2 bytes of a compressed files)
 
-`errors.InvalidDataError` - thrown by explode, when compressed data is less, than 5 bytes long. pkware compressed files have 2 bytes header followed by at lest 2 bytes of data and an end literal.
+`errors.InvalidDataError` - thrown by explode, when compressed data is less, than 5 bytes long. Pkware compressed files have 2 bytes header followed by at lest 2 bytes of data and an end literal.
 
 `errors.AbortedError` - thrown by explode when compressed data ends without reaching the end literal or in mid decompression
 
