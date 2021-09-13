@@ -1,4 +1,4 @@
-const { has, repeat, clone, last /*, clamp */ } = require('ramda')
+const { has, repeat, clone, last, clamp } = require('ramda')
 const { isFunction } = require('ramda-adjunct')
 const ExpandingBuffer = require('./helpers/ExpandingBuffer.js')
 const { toHex, getLowestNBits, nBitsOfOnes } = require('./helpers/functions.js')
@@ -6,7 +6,7 @@ const { ExpectedFunctionError, InvalidDictionarySizeError, InvalidCompressionTyp
 const {
   ChBitsAsc,
   ChCodeAsc,
-  // LONGEST_ALLOWED_REPETITION,
+  LONGEST_ALLOWED_REPETITION,
   DICTIONARY_SIZE_LARGE,
   DICTIONARY_SIZE_MEDIUM,
   DICTIONARY_SIZE_SMALL,
@@ -100,9 +100,9 @@ const outputBits = (state, nBits, bitBuffer) => {
 
 // ---------------------------------
 
-/*
 const getSizeOfMatching = (inputBytes, a, b) => {
   const limit = clamp(2, LONGEST_ALLOWED_REPETITION, b - a)
+
   for (let i = 2; i <= limit; i++) {
     if (inputBytes[a + i] !== inputBytes[b + i]) {
       return i
@@ -134,7 +134,29 @@ const findRepetitions = (inputBytes, endOfLastMatch, cursor) => {
 
   return { size: 0, distance: 0 }
 }
-*/
+
+// this function can return:
+//   false - not flushable
+//   true - flushable
+//   null - flushable, but there might be a better repetition
+const isRepetitionFlushable = (size, distance, startIndex, inputBufferSize) => {
+  if (size === 0) {
+    return false
+  }
+
+  // If we found repetition of 2 bytes, that is 0x100 or fuhrter back,
+  // don't bother. Storing the distance of 0x100 bytes would actually
+  // take more space than storing the 2 bytes as-is.
+  if (size === 2 && distance >= 0x100) {
+    return false
+  }
+
+  if (size >= 8 || startIndex + 1 >= inputBufferSize) {
+    return true
+  }
+
+  return null
+}
 
 // ---------------------------------
 
@@ -172,75 +194,80 @@ const processChunkData = (state, debug = false) => {
         previousStartIndex = startIndex
       }
 
-      // ---------------------------
+      // -------------------------------
 
-      const byte = state.inputBuffer.read(startIndex, 1)
-      outputBits(state, state.nChBits[byte], state.nChCodes[byte])
-      startIndex += 1
+      /* eslint-disable */
+
+      let endOfLastMatch = 0
+      while (startIndex < state.inputBuffer.size()) {
+        let { size, distance } = findRepetitions(state.inputBuffer.read(endOfLastMatch), endOfLastMatch, startIndex)
+
+        const isFlushable = isRepetitionFlushable(size, distance, startIndex, state.inputBuffer.size())
+
+        if (isFlushable === false) {
+          const byte = state.inputBuffer.read(startIndex, 1)
+          outputBits(state, state.nChBits[byte], state.nChCodes[byte])
+          startIndex += 1
+        } else {
+          if (isFlushable === null) {
+            // Try to find better repetition 1 byte later.
+            // stormlib/implode.c L517
+            console.log('TODO: search for a better repetition')
+
+            /*
+            // let cursor = startIndex
+            // let newSize = size
+            // let newDistance = distance
+            // let currentSize
+            // let currentDistance
+            // while (newSize <= currentSize && isRepetitionFlushable(newSize, newDistance, startIndex, state.inputBuffer.size())) {
+            //   currentSize = newSize
+            //   currentDistance = newDistance
+            //   const reps = findRepetitions(state.inputBuffer.read(endOfLastMatch), endOfLastMatch, ++cursor)
+            //   newSize = reps.size
+            //   newDistance = reps.distance
+            // }
+            // size = newSize
+            // distance = currentDistance
+            */
+          }
+
+          /*
+          endOfLastMatch = startIndex + size
+
+          const byte = size + 0xfe
+          outputBits(state, state.nChBits[byte], state.nChCodes[byte])
+          if (size === 2) {
+            const byte = distance >> 2
+            outputBits(state, state.distBits[byte], state.distCodes[byte])
+            outputBits(state, 2, distance & 3)
+          } else {
+            const byte = distance >> state.dictionarySizeBits
+            outputBits(state, state.distBits[byte], state.distCodes[byte])
+            outputBits(state, state.dictionarySizeBits, state.dictionarySizeMask & distance)
+          }
+
+          startIndex += size
+          */
+
+          // TODO: temporarily write out data byte-by-byte here too, because above block with minimal repetition
+          // flushing breaks the compression self check tests
+          const byte = state.inputBuffer.read(startIndex, 1)
+          outputBits(state, state.nChBits[byte], state.nChCodes[byte])
+          startIndex += 1
+        }
+
+        state.inputBuffer.dropStart(endOfLastMatch)
+        startIndex -= endOfLastMatch
+        endOfLastMatch = 0
+      }
+
+      /* eslint-enable prefer-const */
+
+      // -------------------------------
     }
 
     state.inputBuffer.dropStart(state.inputBuffer.size())
-
-    // ---------------------------------------
-
-    /*
-    let endOfLastMatch = 0
-    while (startIndex < state.inputBuffer.size()) {
-      let { size, distance } = findRepetitions(state.inputBuffer.read(endOfLastMatch), endOfLastMatch, startIndex) // eslint-disable-line prefer-const
-
-      const isRepetitionFlushable = (currentSize, currentDistance) => {
-        if (currentSize === 0) {
-          return false
-        }
-
-        if (currentSize === 2 && currentDistance >= 0x100) {
-          return false
-        }
-
-        return true
-      }
-
-      if (isRepetitionFlushable(size, distance, startIndex)) {
-        // let cursor = startIndex
-        // let newSize = size
-        // let newDistance = distance
-        // let currentSize
-        // let currentDistance
-        // while (newSize <= currentSize && isRepetitionFlushable(newSize, newDistance)) {
-        //   currentSize = newSize
-        //   currentDistance = newDistance
-        //   const reps = findRepetitions(state.inputBuffer.read(endOfLastMatch), endOfLastMatch, ++cursor)
-        //   newSize = reps.size
-        //   newDistance = reps.distance
-        // }
-        // size = newSize
-        // distance = currentDistance
-
-        endOfLastMatch = startIndex + size
-
-        const byte = size + 0xfe
-        outputBits(state, state.nChBits[byte], state.nChCodes[byte])
-        if (size === 2) {
-          const byte = distance >> 2
-          outputBits(state, state.distBits[byte], state.distCodes[byte])
-          outputBits(state, 2, distance & 3)
-        } else {
-          const byte = distance >> state.dictionarySizeBits
-          outputBits(state, state.distBits[byte], state.distCodes[byte])
-          outputBits(state, state.dictionarySizeBits, state.dictionarySizeMask & distance)
-        }
-        startIndex += size
-      } else {
-        const byte = state.inputBuffer.read(startIndex, 1)
-        outputBits(state, state.nChBits[byte], state.nChCodes[byte])
-        startIndex += 1
-      }
-
-      state.inputBuffer.dropStart(endOfLastMatch)
-      startIndex -= endOfLastMatch
-      endOfLastMatch = 0
-    }
-    */
   }
 
   if (state.streamEnded) {
@@ -333,6 +360,9 @@ const implode = (compressionType, dictionarySizeBits, config = {}) => {
 module.exports = {
   setup,
   outputBits,
+  getSizeOfMatching,
+  findRepetitions,
+  isRepetitionFlushable,
   processChunkData,
   implode
 }

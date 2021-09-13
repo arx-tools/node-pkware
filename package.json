@@ -13,7 +13,7 @@
     "lint:staged": "lint-staged",
     "test:unit": "set FORCE_COLOR=true && mocha test/**/*.spec.js --timeout 5000",
     "test:unit:watch": "nodemon --exec \"npm run test:unit\" --watch test --watch src",
-    "test:files": "set FORCE_COLOR=true && mocha test/**/*.files.js --timeout 50000",
+    "test:files": "set FORCE_COLOR=true && mocha test/**/*.files.js --timeout 1000",
     "test:files:watch": "nodemon --exec \"npm run test:files\" --watch test --watch src"
   },
   "repository": {

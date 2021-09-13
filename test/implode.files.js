@@ -51,17 +51,17 @@ const defineTestForSimpleFiles =
     it(`can compress ${folder}/${decompressedFile} with ${toHex(highWaterMark)} byte chunks`, done => {
       ;(async () => {
         let expected
-      try {
-        expected = await fs.promises.readFile(`${TEST_FILE_FOLDER}${folder}/${compressedFile}`)
+        try {
+          expected = await fs.promises.readFile(`${TEST_FILE_FOLDER}${folder}/${compressedFile}`)
         } catch (e) {
-        done(e)
-      }
+          done(e)
+        }
 
-      if (!expected) {
-        return
-      }
+        if (!expected) {
+          return
+        }
         fs.createReadStream(`${TEST_FILE_FOLDER}${folder}/${decompressedFile}`, { highWaterMark })
-        .on('error', done)
+          .on('error', done)
           .pipe(through(implode(compressionType, dictionarySize, { debug: true })).on('error', done))
           .pipe(
             streamToBuffer(buffer => {
@@ -72,23 +72,25 @@ const defineTestForSimpleFiles =
       })()
     })
   }
+  */
 
+/*
 const defineTestForFilesWithOffset =
   highWaterMark => (folder, decompressedFile, compressedFile, compressionType, dictionarySize, offset) => {
     it(`can compress ${folder}/${decompressedFile}`, done => {
       ;(async () => {
         let expected
         try {
-        const expected = await fs.promises.readFile(`${TEST_FILE_FOLDER}${folder}/${compressedFile}`)
+          const expected = await fs.promises.readFile(`${TEST_FILE_FOLDER}${folder}/${compressedFile}`)
         } catch (e) {
-        done(e)
-      }
+          done(e)
+        }
 
-      if (!expected) {
-        return
-      }
+        if (!expected) {
+          return
+        }
         fs.createReadStream(`${TEST_FILE_FOLDER}${folder}/${decompressedFile}`, { highWaterMark })
-        .on('error', done)
+          .on('error', done)
           .pipe(
             through(
               transformSplitBy(
@@ -107,7 +109,7 @@ const defineTestForFilesWithOffset =
       })()
     })
   }
-*/
+  */
 
 // only run the tests, if the other repo is present
 // https://mochajs.org/#inclusive-tests
@@ -129,7 +131,9 @@ describe('implode', () => {
     COMPRESSION_BINARY,
     DICTIONARY_SIZE_SMALL
   )
+  */
 
+  /*
   defineTestForFilesWithOffset(0x100)(
     'arx-fatalis/level8',
     'fast.fts.unpacked',
