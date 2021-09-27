@@ -3,6 +3,7 @@
   "version": "1.0.0-beta.1",
   "description": "The nodejs implementation of StormLib's pkware compressor/de-compressor",
   "main": "src/index.js",
+  "types": "types",
   "bin": {
     "explode": "bin/explode.js",
     "implode": "bin/implode.js"
