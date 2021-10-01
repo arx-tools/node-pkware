@@ -164,7 +164,7 @@ const processChunkData = (state, debug = false) => {
   }
 
   if (!state.inputBuffer.isEmpty()) {
-    let startIndex = 0
+    state.startIndex = 0
 
     // repetitions are at least 2 bytes long,
     // so the initial 2 bytes can be moved to the output as is
@@ -173,35 +173,35 @@ const processChunkData = (state, debug = false) => {
       const [byte1, byte2] = state.inputBuffer.read(0, 2)
       outputBits(state, state.nChBits[byte1], state.nChCodes[byte1])
       outputBits(state, state.nChBits[byte2], state.nChCodes[byte2])
-      startIndex += 2
+      state.startIndex += 2
     }
 
     // -------------------------------
 
-    /* eslint-disable */
+    /* eslint-disable prefer-const */
 
     let endOfLastMatch = 0
-    while (startIndex < state.inputBuffer.size()) {
-      let { size, distance } = findRepetitions(state.inputBuffer.read(endOfLastMatch), endOfLastMatch, startIndex)
+    while (state.startIndex < state.inputBuffer.size()) {
+      let { size, distance } = findRepetitions(state.inputBuffer.read(endOfLastMatch), endOfLastMatch, state.startIndex)
 
-      const isFlushable = isRepetitionFlushable(size, distance, startIndex, state.inputBuffer.size())
+      const isFlushable = isRepetitionFlushable(size, distance, state.startIndex, state.inputBuffer.size())
 
       if (isFlushable === false) {
-        const byte = state.inputBuffer.read(startIndex, 1)
+        const byte = state.inputBuffer.read(state.startIndex, 1)
         outputBits(state, state.nChBits[byte], state.nChCodes[byte])
-        startIndex += 1
+        state.startIndex += 1
       } else {
         /*
         if (isFlushable === null) {
           // Try to find better repetition 1 byte later.
           // stormlib/implode.c L517
           
-          // let cursor = startIndex
+          // let cursor = state.startIndex
           // let newSize = size
           // let newDistance = distance
           // let currentSize
           // let currentDistance
-          // while (newSize <= currentSize && isRepetitionFlushable(newSize, newDistance, startIndex, state.inputBuffer.size())) {
+          // while (newSize <= currentSize && isRepetitionFlushable(newSize, newDistance, state.startIndex, state.inputBuffer.size())) {
           //   currentSize = newSize
           //   currentDistance = newDistance
           //   const reps = findRepetitions(state.inputBuffer.read(endOfLastMatch), endOfLastMatch, ++cursor)
@@ -214,7 +214,7 @@ const processChunkData = (state, debug = false) => {
         */
 
         /*
-        endOfLastMatch = startIndex + size
+        endOfLastMatch = state.startIndex + size
 
         const byte = size + 0xfe
         outputBits(state, state.nChBits[byte], state.nChCodes[byte])
@@ -228,18 +228,18 @@ const processChunkData = (state, debug = false) => {
           outputBits(state, state.dictionarySizeBits, state.dictionarySizeMask & distance)
         }
 
-        startIndex += size
+        state.startIndex += size
         */
 
         // TODO: temporarily write out data byte-by-byte here too, because above block with minimal repetition
         // flushing breaks the compression self check tests
-        const byte = state.inputBuffer.read(startIndex, 1)
+        const byte = state.inputBuffer.read(state.startIndex, 1)
         outputBits(state, state.nChBits[byte], state.nChCodes[byte])
-        startIndex += 1
+        state.startIndex += 1
       }
 
       state.inputBuffer.dropStart(endOfLastMatch)
-      startIndex -= endOfLastMatch
+      state.startIndex -= endOfLastMatch
       endOfLastMatch = 0
     }
 
@@ -308,6 +308,7 @@ const implode = (compressionType, dictionarySizeBits, config = {}) => {
     dictionarySizeBits: dictionarySizeBits,
     distCodes: clone(DistCode),
     distBits: clone(DistBits),
+    startIndex: 0,
     inputBuffer: new ExpandingBuffer(inputBufferSize),
     outputBuffer: new ExpandingBuffer(outputBufferSize),
     handledFirstTwoBytes: false,
