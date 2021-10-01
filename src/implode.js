@@ -19,8 +19,6 @@ const {
   DistBits
 } = require('./constants.js')
 
-const INFINITE_LOOP_THRESHOLD = 100
-
 const setup = state => {
   state.nChBits = repeat(0, 0x306)
   state.nChCodes = repeat(0, 0x306)
@@ -178,94 +176,76 @@ const processChunkData = (state, debug = false) => {
       startIndex += 2
     }
 
-    // I don't trust my code, so just to be sure I'm detecting infinite loops in the while loop below
-    let infLoopProtector = 0
-    let previousStartIndex = startIndex
+    // -------------------------------
 
+    /* eslint-disable */
+
+    let endOfLastMatch = 0
     while (startIndex < state.inputBuffer.size()) {
-      // the idea is to detect if the startIndex is not progressing for over INFINITE_LOOP_THRESHOLD times
-      if (previousStartIndex === startIndex) {
-        if (++infLoopProtector > INFINITE_LOOP_THRESHOLD) {
-          console.error('infinite loop detected, halting!')
-          process.exit(1)
-        }
+      let { size, distance } = findRepetitions(state.inputBuffer.read(endOfLastMatch), endOfLastMatch, startIndex)
+
+      const isFlushable = isRepetitionFlushable(size, distance, startIndex, state.inputBuffer.size())
+
+      if (isFlushable === false) {
+        const byte = state.inputBuffer.read(startIndex, 1)
+        outputBits(state, state.nChBits[byte], state.nChCodes[byte])
+        startIndex += 1
       } else {
-        infLoopProtector = 0
-        previousStartIndex = startIndex
-      }
+        /*
+        if (isFlushable === null) {
+          // Try to find better repetition 1 byte later.
+          // stormlib/implode.c L517
+          
+          // let cursor = startIndex
+          // let newSize = size
+          // let newDistance = distance
+          // let currentSize
+          // let currentDistance
+          // while (newSize <= currentSize && isRepetitionFlushable(newSize, newDistance, startIndex, state.inputBuffer.size())) {
+          //   currentSize = newSize
+          //   currentDistance = newDistance
+          //   const reps = findRepetitions(state.inputBuffer.read(endOfLastMatch), endOfLastMatch, ++cursor)
+          //   newSize = reps.size
+          //   newDistance = reps.distance
+          // }
+          // size = newSize
+          // distance = currentDistance
+        }
+        */
 
-      // -------------------------------
+        /*
+        endOfLastMatch = startIndex + size
 
-      /* eslint-disable */
-
-      let endOfLastMatch = 0
-      while (startIndex < state.inputBuffer.size()) {
-        let { size, distance } = findRepetitions(state.inputBuffer.read(endOfLastMatch), endOfLastMatch, startIndex)
-
-        const isFlushable = isRepetitionFlushable(size, distance, startIndex, state.inputBuffer.size())
-
-        if (isFlushable === false) {
-          const byte = state.inputBuffer.read(startIndex, 1)
-          outputBits(state, state.nChBits[byte], state.nChCodes[byte])
-          startIndex += 1
+        const byte = size + 0xfe
+        outputBits(state, state.nChBits[byte], state.nChCodes[byte])
+        if (size === 2) {
+          const byte = distance >> 2
+          outputBits(state, state.distBits[byte], state.distCodes[byte])
+          outputBits(state, 2, distance & 3)
         } else {
-          if (isFlushable === null) {
-            // Try to find better repetition 1 byte later.
-            // stormlib/implode.c L517
-            console.log('TODO: search for a better repetition')
-
-            /*
-            // let cursor = startIndex
-            // let newSize = size
-            // let newDistance = distance
-            // let currentSize
-            // let currentDistance
-            // while (newSize <= currentSize && isRepetitionFlushable(newSize, newDistance, startIndex, state.inputBuffer.size())) {
-            //   currentSize = newSize
-            //   currentDistance = newDistance
-            //   const reps = findRepetitions(state.inputBuffer.read(endOfLastMatch), endOfLastMatch, ++cursor)
-            //   newSize = reps.size
-            //   newDistance = reps.distance
-            // }
-            // size = newSize
-            // distance = currentDistance
-            */
-          }
-
-          /*
-          endOfLastMatch = startIndex + size
-
-          const byte = size + 0xfe
-          outputBits(state, state.nChBits[byte], state.nChCodes[byte])
-          if (size === 2) {
-            const byte = distance >> 2
-            outputBits(state, state.distBits[byte], state.distCodes[byte])
-            outputBits(state, 2, distance & 3)
-          } else {
-            const byte = distance >> state.dictionarySizeBits
-            outputBits(state, state.distBits[byte], state.distCodes[byte])
-            outputBits(state, state.dictionarySizeBits, state.dictionarySizeMask & distance)
-          }
-
-          startIndex += size
-          */
-
-          // TODO: temporarily write out data byte-by-byte here too, because above block with minimal repetition
-          // flushing breaks the compression self check tests
-          const byte = state.inputBuffer.read(startIndex, 1)
-          outputBits(state, state.nChBits[byte], state.nChCodes[byte])
-          startIndex += 1
+          const byte = distance >> state.dictionarySizeBits
+          outputBits(state, state.distBits[byte], state.distCodes[byte])
+          outputBits(state, state.dictionarySizeBits, state.dictionarySizeMask & distance)
         }
 
-        state.inputBuffer.dropStart(endOfLastMatch)
-        startIndex -= endOfLastMatch
-        endOfLastMatch = 0
+        startIndex += size
+        */
+
+        // TODO: temporarily write out data byte-by-byte here too, because above block with minimal repetition
+        // flushing breaks the compression self check tests
+        const byte = state.inputBuffer.read(startIndex, 1)
+        outputBits(state, state.nChBits[byte], state.nChCodes[byte])
+        startIndex += 1
       }
 
-      /* eslint-enable prefer-const */
-
-      // -------------------------------
+      state.inputBuffer.dropStart(endOfLastMatch)
+      startIndex -= endOfLastMatch
+      endOfLastMatch = 0
     }
+
+    /* eslint-enable prefer-const */
+
+    // -------------------------------
 
     state.inputBuffer.dropStart(state.inputBuffer.size())
   }
