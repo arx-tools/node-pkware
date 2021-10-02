@@ -9,7 +9,7 @@ const {
 } = require('../src/constants.js')
 const { InvalidDictionarySizeError, InvalidCompressionTypeError } = require('../src/errors.js')
 const ExpandingBuffer = require('../src/helpers/ExpandingBuffer.js')
-const { setup, outputBits, processChunkData, implode } = require('../src/implode.js')
+const { setup, outputBits, processChunkData, implode, handleFirstTwoBytes } = require('../src/implode.js')
 
 describe('setup', () => {
   let state
@@ -73,8 +73,56 @@ describe('processChunkData', () => {
   it('is a function', () => {
     assert.ok(isFunction(processChunkData), `${processChunkData} is not a function`)
   })
+})
 
-  // TODO: create tests
+describe('handleFirstTwoBytes', () => {
+  let state
+  beforeEach(() => {
+    state = {
+      startIndex: 0,
+      inputBuffer: new ExpandingBuffer(),
+      outputBuffer: new ExpandingBuffer(),
+      dictionarySizeBits: DICTIONARY_SIZE_LARGE,
+      compressionType: COMPRESSION_BINARY,
+      streamEnded: false
+    }
+    setup(state)
+  })
+  it('is a function', () => {
+    assert.ok(isFunction(handleFirstTwoBytes), `${handleFirstTwoBytes} is not a function`)
+  })
+  it('does not increase startIndex, when there is no input data', () => {
+    handleFirstTwoBytes(state)
+    assert.strictEqual(state.startIndex, 0)
+  })
+  it('does not increase startIndex, when there is less, than 3 bytes of input data', () => {
+    state.inputBuffer.append(Buffer.from('ab'))
+    handleFirstTwoBytes(state)
+    assert.strictEqual(state.startIndex, 0)
+  })
+  it('increases startIndex, when there is 3 or more bytes of input data', () => {
+    state.inputBuffer.append(Buffer.from('abcde'))
+    state.startIndex = 7
+    handleFirstTwoBytes(state)
+    assert.strictEqual(state.startIndex, 9)
+  })
+  it('does not increase startIndex when handledFirstTwoBytes is true', () => {
+    state.inputBuffer.append(Buffer.from('abcde'))
+    state.handledFirstTwoBytes = true
+    const oldStartIndex = state.startIndex
+    handleFirstTwoBytes(state)
+    assert.strictEqual(state.startIndex, oldStartIndex)
+  })
+  it('can only increase startIndex once', () => {
+    state.inputBuffer.append(Buffer.from('abcdefgh'))
+    const oldStartIndex = state.startIndex
+    handleFirstTwoBytes(state)
+    handleFirstTwoBytes(state)
+    handleFirstTwoBytes(state)
+    handleFirstTwoBytes(state)
+    handleFirstTwoBytes(state)
+    assert.strictEqual(state.startIndex, oldStartIndex + 2)
+  })
 })
 
 describe('implode', () => {

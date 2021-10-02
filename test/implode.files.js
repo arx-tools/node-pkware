@@ -123,6 +123,8 @@ describe('implode', () => {
   defineTestForImplodeSelfCheck(0x100)('implode-decoder', 'small.unpacked', COMPRESSION_BINARY, DICTIONARY_SIZE_SMALL)
   defineTestForImplodeSelfCheck(0x100)('implode-decoder', 'large.unpacked', COMPRESSION_ASCII, DICTIONARY_SIZE_LARGE)
 
+  // defineTestForImplodeSelfCheck(0x10)('misc', 'uncompressed.txt', COMPRESSION_BINARY, DICTIONARY_SIZE_SMALL)
+
   /*
   defineTestForSimpleFiles(0x100)(
     'implode-decoder',

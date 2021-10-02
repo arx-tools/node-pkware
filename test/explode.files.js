@@ -73,7 +73,6 @@ describe('explode', () => {
   defineTestForSimpleFiles(0x100)('implode-decoder', 'small', 'small.unpacked')
   defineTestForSimpleFiles(0x1000)('implode-decoder', 'small', 'small.unpacked')
   defineTestForSimpleFiles(0x10000)('implode-decoder', 'small', 'small.unpacked')
-
   /*
   defineTestForSimpleFiles(0x100)('implode-decoder', 'medium', 'medium.unpacked')
   defineTestForSimpleFiles(0x1000)('implode-decoder', 'medium', 'medium.unpacked')
@@ -97,6 +96,7 @@ describe('explode', () => {
   */
 
   defineTestForFilesWithOffset(0x100)('arx-fatalis/level8', 'fast.fts', 'fast.fts.unpacked', 0x718)
+
   /*
   defineTestForFilesWithOffset(0x1000)('arx-fatalis/level8', 'fast.fts', 'fast.fts.unpacked', 0x718)
   defineTestForFilesWithOffset(0x10000)('arx-fatalis/level8', 'fast.fts', 'fast.fts.unpacked', 0x718)

@@ -158,6 +158,25 @@ const isRepetitionFlushable = (size, distance, startIndex, inputBufferSize) => {
 
 // ---------------------------------
 
+// repetitions are at least 2 bytes long,
+// so the initial 2 bytes can be moved to the output as is
+const handleFirstTwoBytes = state => {
+  if (state.handledFirstTwoBytes) {
+    return
+  }
+
+  if (state.inputBuffer.size() < 3) {
+    return
+  }
+
+  const [byte1, byte2] = state.inputBuffer.read(0, 2)
+  outputBits(state, state.nChBits[byte1], state.nChCodes[byte1])
+  outputBits(state, state.nChBits[byte2], state.nChCodes[byte2])
+
+  state.handledFirstTwoBytes = true
+  state.startIndex += 2
+}
+
 const processChunkData = (state, debug = false) => {
   if (!has('dictionarySizeMask', state)) {
     setup(state)
@@ -166,15 +185,7 @@ const processChunkData = (state, debug = false) => {
   if (!state.inputBuffer.isEmpty()) {
     state.startIndex = 0
 
-    // repetitions are at least 2 bytes long,
-    // so the initial 2 bytes can be moved to the output as is
-    if (!state.handledFirstTwoBytes && state.inputBuffer.size() > 2) {
-      state.handledFirstTwoBytes = true
-      const [byte1, byte2] = state.inputBuffer.read(0, 2)
-      outputBits(state, state.nChBits[byte1], state.nChCodes[byte1])
-      outputBits(state, state.nChBits[byte2], state.nChCodes[byte2])
-      state.startIndex += 2
-    }
+    handleFirstTwoBytes(state)
 
     // -------------------------------
 
@@ -344,6 +355,7 @@ module.exports = {
   getSizeOfMatching,
   findRepetitions,
   isRepetitionFlushable,
+  handleFirstTwoBytes,
   processChunkData,
   implode
 }
