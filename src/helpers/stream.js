@@ -196,11 +196,21 @@ export const splitAtMatch = (matches, skipBytes = 0, debug = false) => {
 }
 */
 
+const outputInChunks = (buffer, stream) => {
+  const chunks = Math.ceil(buffer.length / 1000)
+  for (let i = 0; i < chunks - 1; i++) {
+    stream.write(buffer.slice(i * 1000, (i + 1) * 1000))
+  }
+  stream.write(buffer.slice((chunks - 1) * 1000))
+  stream.end()
+}
+
 module.exports = {
   splitAt,
   transformIdentity,
   transformEmpty,
   through,
   transformSplitBy,
-  streamToBuffer
+  streamToBuffer,
+  outputInChunks
 }
