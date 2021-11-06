@@ -44,6 +44,7 @@ class ExpandingBuffer {
     }
   }
 
+  // watch out! the buffer returned by Buffer.slice() will point to the same memory!
   read(offset, limit) {
     if (offset < 0 || limit < 1) {
       return Buffer.from([])
