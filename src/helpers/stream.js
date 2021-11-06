@@ -3,6 +3,8 @@ const { promisify } = require('util')
 const { isFunction } = require('ramda-adjunct')
 const ExpandingBuffer = require('./ExpandingBuffer.js')
 
+const emptyBuffer = Buffer.from([])
+
 class QuasiTransform {
   constructor(handler) {
     this.handler = handler
@@ -33,12 +35,12 @@ const splitAt = index => {
 
     if (index <= cntr) {
       // index ..... cntr ..... chunk.length
-      left = Buffer.from([])
+      left = emptyBuffer
       right = chunk
     } else if (index >= cntr + chunk.length) {
       // cntr ..... chunk.length ..... index
       left = chunk
-      right = Buffer.from([])
+      right = emptyBuffer
       isLeftDone = index === cntr + chunk.length
     } else {
       // cntr ..... index ..... chunk.length
@@ -60,7 +62,7 @@ const transformIdentity = () => {
 
 const transformEmpty = () => {
   return function (chunk, encoding, callback) {
-    callback(null, Buffer.from([]))
+    callback(null, emptyBuffer)
   }
 }
 
@@ -73,6 +75,8 @@ const through = handler => {
 const transformSplitBy = (predicate, leftHandler, rightHandler) => {
   let isFirstChunk = true
   let wasLeftFlushCalled = false
+  const damChunkSize = 0x10000
+  const dam = new ExpandingBuffer()
 
   const leftTransform = new QuasiTransform(leftHandler)
   const rightTransform = new QuasiTransform(rightHandler)
@@ -86,8 +90,12 @@ const transformSplitBy = (predicate, leftHandler, rightHandler) => {
     if (isFirstChunk) {
       isFirstChunk = false
       this._flush = flushCallback => {
-        let leftFiller = Promise.resolve(Buffer.from([]))
-        let rightFiller = Promise.resolve(Buffer.from([]))
+        if (!dam.isEmpty()) {
+          this.push(dam.read())
+        }
+
+        let leftFiller = Promise.resolve(emptyBuffer)
+        let rightFiller = Promise.resolve(emptyBuffer)
 
         if (!wasLeftFlushCalled && isFunction(leftTransform._flush)) {
           leftFiller = new Promise((resolve, reject) => {
@@ -123,7 +131,7 @@ const transformSplitBy = (predicate, leftHandler, rightHandler) => {
       }
     }
 
-    let filler = Promise.resolve(Buffer.from([]))
+    let filler = Promise.resolve(emptyBuffer)
     if (isLeftDone && !wasLeftFlushCalled && isFunction(leftTransform._flush)) {
       wasLeftFlushCalled = true
       filler = new Promise((resolve, reject) => {
@@ -139,7 +147,18 @@ const transformSplitBy = (predicate, leftHandler, rightHandler) => {
 
     Promise.all([_left, filler, _right])
       .then(buffers => {
-        callback(null, Buffer.concat(buffers))
+        dam.append(Buffer.concat(buffers))
+        if (dam.size() > damChunkSize) {
+          const chunks = Math.floor(dam.size() / damChunkSize)
+          for (let i = 0; i < chunks - 1; i++) {
+            this.push(dam.read(i * damChunkSize, damChunkSize))
+          }
+          const lastChunk = dam.read((chunks - 1) * damChunkSize, damChunkSize)
+          callback(null, lastChunk)
+          dam.flushStart(chunks * damChunkSize)
+        } else {
+          callback(null, emptyBuffer)
+        }
       })
       .catch(err => {
         callback(err)
@@ -164,7 +183,7 @@ const streamToBuffer = done => {
 /*
 export const splitAtMatch = (matches, skipBytes = 0, debug = false) => {
   let alreadyMatched = false
-  const empty = Buffer.from([])
+  const empty = emptyBuffer
 
   return (chunk, offset) => {
     if (alreadyMatched) {
@@ -196,21 +215,11 @@ export const splitAtMatch = (matches, skipBytes = 0, debug = false) => {
 }
 */
 
-const outputInChunks = (buffer, stream) => {
-  const chunks = Math.ceil(buffer.length / 1000)
-  for (let i = 0; i < chunks - 1; i++) {
-    stream.write(buffer.slice(i * 1000, (i + 1) * 1000))
-  }
-  stream.write(buffer.slice((chunks - 1) * 1000))
-  stream.end()
-}
-
 module.exports = {
   splitAt,
   transformIdentity,
   transformEmpty,
   through,
   transformSplitBy,
-  streamToBuffer,
-  outputInChunks
+  streamToBuffer
 }
