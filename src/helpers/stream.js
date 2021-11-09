@@ -150,12 +150,12 @@ const transformSplitBy = (predicate, leftHandler, rightHandler) => {
         dam.append(Buffer.concat(buffers))
         if (dam.size() > damChunkSize) {
           const chunks = Math.floor(dam.size() / damChunkSize)
-          for (let i = 0; i < chunks - 1; i++) {
-            this.push(dam.read(i * damChunkSize, damChunkSize))
-          }
-          const lastChunk = Buffer.from(dam.read((chunks - 1) * damChunkSize, damChunkSize))
-          callback(null, lastChunk)
+          const data = Buffer.from(dam.read(0, chunks * damChunkSize))
           dam.flushStart(chunks * damChunkSize)
+          for (let i = 0; i < chunks - 1; i++) {
+            this.push(data.slice(i * damChunkSize, i * damChunkSize + damChunkSize))
+          }
+          callback(null, data.slice((chunks - 1) * damChunkSize))
         } else {
           callback(null, emptyBuffer)
         }
