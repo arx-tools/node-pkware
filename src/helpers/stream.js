@@ -153,7 +153,7 @@ const transformSplitBy = (predicate, leftHandler, rightHandler) => {
           for (let i = 0; i < chunks - 1; i++) {
             this.push(dam.read(i * damChunkSize, damChunkSize))
           }
-          const lastChunk = dam.read((chunks - 1) * damChunkSize, damChunkSize)
+          const lastChunk = Buffer.from(dam.read((chunks - 1) * damChunkSize, damChunkSize))
           callback(null, lastChunk)
           dam.flushStart(chunks * damChunkSize)
         } else {

@@ -1,10 +1,7 @@
 const fs = require('fs')
 const { before, describe, it } = require('mocha')
 const { buffersShouldEqual } = require('../src/helpers/testing.js')
-const {
-  through /*, splitAt, transformSplitBy, transformIdentity */,
-  streamToBuffer
-} = require('../src/helpers/stream.js')
+const { through, streamToBuffer, transformSplitBy, splitAt, transformIdentity } = require('../src/helpers/stream.js')
 const { implode } = require('../src/implode.js')
 const { explode } = require('../src/explode.js')
 const { toHex, fileExists } = require('../src/helpers/functions.js')
@@ -44,6 +41,47 @@ const defineTestForImplodeSelfCheck = highWaterMark => (folder, decompressedFile
     })()
   })
 }
+
+const defineTestForImplodeSelfCheckWithOffset =
+  highWaterMark => (folder, decompressedFile, compressionType, dictionarySize, offset) => {
+    it(`can compress ${folder}/${decompressedFile} with ${toHex(highWaterMark)} byte chunks and ${toHex(
+      offset
+    )} offset`, done => {
+      ;(async () => {
+        let expected
+        try {
+          expected = await fs.promises.readFile(`${TEST_FILE_FOLDER}${folder}/${decompressedFile}`)
+        } catch (e) {
+          done(e)
+        }
+
+        if (!expected) {
+          return
+        }
+
+        fs.createReadStream(`${TEST_FILE_FOLDER}${folder}/${decompressedFile}`, { highWaterMark })
+          .on('error', done)
+          .pipe(
+            through(
+              transformSplitBy(
+                splitAt(offset),
+                transformIdentity(),
+                implode(compressionType, dictionarySize, { debug: true })
+              )
+            )
+          )
+          .pipe(
+            through(transformSplitBy(splitAt(offset), transformIdentity(), explode({ debug: true }))).on('error', done)
+          )
+          .pipe(
+            streamToBuffer(buffer => {
+              buffersShouldEqual(buffer, expected, 0, true)
+              done()
+            })
+          )
+      })()
+    })
+  }
 
 /*
 const defineTestForSimpleFiles =
@@ -121,7 +159,14 @@ before(async function () {
 
 describe('implode', () => {
   defineTestForImplodeSelfCheck(0x100)('implode-decoder', 'small.unpacked', COMPRESSION_BINARY, DICTIONARY_SIZE_SMALL)
-  defineTestForImplodeSelfCheck(0x100)('implode-decoder', 'large.unpacked', COMPRESSION_ASCII, DICTIONARY_SIZE_LARGE)
+  defineTestForImplodeSelfCheck(0x1000)('implode-decoder', 'large.unpacked', COMPRESSION_ASCII, DICTIONARY_SIZE_LARGE)
+  defineTestForImplodeSelfCheckWithOffset(0x1000)(
+    'arx-fatalis/level8',
+    'fast.fts.unpacked',
+    COMPRESSION_BINARY,
+    DICTIONARY_SIZE_LARGE,
+    0x718
+  )
 
   // defineTestForImplodeSelfCheck(0x10)('misc', 'uncompressed.txt', COMPRESSION_BINARY, DICTIONARY_SIZE_SMALL)
 
