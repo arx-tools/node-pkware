@@ -64,7 +64,7 @@ Returns a function, that you can use as a [transform.\_transform](https://nodejs
 
 Takes an optional config object, which has the following properties:
 
-```
+```js
 {
   debug: boolean, // whether the code should display debug messages on the console or not (default = false)
   inputBufferSize: int, // the starting size of the input buffer, may expand later as needed. Not having to expand may have performance impact (default 0)
@@ -78,7 +78,7 @@ Takes an optional config object, which has the following properties:
 
 Takes an optional config object, which has the following properties:
 
-```
+```js
 {
   debug: boolean, // whether the code should display debug messages on the console or not (default = false)
   inputBufferSize: int, // the starting size of the input buffer, may expand later as needed. Not having to expand may have performance impact (default 0)
