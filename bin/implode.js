@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const fs = require('fs')
-const minimist = require('minimist')
+const minimist = require('minimist-lite')
 const {
   COMPRESSION_BINARY,
   COMPRESSION_ASCII,

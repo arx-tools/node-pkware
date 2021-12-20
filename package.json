@@ -28,7 +28,7 @@
   "author": "Lajos Meszaros <m_lajos@hotmail.com>",
   "license": "GPL-3.0-or-later",
   "dependencies": {
-    "minimist": "^1.2.5",
+    "minimist-lite": "^2.0.0",
     "ramda": "^0.27.1",
     "ramda-adjunct": "^2.33.0"
   },

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const fs = require('fs')
-const minimist = require('minimist')
+const minimist = require('minimist-lite')
 const { getPackageVersion, parseNumberString, fileExists } = require('../src/helpers/functions.js')
 const { transformEmpty, transformIdentity, transformSplitBy, splitAt, through } = require('../src/helpers/stream.js')
 const { explode } = require('../src/explode.js')
