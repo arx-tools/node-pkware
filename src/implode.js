@@ -114,7 +114,9 @@ const getSizeOfMatching = (inputBytes, a, b) => {
 // us to store backward length in less amount of bits
 // currently the code goes from the furthest point
 const findRepetitions = (inputBytes, endOfLastMatch, cursor) => {
-  if (endOfLastMatch === cursor || cursor - endOfLastMatch < 2) {
+  const notEnoughBytes = inputBytes.length - cursor < 2
+  const tooClose = cursor - endOfLastMatch < 2
+  if (notEnoughBytes || tooClose) {
     return { size: 0, distance: 0 }
   }
 
@@ -224,9 +226,6 @@ const processChunkData = (state, debug = false) => {
         }
         */
 
-        /*
-        endOfLastMatch = state.startIndex + size
-
         const byte = size + 0xfe
         outputBits(state, state.nChBits[byte], state.nChCodes[byte])
         if (size === 2) {
@@ -240,13 +239,6 @@ const processChunkData = (state, debug = false) => {
         }
 
         state.startIndex += size
-        */
-
-        // TODO: temporarily write out data byte-by-byte here too, because above block with minimal repetition
-        // flushing breaks the compression self check tests
-        const byte = state.inputBuffer.read(state.startIndex, 1)
-        outputBits(state, state.nChBits[byte], state.nChCodes[byte])
-        state.startIndex += 1
       }
 
       state.inputBuffer.dropStart(endOfLastMatch)
