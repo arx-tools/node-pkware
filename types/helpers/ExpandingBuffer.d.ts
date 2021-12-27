@@ -13,7 +13,7 @@ declare class ExpandingBuffer {
   isEmpty(): boolean
   heapSize(): number
   append(buffer: Buffer): void
-  read(offset: number, limit: number): number | Buffer
+  read(offset?: number, limit?: number): number | Buffer
   flushStart(numberOfBytes: number): void
   flushEnd(numberOfBytes: number): void
   dropStart(numberOfBytes: number): void
