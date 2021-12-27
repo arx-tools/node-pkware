@@ -76,8 +76,12 @@ const defineTestForImplodeSelfCheckWithOffset =
           )
           .pipe(
             streamToBuffer(buffer => {
-              buffersShouldEqual(buffer, expected, 0, true)
-              done()
+              try {
+                buffersShouldEqual(buffer, expected, 0, true)
+                done()
+              } catch (e) {
+                done(e)
+              }
             })
           )
       })()
@@ -162,14 +166,13 @@ describe('implode', () => {
   defineTestForImplodeSelfCheck(0x100)('implode-decoder', 'small.unpacked', COMPRESSION_BINARY, DICTIONARY_SIZE_SMALL)
   defineTestForImplodeSelfCheck(0x1000)('implode-decoder', 'large.unpacked', COMPRESSION_ASCII, DICTIONARY_SIZE_LARGE)
 
-  // This fails: the file size matches, but the exploded data doesn't
-  // defineTestForImplodeSelfCheckWithOffset(0x10000)(
-  //   'arx-fatalis/level8',
-  //   'fast.fts.unpacked',
-  //   COMPRESSION_BINARY,
-  //   DICTIONARY_SIZE_LARGE,
-  //   0x718
-  // )
+  defineTestForImplodeSelfCheckWithOffset(0x10000)(
+    'arx-fatalis/level8',
+    'fast.fts.unpacked',
+    COMPRESSION_BINARY,
+    DICTIONARY_SIZE_LARGE,
+    0x718
+  )
 
   defineTestForImplodeSelfCheckWithOffset(0x100)(
     'arx-fatalis/level8',
