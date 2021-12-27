@@ -115,7 +115,7 @@ const getSizeOfMatching = (inputBytes, a, b) => {
 // currently the code goes from the furthest point
 const findRepetitions = (inputBytes, endOfLastMatch, cursor) => {
   const notEnoughBytes = inputBytes.length - cursor < 2
-  const tooClose = cursor - endOfLastMatch < 2
+  const tooClose = cursor === endOfLastMatch || cursor - endOfLastMatch < 2
   if (notEnoughBytes || tooClose) {
     return { size: 0, distance: 0 }
   }
@@ -193,11 +193,23 @@ const processChunkData = (state, debug = false) => {
 
     /* eslint-disable prefer-const */
 
-    let endOfLastMatch = 0
+    let endOfLastMatch = 0 // used when searching for longer repetitions later
     while (state.startIndex < state.inputBuffer.size()) {
       let { size, distance } = findRepetitions(state.inputBuffer.read(endOfLastMatch), endOfLastMatch, state.startIndex)
 
-      const isFlushable = isRepetitionFlushable(size, distance, state.startIndex, state.inputBuffer.size())
+      let isFlushable = isRepetitionFlushable(size, distance, state.startIndex, state.inputBuffer.size())
+
+      // TODO: this is a temporary fix. chunks need to be divided into smaller bits instead of disabling repetitions
+      // above a certain limit
+      if (state.dictionarySizeBits === DICTIONARY_SIZE_SMALL && distance >= 0x400) {
+        isFlushable = false
+      }
+      if (state.dictionarySizeBits === DICTIONARY_SIZE_MEDIUM && distance >= 0x800) {
+        isFlushable = false
+      }
+      if (state.dictionarySizeBits === DICTIONARY_SIZE_LARGE && distance >= 0x1000) {
+        isFlushable = false
+      }
 
       if (isFlushable === false) {
         const byte = state.inputBuffer.read(state.startIndex, 1)
@@ -278,7 +290,7 @@ const implode = (compressionType, dictionarySizeBits, config = {}) => {
       }
 
       if (debug) {
-        console.log(`reading ${toHex(chunk.length)} bytes from chunk #${state.stats.chunkCounter++}`)
+        console.log(`implode: reading ${toHex(chunk.length)} bytes from chunk #${state.stats.chunkCounter++}`)
       }
 
       processChunkData(state, debug)
@@ -323,9 +335,9 @@ const implode = (compressionType, dictionarySizeBits, config = {}) => {
 
         if (debug) {
           console.log('---------------')
-          console.log('total number of chunks read:', state.stats.chunkCounter)
-          console.log('inputBuffer heap size', toHex(state.inputBuffer.heapSize()))
-          console.log('outputBuffer heap size', toHex(state.outputBuffer.heapSize()))
+          console.log('implode: total number of chunks read:', state.stats.chunkCounter)
+          console.log('implode: inputBuffer heap size', toHex(state.inputBuffer.heapSize()))
+          console.log('implode: outputBuffer heap size', toHex(state.outputBuffer.heapSize()))
         }
 
         callback(null, state.outputBuffer.read())

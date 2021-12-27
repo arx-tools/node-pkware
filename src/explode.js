@@ -128,9 +128,9 @@ const parseInitialData = (state, debug = false) => {
   }
 
   if (debug) {
-    console.log(`compression type: ${state.compressionType === COMPRESSION_BINARY ? 'binary' : 'ascii'}`)
+    console.log(`explode: compression type: ${state.compressionType === COMPRESSION_BINARY ? 'binary' : 'ascii'}`)
     console.log(
-      `compression level: ${
+      `explode: compression level: ${
         state.dictionarySizeBits === 4 ? 'small' : state.dictionarySizeBits === 5 ? 'medium' : 'large'
       }`
     )
@@ -331,7 +331,7 @@ const explode = (config = {}) => {
       }
 
       if (debug) {
-        console.log(`reading ${toHex(chunk.length)} bytes from chunk #${state.stats.chunkCounter++}`)
+        console.log(`explode: reading ${toHex(chunk.length)} bytes from chunk #${state.stats.chunkCounter++}`)
       }
 
       processChunkData(state, debug)
@@ -369,9 +369,9 @@ const explode = (config = {}) => {
 
       if (debug) {
         console.log('---------------')
-        console.log('total number of chunks read:', state.stats.chunkCounter)
-        console.log('inputBuffer heap size', toHex(state.inputBuffer.heapSize()))
-        console.log('outputBuffer heap size', toHex(state.outputBuffer.heapSize()))
+        console.log('explode: total number of chunks read:', state.stats.chunkCounter)
+        console.log('explode: inputBuffer heap size', toHex(state.inputBuffer.heapSize()))
+        console.log('explode: outputBuffer heap size', toHex(state.outputBuffer.heapSize()))
       }
 
       if (state.needMoreInput) {

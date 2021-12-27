@@ -9,7 +9,8 @@ const {
   COMPRESSION_ASCII,
   DICTIONARY_SIZE_SMALL,
   COMPRESSION_BINARY,
-  DICTIONARY_SIZE_LARGE
+  DICTIONARY_SIZE_LARGE,
+  DICTIONARY_SIZE_MEDIUM
 } = require('../src/constants.js')
 
 const TEST_FILE_FOLDER = '../pkware-test-files/'
@@ -160,12 +161,80 @@ before(async function () {
 describe('implode', () => {
   defineTestForImplodeSelfCheck(0x100)('implode-decoder', 'small.unpacked', COMPRESSION_BINARY, DICTIONARY_SIZE_SMALL)
   defineTestForImplodeSelfCheck(0x1000)('implode-decoder', 'large.unpacked', COMPRESSION_ASCII, DICTIONARY_SIZE_LARGE)
+
+  // This fails: the file size matches, but the exploded data doesn't
+  // defineTestForImplodeSelfCheckWithOffset(0x10000)(
+  //   'arx-fatalis/level8',
+  //   'fast.fts.unpacked',
+  //   COMPRESSION_BINARY,
+  //   DICTIONARY_SIZE_LARGE,
+  //   0x718
+  // )
+
+  defineTestForImplodeSelfCheckWithOffset(0x100)(
+    'arx-fatalis/level8',
+    'level8.llf.unpacked',
+    COMPRESSION_BINARY,
+    DICTIONARY_SIZE_SMALL,
+    0
+  )
   defineTestForImplodeSelfCheckWithOffset(0x1000)(
     'arx-fatalis/level8',
-    'fast.fts.unpacked',
+    'level8.llf.unpacked',
+    COMPRESSION_BINARY,
+    DICTIONARY_SIZE_SMALL,
+    0
+  )
+  defineTestForImplodeSelfCheckWithOffset(0x10000)(
+    'arx-fatalis/level8',
+    'level8.llf.unpacked',
+    COMPRESSION_BINARY,
+    DICTIONARY_SIZE_SMALL,
+    0
+  )
+
+  defineTestForImplodeSelfCheckWithOffset(0x100)(
+    'arx-fatalis/level8',
+    'level8.llf.unpacked',
+    COMPRESSION_BINARY,
+    DICTIONARY_SIZE_MEDIUM,
+    0
+  )
+  defineTestForImplodeSelfCheckWithOffset(0x1000)(
+    'arx-fatalis/level8',
+    'level8.llf.unpacked',
+    COMPRESSION_BINARY,
+    DICTIONARY_SIZE_MEDIUM,
+    0
+  )
+  defineTestForImplodeSelfCheckWithOffset(0x10000)(
+    'arx-fatalis/level8',
+    'level8.llf.unpacked',
+    COMPRESSION_BINARY,
+    DICTIONARY_SIZE_MEDIUM,
+    0
+  )
+
+  defineTestForImplodeSelfCheckWithOffset(0x100)(
+    'arx-fatalis/level8',
+    'level8.llf.unpacked',
     COMPRESSION_BINARY,
     DICTIONARY_SIZE_LARGE,
-    0x718
+    0
+  )
+  defineTestForImplodeSelfCheckWithOffset(0x1000)(
+    'arx-fatalis/level8',
+    'level8.llf.unpacked',
+    COMPRESSION_BINARY,
+    DICTIONARY_SIZE_LARGE,
+    0
+  )
+  defineTestForImplodeSelfCheckWithOffset(0x10000)(
+    'arx-fatalis/level8',
+    'level8.llf.unpacked',
+    COMPRESSION_BINARY,
+    DICTIONARY_SIZE_LARGE,
+    0
   )
 
   // defineTestForImplodeSelfCheck(0x10)('misc', 'uncompressed.txt', COMPRESSION_BINARY, DICTIONARY_SIZE_SMALL)
