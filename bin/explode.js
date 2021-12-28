@@ -5,41 +5,20 @@ const minimist = require('minimist-lite')
 const { getPackageVersion, parseNumberString, fileExists } = require('../src/helpers/functions.js')
 const { transformEmpty, transformIdentity, transformSplitBy, splitAt, through } = require('../src/helpers/stream.js')
 const { explode } = require('../src/explode.js')
-// const {
-//   COMPRESSION_BINARY,
-//   COMPRESSION_ASCII,
-//   DICTIONARY_SIZE_SMALL,
-//   DICTIONARY_SIZE_MEDIUM,
-//   DICTIONARY_SIZE_LARGE
-// } = require('../src/constants.js')
 
 const args = minimist(process.argv.slice(2), {
   string: ['output', 'offset', 'input-buffer-size', 'output-buffer-size'],
-  boolean: ['version', 'drop-before-offset', 'debug' /*, 'auto-detect' */],
+  boolean: ['version', 'drop-before-offset', 'debug'],
   alias: {
     v: 'version'
   }
 })
 
-const decompress = (input, output, offset, /* autoDetect, */ keepHeader, config) => {
+const decompress = (input, output, offset, keepHeader, config) => {
   const leftHandler = keepHeader ? transformIdentity() : transformEmpty()
   const rightHandler = explode(config)
 
-  let handler = rightHandler
-
-  // if (autoDetect) {
-  //   const everyPkwareHeader = [
-  //     Buffer.from([COMPRESSION_BINARY, DICTIONARY_SIZE_SMALL]),
-  //     Buffer.from([COMPRESSION_BINARY, DICTIONARY_SIZE_MEDIUM]),
-  //     Buffer.from([COMPRESSION_BINARY, DICTIONARY_SIZE_LARGE]),
-  //     Buffer.from([COMPRESSION_ASCII, DICTIONARY_SIZE_SMALL]),
-  //     Buffer.from([COMPRESSION_ASCII, DICTIONARY_SIZE_MEDIUM]),
-  //     Buffer.from([COMPRESSION_ASCII, DICTIONARY_SIZE_LARGE])
-  //   ]
-  //   handler = transformSplitBy(splitAtMatch(everyPkwareHeader, offset, config.debug), leftHandler, rightHandler)
-  // } else if (offset > 0) {
-  handler = transformSplitBy(splitAt(offset), leftHandler, rightHandler)
-  // }
+  const handler = transformSplitBy(splitAt(offset), leftHandler, rightHandler)
 
   return new Promise((resolve, reject) => {
     input.pipe(through(handler).on('error', reject)).pipe(output).on('finish', resolve).on('error', reject)
@@ -79,7 +58,6 @@ const decompress = (input, output, offset, /* autoDetect, */ keepHeader, config)
   }
 
   const offset = parseNumberString(args.offset, 0)
-  // const autoDetect = args['auto-detect']
 
   const keepHeader = !args['drop-before-offset']
   const config = {
@@ -88,7 +66,7 @@ const decompress = (input, output, offset, /* autoDetect, */ keepHeader, config)
     outputBufferSize: parseNumberString(args['output-buffer-size'], 0x40000)
   }
 
-  decompress(input, output, offset, /* autoDetect, */ keepHeader, config)
+  decompress(input, output, offset, keepHeader, config)
     .then(() => {
       process.exit(0)
     })

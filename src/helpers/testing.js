@@ -54,6 +54,11 @@ const buffersShouldEqual = (expected, result, offset = 0, displayAsHex = false) 
   if (!Buffer.isBuffer(expected)) {
     throw new Error('expected is not a Buffer')
   }
+
+  if (!Buffer.isBuffer(result)) {
+    throw new Error('result is not a Buffer')
+  }
+
   const diff = report(expected, result, compare(expected, result, offset), displayAsHex)
   assert.ok(expected.equals(result), diff)
 }
