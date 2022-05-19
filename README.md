@@ -8,7 +8,7 @@ It was the de-facto compression for games from around Y2K, like Arx Fatalis
 
 `npm i -g node-pkware`
 
-recommended node version: 8.5+
+minimum required node version: 8.5+
 
 development and testing should be done in node 12.3+ because of the tests utilizing `Readable.from()` - source: https://stackoverflow.com/a/59638132/1806628
 
