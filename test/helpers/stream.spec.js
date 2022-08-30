@@ -1,16 +1,16 @@
 const assert = require('assert')
 const { Writable, Readable } = require('stream')
 const { describe, it } = require('mocha')
-const { isFunction } = require('ramda-adjunct')
 const {
   splitAt,
   transformIdentity,
   transformEmpty,
   through,
   transformSplitBy,
-  streamToBuffer
+  streamToBuffer,
 } = require('../../src/helpers/stream.js')
 const { buffersShouldEqual, transformToABC } = require('../../src/helpers/testing.js')
+const { isFunction } = require('../../src/helpers/functions.js')
 
 describe('helpers/stream', () => {
   describe('splitAt', () => {
@@ -126,7 +126,7 @@ describe('helpers/stream', () => {
       assert.strictEqual(isFunction(handler), true)
     })
     describe('returned handler', () => {
-      it('takes a Buffer, an encoding and an error first, data second callback function and calls it with the given Buffer', done => {
+      it('takes a Buffer, an encoding and an error first, data second callback function and calls it with the given Buffer', (done) => {
         const handler = transformIdentity()
         const callback = (error, data) => {
           assert.strictEqual(error, null, '1st parameter (error) in the callback should be null')
@@ -135,7 +135,7 @@ describe('helpers/stream', () => {
         }
         handler(Buffer.from([1, 2, 3]), null, callback)
       })
-      it("passes whatever was given as the 1st parameter to the callback's 2nd parameter", done => {
+      it("passes whatever was given as the 1st parameter to the callback's 2nd parameter", (done) => {
         const handler = transformIdentity()
         const callback = (error, data) => {
           assert.strictEqual(error, null, '1st parameter (error) in the callback should be null')
@@ -144,14 +144,14 @@ describe('helpers/stream', () => {
         }
         handler('#ffffff', '', callback)
       })
-      it('can be given to a throughstream and will not change the input chunks', done => {
+      it('can be given to a throughstream and will not change the input chunks', (done) => {
         Readable.from('this is a test')
           .pipe(through(transformIdentity()))
           .pipe(
-            streamToBuffer(buffer => {
+            streamToBuffer((buffer) => {
               buffersShouldEqual(buffer, Buffer.from('this is a test'))
               done()
-            })
+            }),
           )
       })
     })
@@ -166,7 +166,7 @@ describe('helpers/stream', () => {
       assert.strictEqual(isFunction(handler), true)
     })
     describe('returned handler', () => {
-      it('takes a Buffer, an encoding and an error first, data second callback function and calls it with an empty Buffer', done => {
+      it('takes a Buffer, an encoding and an error first, data second callback function and calls it with an empty Buffer', (done) => {
         const handler = transformEmpty()
         const callback = (error, data) => {
           assert.strictEqual(error, null, '1st parameter (error) in the callback should be null')
@@ -175,14 +175,14 @@ describe('helpers/stream', () => {
         }
         handler(Buffer.from([1, 2, 3]), null, callback)
       })
-      it('can be given to a throughstream and will always return an empty buffer', done => {
+      it('can be given to a throughstream and will always return an empty buffer', (done) => {
         Readable.from('this is a test')
           .pipe(through(transformEmpty()))
           .pipe(
-            streamToBuffer(buffer => {
+            streamToBuffer((buffer) => {
               buffersShouldEqual(buffer, Buffer.from([]))
               done()
-            })
+            }),
           )
       })
     })
@@ -192,7 +192,7 @@ describe('helpers/stream', () => {
     it('is a function', () => {
       assert.ok(isFunction(through), `${through} is not a function`)
     })
-    it('calls _flush when the input stream have finished', done => {
+    it('calls _flush when the input stream have finished', (done) => {
       let isFirstChunk = true
       const handler = function (chunk, encoding, callback) {
         if (isFirstChunk) {
@@ -207,7 +207,7 @@ describe('helpers/stream', () => {
       const stream = new Readable({
         read() {
           return null
-        }
+        },
       })
 
       stream.pipe(through(handler))
@@ -225,45 +225,45 @@ describe('helpers/stream', () => {
     it('is a function', () => {
       assert.ok(isFunction(transformSplitBy), `${transformSplitBy} is not a function`)
     })
-    it("takes a predicate, an identity and empty transformers and returns a handler, which only let's through the first part of data", done => {
+    it("takes a predicate, an identity and empty transformers and returns a handler, which only let's through the first part of data", (done) => {
       const handler = transformSplitBy(splitAt(3), transformIdentity(), transformEmpty())
 
       Readable.from('abcde')
         .pipe(through(handler))
         .pipe(
-          streamToBuffer(buffer => {
+          streamToBuffer((buffer) => {
             buffersShouldEqual(Buffer.from('abc'), buffer)
             done()
-          })
+          }),
         )
     })
 
-    it("takes a predicate, an empty and identity transformers and returns a handler, which only let's through the second part of data", done => {
+    it("takes a predicate, an empty and identity transformers and returns a handler, which only let's through the second part of data", (done) => {
       const handler = transformSplitBy(splitAt(3), transformEmpty(), transformIdentity())
 
       Readable.from('abcde')
         .pipe(through(handler))
         .pipe(
-          streamToBuffer(buffer => {
+          streamToBuffer((buffer) => {
             buffersShouldEqual(Buffer.from('de'), buffer)
             done()
-          })
+          }),
         )
     })
 
-    it('only splits data once, when splitAt is used as predicate', done => {
+    it('only splits data once, when splitAt is used as predicate', (done) => {
       const handler = transformSplitBy(splitAt(10), transformEmpty(), transformToABC())
 
       const stream = new Readable({
         read() {
           return null
-        }
+        },
       })
       stream.pipe(through(handler)).pipe(
-        streamToBuffer(buffer => {
+        streamToBuffer((buffer) => {
           buffersShouldEqual(Buffer.from('ABCD'), buffer)
           done()
-        })
+        }),
       )
       stream.push('abcdef')
       stream.push('ghijkl')
@@ -272,13 +272,13 @@ describe('helpers/stream', () => {
       stream.push(null)
     })
 
-    it('calls both leftHandler._flush at split point and rightHandler._flush when they no longer receive data', done => {
+    it('calls both leftHandler._flush at split point and rightHandler._flush when they no longer receive data', (done) => {
       const A = () => {
         let isFirstChunk = true
         return function (chunk, encoding, callback) {
           if (isFirstChunk) {
             isFirstChunk = false
-            this._flush = flushCallback => {
+            this._flush = (flushCallback) => {
               flushCallback(null, Buffer.from('A'))
             }
           }
@@ -292,7 +292,7 @@ describe('helpers/stream', () => {
         return function (chunk, encoding, callback) {
           if (isFirstChunk) {
             isFirstChunk = false
-            this._flush = flushCallback => {
+            this._flush = (flushCallback) => {
               flushCallback(null, Buffer.from('B'))
             }
           }
@@ -306,14 +306,14 @@ describe('helpers/stream', () => {
       const stream = new Readable({
         read() {
           return null
-        }
+        },
       })
 
       stream.pipe(through(handler)).pipe(
-        streamToBuffer(buffer => {
+        streamToBuffer((buffer) => {
           buffersShouldEqual(Buffer.from('abcdefghijAklmnopqrstuvwxB'), buffer)
           done()
-        })
+        }),
       )
 
       stream.push('abcdef')
@@ -323,13 +323,13 @@ describe('helpers/stream', () => {
       stream.push(null)
     })
 
-    it('calls both leftHandler._flush and rightHandler._flush when they no longer receive data', done => {
+    it('calls both leftHandler._flush and rightHandler._flush when they no longer receive data', (done) => {
       const A = () => {
         let isFirstChunk = true
         return function (chunk, encoding, callback) {
           if (isFirstChunk) {
             isFirstChunk = false
-            this._flush = flushCallback => {
+            this._flush = (flushCallback) => {
               flushCallback(null, Buffer.from('A'))
             }
           }
@@ -343,7 +343,7 @@ describe('helpers/stream', () => {
         return function (chunk, encoding, callback) {
           if (isFirstChunk) {
             isFirstChunk = false
-            this._flush = flushCallback => {
+            this._flush = (flushCallback) => {
               flushCallback(null, Buffer.from('B'))
             }
           }
@@ -357,14 +357,14 @@ describe('helpers/stream', () => {
       const stream = new Readable({
         read() {
           return null
-        }
+        },
       })
 
       stream.pipe(through(handler)).pipe(
-        streamToBuffer(buffer => {
+        streamToBuffer((buffer) => {
           buffersShouldEqual(Buffer.from('abcdefghijklmnopqrstuvwxAB'), buffer)
           done()
-        })
+        }),
       )
 
       stream.push('abcdef')
@@ -384,21 +384,21 @@ describe('streamToBuffer', () => {
     const handler = streamToBuffer()
     assert.ok(handler instanceof Writable)
   })
-  it('takes a callback function, which is called, when writable gets no more data', done => {
+  it('takes a callback function, which is called, when writable gets no more data', (done) => {
     const handler = streamToBuffer(() => {
       done()
     })
     Readable.from('lorem ipsum dolor').pipe(handler)
   })
-  it('only calls the callback function once all the input have been gathered', done => {
+  it('only calls the callback function once all the input have been gathered', (done) => {
     let isCalled = false
-    const handler = streamToBuffer(data => {
+    const handler = streamToBuffer((data) => {
       isCalled = true
     })
     const stream = new Readable({
       read() {
         return null
-      }
+      },
     })
     stream.pipe(handler)
     setTimeout(() => {
@@ -406,15 +406,15 @@ describe('streamToBuffer', () => {
       done()
     }, 100)
   })
-  it('calls the callback with the data accumulated via piping once the stream is finished', done => {
-    const handler = streamToBuffer(data => {
+  it('calls the callback with the data accumulated via piping once the stream is finished', (done) => {
+    const handler = streamToBuffer((data) => {
       buffersShouldEqual(data, Buffer.from('lorem ipsum dolor sit amet'))
       done()
     })
     const stream = new Readable({
       read() {
         return null
-      }
+      },
     })
     stream.pipe(handler)
     stream.push('lorem ')

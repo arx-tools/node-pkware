@@ -10,44 +10,45 @@ const {
   DICTIONARY_SIZE_SMALL,
   COMPRESSION_BINARY,
   DICTIONARY_SIZE_LARGE,
-  DICTIONARY_SIZE_MEDIUM
+  DICTIONARY_SIZE_MEDIUM,
 } = require('../src/constants.js')
 
 const TEST_FILE_FOLDER = '../pkware-test-files/'
 
-const defineTestForImplodeSelfCheck = highWaterMark => (folder, decompressedFile, compressionType, dictionarySize) => {
-  it(`can compress ${folder}/${decompressedFile} with ${toHex(highWaterMark)} byte chunks`, done => {
-    ;(async () => {
-      let expected
-      try {
-        expected = await fs.promises.readFile(`${TEST_FILE_FOLDER}${folder}/${decompressedFile}`)
-      } catch (e) {
-        done(e)
-      }
+const defineTestForImplodeSelfCheck =
+  (highWaterMark) => (folder, decompressedFile, compressionType, dictionarySize) => {
+    it(`can compress ${folder}/${decompressedFile} with ${toHex(highWaterMark)} byte chunks`, (done) => {
+      ;(async () => {
+        let expected
+        try {
+          expected = await fs.promises.readFile(`${TEST_FILE_FOLDER}${folder}/${decompressedFile}`)
+        } catch (e) {
+          done(e)
+        }
 
-      if (!expected) {
-        return
-      }
+        if (!expected) {
+          return
+        }
 
-      fs.createReadStream(`${TEST_FILE_FOLDER}${folder}/${decompressedFile}`, { highWaterMark })
-        .on('error', done)
-        .pipe(through(implode(compressionType, dictionarySize, { debug: true })))
-        .pipe(through(explode({ debug: true })).on('error', done))
-        .pipe(
-          streamToBuffer(buffer => {
-            buffersShouldEqual(buffer, expected, 0, true)
-            done()
-          })
-        )
-    })()
-  })
-}
+        fs.createReadStream(`${TEST_FILE_FOLDER}${folder}/${decompressedFile}`, { highWaterMark })
+          .on('error', done)
+          .pipe(through(implode(compressionType, dictionarySize, { debug: true })))
+          .pipe(through(explode({ debug: true })).on('error', done))
+          .pipe(
+            streamToBuffer((buffer) => {
+              buffersShouldEqual(buffer, expected, 0, true)
+              done()
+            }),
+          )
+      })()
+    })
+  }
 
 const defineTestForImplodeSelfCheckWithOffset =
-  highWaterMark => (folder, decompressedFile, compressionType, dictionarySize, offset) => {
+  (highWaterMark) => (folder, decompressedFile, compressionType, dictionarySize, offset) => {
     it(`can compress ${folder}/${decompressedFile} with ${toHex(highWaterMark)} byte chunks and ${toHex(
-      offset
-    )} offset`, done => {
+      offset,
+    )} offset`, (done) => {
       ;(async () => {
         let expected
         try {
@@ -67,22 +68,22 @@ const defineTestForImplodeSelfCheckWithOffset =
               transformSplitBy(
                 splitAt(offset),
                 transformIdentity(),
-                implode(compressionType, dictionarySize, { debug: true })
-              )
-            )
+                implode(compressionType, dictionarySize, { debug: true }),
+              ),
+            ),
           )
           .pipe(
-            through(transformSplitBy(splitAt(offset), transformIdentity(), explode({ debug: true }))).on('error', done)
+            through(transformSplitBy(splitAt(offset), transformIdentity(), explode({ debug: true }))).on('error', done),
           )
           .pipe(
-            streamToBuffer(buffer => {
+            streamToBuffer((buffer) => {
               try {
                 buffersShouldEqual(buffer, expected, 0, true)
                 done()
               } catch (e) {
                 done(e)
               }
-            })
+            }),
           )
       })()
     })
@@ -171,7 +172,7 @@ describe('implode', () => {
     'fast.fts.unpacked',
     COMPRESSION_BINARY,
     DICTIONARY_SIZE_LARGE,
-    0x718
+    0x718,
   )
 
   defineTestForImplodeSelfCheckWithOffset(0x100)(
@@ -179,21 +180,21 @@ describe('implode', () => {
     'level8.llf.unpacked',
     COMPRESSION_BINARY,
     DICTIONARY_SIZE_SMALL,
-    0
+    0,
   )
   defineTestForImplodeSelfCheckWithOffset(0x1000)(
     'arx-fatalis/level8',
     'level8.llf.unpacked',
     COMPRESSION_BINARY,
     DICTIONARY_SIZE_SMALL,
-    0
+    0,
   )
   defineTestForImplodeSelfCheckWithOffset(0x10000)(
     'arx-fatalis/level8',
     'level8.llf.unpacked',
     COMPRESSION_BINARY,
     DICTIONARY_SIZE_SMALL,
-    0
+    0,
   )
 
   defineTestForImplodeSelfCheckWithOffset(0x100)(
@@ -201,21 +202,21 @@ describe('implode', () => {
     'level8.llf.unpacked',
     COMPRESSION_BINARY,
     DICTIONARY_SIZE_MEDIUM,
-    0
+    0,
   )
   defineTestForImplodeSelfCheckWithOffset(0x1000)(
     'arx-fatalis/level8',
     'level8.llf.unpacked',
     COMPRESSION_BINARY,
     DICTIONARY_SIZE_MEDIUM,
-    0
+    0,
   )
   defineTestForImplodeSelfCheckWithOffset(0x10000)(
     'arx-fatalis/level8',
     'level8.llf.unpacked',
     COMPRESSION_BINARY,
     DICTIONARY_SIZE_MEDIUM,
-    0
+    0,
   )
 
   defineTestForImplodeSelfCheckWithOffset(0x100)(
@@ -223,21 +224,21 @@ describe('implode', () => {
     'level8.llf.unpacked',
     COMPRESSION_BINARY,
     DICTIONARY_SIZE_LARGE,
-    0
+    0,
   )
   defineTestForImplodeSelfCheckWithOffset(0x1000)(
     'arx-fatalis/level8',
     'level8.llf.unpacked',
     COMPRESSION_BINARY,
     DICTIONARY_SIZE_LARGE,
-    0
+    0,
   )
   defineTestForImplodeSelfCheckWithOffset(0x10000)(
     'arx-fatalis/level8',
     'level8.llf.unpacked',
     COMPRESSION_BINARY,
     DICTIONARY_SIZE_LARGE,
-    0
+    0,
   )
 
   // defineTestForImplodeSelfCheck(0x10)('misc', 'uncompressed.txt', COMPRESSION_BINARY, DICTIONARY_SIZE_SMALL)

@@ -1,6 +1,24 @@
 const fs = require('fs')
-const { repeat, test } = require('ramda')
-const { isNumber, isString } = require('ramda-adjunct')
+const { repeat, test, type } = require('ramda')
+
+const isNumber = (x) => {
+  return typeof x === 'number'
+}
+
+const isString = (x) => {
+  return typeof x === 'string'
+}
+
+const isFunction = (x) => {
+  return type(x) === 'Function'
+}
+
+const noop = () => {}
+
+// https://stackoverflow.com/a/68989785/1806628
+const isPlainObject = (x) => {
+  return x.constructor === Object
+}
 
 const isBetween = (min, max, num) => {
   if (!isNumber(min) || !isNumber(max) || !isNumber(num)) {
@@ -112,6 +130,11 @@ const fileExists = async (filename) => {
 }
 
 module.exports = {
+  isNumber,
+  isString,
+  isFunction,
+  noop,
+  isPlainObject,
   isBetween,
   nBitsOfOnes,
   maskBits,

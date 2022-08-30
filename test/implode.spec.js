@@ -1,14 +1,14 @@
 const assert = require('assert')
 const { beforeEach, describe, it } = require('mocha')
-const { isFunction, isPlainObject } = require('ramda-adjunct')
 const {
   COMPRESSION_BINARY,
   DICTIONARY_SIZE_LARGE,
   DICTIONARY_SIZE_SMALL,
-  DICTIONARY_SIZE_MEDIUM
+  DICTIONARY_SIZE_MEDIUM,
 } = require('../src/constants.js')
 const { InvalidDictionarySizeError, InvalidCompressionTypeError } = require('../src/errors.js')
 const ExpandingBuffer = require('../src/helpers/ExpandingBuffer.js')
+const { isFunction, isPlainObject } = require('../src/helpers/functions.js')
 const { setup, outputBits, processChunkData, implode, handleFirstTwoBytes } = require('../src/implode.js')
 
 describe('setup', () => {
@@ -18,7 +18,7 @@ describe('setup', () => {
       inputBuffer: new ExpandingBuffer(),
       outputBuffer: new ExpandingBuffer(),
       dictionarySizeBits: DICTIONARY_SIZE_LARGE,
-      compressionType: COMPRESSION_BINARY
+      compressionType: COMPRESSION_BINARY,
     }
   })
   it('is a function', () => {
@@ -84,7 +84,7 @@ describe('handleFirstTwoBytes', () => {
       outputBuffer: new ExpandingBuffer(),
       dictionarySizeBits: DICTIONARY_SIZE_LARGE,
       compressionType: COMPRESSION_BINARY,
-      streamEnded: false
+      streamEnded: false,
     }
     setup(state)
   })

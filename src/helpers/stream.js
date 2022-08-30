@@ -1,7 +1,7 @@
 const { Transform, Writable } = require('stream')
 const { promisify } = require('util')
-const { isFunction } = require('ramda-adjunct')
 const ExpandingBuffer = require('./ExpandingBuffer.js')
+const { isFunction } = require('./functions.js')
 
 const emptyBuffer = Buffer.from([])
 

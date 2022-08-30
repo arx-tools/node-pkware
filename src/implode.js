@@ -1,7 +1,6 @@
 const { has, repeat, clone, last, clamp } = require('ramda')
-const { isFunction } = require('ramda-adjunct')
 const ExpandingBuffer = require('./helpers/ExpandingBuffer.js')
-const { toHex, getLowestNBits, nBitsOfOnes } = require('./helpers/functions.js')
+const { toHex, getLowestNBits, nBitsOfOnes, isFunction } = require('./helpers/functions.js')
 const { ExpectedFunctionError, InvalidDictionarySizeError, InvalidCompressionTypeError } = require('./errors.js')
 const {
   ChBitsAsc,

@@ -13,7 +13,7 @@
     "implode": "bin/implode.js"
   },
   "scripts": {
-    "lint": "eslint \"{bin,src}/**/*.{js,ts}\"",
+    "lint": "eslint \"{bin,src,test}/**/*.{js,ts}\"",
     "lint:fix": "npm run lint -- --fix",
     "lint:staged": "lint-staged",
     "test:unit": "set FORCE_COLOR=true && mocha test/**/*.spec.js --timeout 5000",
@@ -33,8 +33,7 @@
   "license": "GPL-3.0-or-later",
   "dependencies": {
     "minimist-lite": "^2.2.1",
-    "ramda": "^0.28.0",
-    "ramda-adjunct": "^3.2.0"
+    "ramda": "^0.28.0"
   },
   "devDependencies": {
     "@types/node": "^18.7.14",

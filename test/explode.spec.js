@@ -2,14 +2,13 @@ const assert = require('assert')
 const { Readable } = require('stream')
 const { describe, it, before, beforeEach } = require('mocha')
 // const { has } = require('ramda')
-const { isFunction, isPlainObject, noop } = require('ramda-adjunct')
 const { ChBitsAsc, ChCodeAsc /*, COMPRESSION_ASCII, COMPRESSION_BINARY */ } = require('../src/constants.js')
 const {
   InvalidDataError,
   InvalidCompressionTypeError,
   InvalidDictionarySizeError,
   ExpectedBufferError,
-  ExpectedFunctionError
+  ExpectedFunctionError,
 } = require('../src/errors.js')
 const {
   explode,
@@ -21,11 +20,12 @@ const {
   wasteBits,
   decodeNextLiteral,
   decodeDistance,
-  generateDecodeTables
+  generateDecodeTables,
 } = require('../src/explode.js')
 const ExpandingBuffer = require('../src/helpers/ExpandingBuffer.js')
 const { through } = require('../src/helpers/stream.js')
 const { buffersShouldEqual } = require('../src/helpers/testing.js')
+const { isFunction, noop, isPlainObject } = require('../src/helpers/functions.js')
 
 describe('readHeader', () => {
   it('is a function', () => {
@@ -236,8 +236,8 @@ describe('explode', () => {
         handler(Buffer.from([]))
       }, ExpectedFunctionError)
     })
-    it('gives an errorous callback when the first parameter is not a buffer', done => {
-      handler(12, null, err => {
+    it('gives an errorous callback when the first parameter is not a buffer', (done) => {
+      handler(12, null, (err) => {
         assert.ok(err instanceof Error)
         done()
       })
@@ -257,7 +257,7 @@ describe('explode', () => {
       handler(Buffer.from([1, 2, 3]), null, noop)
       assert.strictEqual(handler._state.isFirstChunk, false)
     })
-    it('calling the handler via streams will call state.onInputFinished once the stream have finished', done => {
+    it('calling the handler via streams will call state.onInputFinished once the stream have finished', (done) => {
       let wasCalled = false
       handler._state.onInputFinished = () => {
         wasCalled = true
@@ -291,7 +291,7 @@ describe('explode', () => {
     */
     it('leaves state unchanged, when header is not read yet and we have less, than 4 bytes', () => {
       const state = {
-        inputBuffer: new ExpandingBuffer()
+        inputBuffer: new ExpandingBuffer(),
       }
       state.inputBuffer.append(Buffer.from([1, 4, 0]))
       processChunkData(state)

@@ -6,7 +6,7 @@ const {
   InvalidDataError,
   AbortedError,
   ExpectedBufferError,
-  ExpectedFunctionError
+  ExpectedFunctionError,
 } = require('../../src/errors.js')
 
 describe('InvalidDictionarySizeError', () => {

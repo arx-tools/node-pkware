@@ -1,14 +1,15 @@
 const assert = require('assert')
 const { describe, it } = require('mocha')
-const { isFunction, isNumber } = require('ramda-adjunct')
 const {
+  isNumber,
+  isFunction,
   isBetween,
   nBitsOfOnes,
   maskBits,
   isFullHexString,
   toHex,
   getLowestNBits,
-  mergeSparseArrays
+  mergeSparseArrays,
 } = require('../../src/helpers/functions.js')
 
 describe('helpers/functions', () => {

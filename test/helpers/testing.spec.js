@@ -1,6 +1,6 @@
 const assert = require('assert')
 const { describe, it } = require('mocha')
-const { isFunction } = require('ramda-adjunct')
+const { isFunction } = require('../../src/helpers/functions.js')
 const { isClass, bufferToString, buffersShouldEqual, transformToABC } = require('../../src/helpers/testing.js')
 
 describe('helpers/testing', () => {
@@ -41,7 +41,7 @@ describe('helpers/testing', () => {
         equals: () => {
           console.log('bamboozled!')
           return true
-        }
+        },
       }
       const buffer2 = Buffer.from([1, 2, 3])
       assert.throws(() => {
@@ -66,7 +66,7 @@ describe('helpers/testing', () => {
       assert.strictEqual(isFunction(handler), true)
     })
     describe('returned handler', () => {
-      it('it always outputs a single character to the callback parameter', done => {
+      it('it always outputs a single character to the callback parameter', (done) => {
         const handler = transformToABC()
         const callback = (error, data) => {
           assert.strictEqual(error, null, '1st parameter (error) in the callback should be null')
@@ -75,7 +75,7 @@ describe('helpers/testing', () => {
         }
         handler(Buffer.from([1, 2, 3, 4, 5]), null, callback)
       })
-      it('always gives a different single character from the alphabet at every call', done => {
+      it('always gives a different single character from the alphabet at every call', (done) => {
         const handler = transformToABC()
         const responses = []
         const callback = (_error, data) => {

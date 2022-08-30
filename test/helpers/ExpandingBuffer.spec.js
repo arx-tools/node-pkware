@@ -103,7 +103,7 @@ describe('ExpandingBuffer', () => {
     const buffer2 = buffer.getHeap()
     assert.ok(
       buffer1 === buffer2,
-      `reference of ${bufferToString(buffer1)} !== reference of ${bufferToString(buffer2)}`
+      `reference of ${bufferToString(buffer1)} !== reference of ${bufferToString(buffer2)}`,
     )
   })
   it('re-uses the existing internal buffer, when appended data fits into the space freed by flushing from the end', () => {
@@ -114,7 +114,7 @@ describe('ExpandingBuffer', () => {
     const buffer2 = buffer.getHeap()
     assert.ok(
       buffer1 === buffer2,
-      `reference of ${bufferToString(buffer1)} !== reference of ${bufferToString(buffer2)}`
+      `reference of ${bufferToString(buffer1)} !== reference of ${bufferToString(buffer2)}`,
     )
   })
   it('makes sure to only allow reading data below size and not from the heap', () => {
@@ -147,7 +147,7 @@ describe('ExpandingBuffer', () => {
     const buffer2 = buffer.getHeap()
     assert.ok(
       buffer1 === buffer2,
-      `reference of ${bufferToString(buffer1)} !== reference of ${bufferToString(buffer2)}`
+      `reference of ${bufferToString(buffer1)} !== reference of ${bufferToString(buffer2)}`,
     )
   })
   it('clears the internally stored data, when flushing an amount bigger, than heapSize', () => {

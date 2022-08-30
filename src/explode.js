@@ -1,5 +1,4 @@
 const { repeat, unfold, reduce, has, includes } = require('ramda')
-const { isFunction } = require('ramda-adjunct')
 const {
   InvalidDataError,
   InvalidCompressionTypeError,
@@ -8,7 +7,7 @@ const {
   ExpectedFunctionError,
   AbortedError,
 } = require('./errors.js')
-const { mergeSparseArrays, getLowestNBits, nBitsOfOnes, toHex } = require('./helpers/functions.js')
+const { mergeSparseArrays, getLowestNBits, nBitsOfOnes, toHex, isFunction } = require('./helpers/functions.js')
 const {
   ChBitsAsc,
   ChCodeAsc,
