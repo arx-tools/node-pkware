@@ -1,2 +1,4 @@
 node_modules/**/*
 report.*
+tsconfig.tsbuildinfo
+dist

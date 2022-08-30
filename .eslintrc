@@ -11,11 +11,14 @@
     "prettier/prettier": [
       "error",
       {
+        "arrowParens": "always",
+        "endOfLine": "auto",
+        "printWidth": 120,
         "semi": false,
         "singleQuote": true,
-        "printWidth": 120,
-        "trailingComma": "none",
-        "arrowParens": "avoid"
+        "tabWidth": 2,
+        "trailingComma": "all",
+        "useTabs": false
       }
     ],
     "import/no-unresolved": "error",
@@ -55,10 +58,10 @@
     "ramda/when-simplification": "error"
   },
   "settings": {
-    "import/extensions": [".mjs", ".js"],
+    "import/extensions": [".ts", ".js"],
     "import/resolver": {
       "node": {
-        "extensions": [".mjs", ".js"]
+        "extensions": [".ts", ".js"]
       }
     }
   }
