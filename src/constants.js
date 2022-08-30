@@ -135,5 +135,5 @@ module.exports = {
   ExLenBits,
   LenBase,
   ChBitsAsc,
-  ChCodeAsc
+  ChCodeAsc,
 }

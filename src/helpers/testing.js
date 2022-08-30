@@ -30,7 +30,7 @@ const readToBuffer = (fileName, chunkSizeInBytes = 1024) => {
 */
 
 // source: https://stackoverflow.com/a/43197340/1806628
-const isClass = obj => {
+const isClass = (obj) => {
   const isCtorClass = obj.constructor && obj.constructor.toString().substring(0, 5) === 'class'
   if (obj.prototype === undefined) {
     return isCtorClass
@@ -74,5 +74,5 @@ module.exports = {
   isClass,
   buffersShouldEqual,
   bufferToString,
-  transformToABC
+  transformToABC,
 }

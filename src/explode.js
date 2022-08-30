@@ -6,7 +6,7 @@ const {
   InvalidDictionarySizeError,
   ExpectedBufferError,
   ExpectedFunctionError,
-  AbortedError
+  AbortedError,
 } = require('./errors.js')
 const { mergeSparseArrays, getLowestNBits, nBitsOfOnes, toHex } = require('./helpers/functions.js')
 const {
@@ -26,11 +26,11 @@ const {
   ExLenBits,
   DistBits,
   LenCode,
-  DistCode
+  DistCode,
 } = require('./constants.js')
 const ExpandingBuffer = require('./helpers/ExpandingBuffer.js')
 
-const readHeader = buffer => {
+const readHeader = (buffer) => {
   if (!Buffer.isBuffer(buffer)) {
     throw new ExpectedBufferError()
   }
@@ -49,12 +49,12 @@ const readHeader = buffer => {
 
   return {
     compressionType,
-    dictionarySizeBits
+    dictionarySizeBits,
   }
 }
 
 // PAT = populate ascii table
-const createPATIterator = (limit, stepper) => n => {
+const createPATIterator = (limit, stepper) => (n) => {
   return n >= limit ? false : [n, n + (1 << stepper)]
 }
 
@@ -69,7 +69,7 @@ const populateAsciiTable = (value, index, bits, limit) => {
       return acc
     },
     [],
-    idxs
+    idxs,
   )
 }
 
@@ -78,7 +78,7 @@ const generateAsciiTables = () => {
     asciiTable2C34: repeat(0, 0x100),
     asciiTable2D34: repeat(0, 0x100),
     asciiTable2E34: repeat(0, 0x80),
-    asciiTable2EB4: repeat(0, 0x100)
+    asciiTable2EB4: repeat(0, 0x100),
   }
 
   tables.chBitsAsc = ChBitsAsc.map((value, index) => {
@@ -132,7 +132,7 @@ const parseInitialData = (state, debug = false) => {
     console.log(
       `explode: compression level: ${
         state.dictionarySizeBits === 4 ? 'small' : state.dictionarySizeBits === 5 ? 'medium' : 'large'
-      }`
+      }`,
     )
   }
 
@@ -158,7 +158,7 @@ const wasteBits = (state, numberOfBits) => {
   return PKDCL_OK
 }
 
-const decodeNextLiteral = state => {
+const decodeNextLiteral = (state) => {
   const lastBit = state.bitBuffer & 1
 
   if (wasteBits(state, 1) === PKDCL_STREAM_END) {
@@ -354,7 +354,7 @@ const explode = (config = {}) => {
   handler._state = {
     _backup: {
       extraBits: null,
-      bitBuffer: null
+      bitBuffer: null,
     },
     needMoreInput: true,
     isFirstChunk: true,
@@ -364,7 +364,7 @@ const explode = (config = {}) => {
     distPosCodes: generateDecodeTables(DistCode, DistBits),
     inputBuffer: new ExpandingBuffer(inputBufferSize),
     outputBuffer: new ExpandingBuffer(outputBufferSize),
-    onInputFinished: callback => {
+    onInputFinished: (callback) => {
       const state = handler._state
 
       if (debug) {
@@ -393,8 +393,8 @@ const explode = (config = {}) => {
       state.inputBuffer._restoreIndices()
     },
     stats: {
-      chunkCounter: 0
-    }
+      chunkCounter: 0,
+    },
   }
 
   return handler
@@ -410,5 +410,5 @@ module.exports = {
   wasteBits,
   decodeNextLiteral,
   decodeDistance,
-  generateDecodeTables
+  generateDecodeTables,
 }

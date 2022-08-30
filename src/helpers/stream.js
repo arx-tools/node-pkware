@@ -15,7 +15,7 @@ class QuasiTransform {
   }
 }
 
-const splitAt = index => {
+const splitAt = (index) => {
   let cntr = 0
 
   if (!Number.isInteger(index) || index < 0) {
@@ -24,7 +24,7 @@ const splitAt = index => {
     }
   }
 
-  return chunk => {
+  return (chunk) => {
     let left
     let right
     let isLeftDone = true
@@ -66,9 +66,9 @@ const transformEmpty = () => {
   }
 }
 
-const through = handler => {
+const through = (handler) => {
   return new Transform({
-    transform: handler
+    transform: handler,
   })
 }
 
@@ -89,7 +89,7 @@ const transformSplitBy = (predicate, leftHandler, rightHandler) => {
 
     if (isFirstChunk) {
       isFirstChunk = false
-      this._flush = flushCallback => {
+      this._flush = (flushCallback) => {
         if (!dam.isEmpty()) {
           this.push(dam.read())
         }
@@ -122,10 +122,10 @@ const transformSplitBy = (predicate, leftHandler, rightHandler) => {
         }
 
         Promise.all([leftFiller, rightFiller])
-          .then(buffers => {
+          .then((buffers) => {
             flushCallback(null, Buffer.concat(buffers))
           })
-          .catch(err => {
+          .catch((err) => {
             flushCallback(err)
           })
       }
@@ -146,7 +146,7 @@ const transformSplitBy = (predicate, leftHandler, rightHandler) => {
     }
 
     Promise.all([_left, filler, _right])
-      .then(buffers => {
+      .then((buffers) => {
         dam.append(Buffer.concat(buffers))
         if (dam.size() > damChunkSize) {
           const chunks = Math.floor(dam.size() / damChunkSize)
@@ -160,13 +160,13 @@ const transformSplitBy = (predicate, leftHandler, rightHandler) => {
           callback(null, emptyBuffer)
         }
       })
-      .catch(err => {
+      .catch((err) => {
         callback(err)
       })
   }
 }
 
-const streamToBuffer = done => {
+const streamToBuffer = (done) => {
   const buffer = new ExpandingBuffer()
   return new Writable({
     write(chunk, encoding, callback) {
@@ -176,7 +176,7 @@ const streamToBuffer = done => {
     final(callback) {
       done(buffer.getHeap())
       callback()
-    }
+    },
   })
 }
 
@@ -186,5 +186,5 @@ module.exports = {
   transformEmpty,
   through,
   transformSplitBy,
-  streamToBuffer
+  streamToBuffer,
 }

@@ -10,8 +10,8 @@ const args = minimist(process.argv.slice(2), {
   string: ['output', 'offset', 'input-buffer-size', 'output-buffer-size'],
   boolean: ['version', 'drop-before-offset', 'debug'],
   alias: {
-    v: 'version'
-  }
+    v: 'version',
+  },
 })
 
 const decompress = (input, output, offset, keepHeader, config) => {
@@ -63,14 +63,14 @@ const decompress = (input, output, offset, keepHeader, config) => {
   const config = {
     debug: args.debug,
     inputBufferSize: parseNumberString(args['input-buffer-size'], 0x10000),
-    outputBufferSize: parseNumberString(args['output-buffer-size'], 0x40000)
+    outputBufferSize: parseNumberString(args['output-buffer-size'], 0x40000),
   }
 
   decompress(input, output, offset, keepHeader, config)
     .then(() => {
       process.exit(0)
     })
-    .catch(e => {
+    .catch((e) => {
       console.error(`error: ${e.message}`)
       process.exit(1)
     })

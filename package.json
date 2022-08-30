@@ -13,7 +13,7 @@
     "implode": "bin/implode.js"
   },
   "scripts": {
-    "lint": "eslint \"src/**/*.js\"",
+    "lint": "eslint \"{bin,src}/**/*.{js,ts}\"",
     "lint:fix": "npm run lint -- --fix",
     "lint:staged": "lint-staged",
     "test:unit": "set FORCE_COLOR=true && mocha test/**/*.spec.js --timeout 5000",

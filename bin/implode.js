@@ -7,7 +7,7 @@ const {
   COMPRESSION_ASCII,
   DICTIONARY_SIZE_SMALL,
   DICTIONARY_SIZE_MEDIUM,
-  DICTIONARY_SIZE_LARGE
+  DICTIONARY_SIZE_LARGE,
 } = require('../src/constants.js')
 const { getPackageVersion, parseNumberString, fileExists } = require('../src/helpers/functions.js')
 const { implode } = require('../src/implode.js')
@@ -33,8 +33,8 @@ const args = minimist(process.argv.slice(2), {
     s: 'small',
     m: 'medium',
     l: 'large',
-    v: 'version'
-  }
+    v: 'version',
+  },
 })
 
 ;(async () => {
@@ -67,7 +67,7 @@ const args = minimist(process.argv.slice(2), {
     hasErrors = true
   }
 
-  const sizes = [args.small, args.medium, args.large].filter(x => x === true)
+  const sizes = [args.small, args.medium, args.large].filter((x) => x === true)
   if (sizes.length > 1) {
     console.error('error: multiple size types specified, can only work with one of --small, --medium and --large')
     hasErrors = true
@@ -99,14 +99,14 @@ const args = minimist(process.argv.slice(2), {
   const config = {
     debug: args.debug,
     inputBufferSize: parseNumberString(args['input-buffer-size'], 0x10000),
-    outputBufferSize: parseNumberString(args['output-buffer-size'], 0x12000)
+    outputBufferSize: parseNumberString(args['output-buffer-size'], 0x12000),
   }
 
   decompress(input, output, offset, keepHeader, compressionType, dictionarySize, config)
     .then(() => {
       process.exit(0)
     })
-    .catch(e => {
+    .catch((e) => {
       console.error(`error: ${e.message}`)
       process.exit(1)
     })

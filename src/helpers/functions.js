@@ -13,7 +13,7 @@ const isBetween = (min, max, num) => {
   return num >= min && num <= max
 }
 
-const nBitsOfOnes = numberOfBits => {
+const nBitsOfOnes = (numberOfBits) => {
   if (!Number.isInteger(numberOfBits) || numberOfBits < 0) {
     return null
   }
@@ -37,7 +37,7 @@ const getLowestNBits = (numberOfBits, number) => {
 
 const isDecimalString = test(/^\d+$/)
 
-const isFullHexString = str => {
+const isFullHexString = (str) => {
   if (isString(str)) {
     return /^\s*0x[0-9a-f]+\s*$/.test(str)
   } else {
@@ -102,7 +102,7 @@ const getPackageVersion = async () => {
   }
 }
 
-const fileExists = async filename => {
+const fileExists = async (filename) => {
   try {
     await fs.promises.access(filename, fs.constants.R_OK)
     return true
@@ -121,5 +121,5 @@ module.exports = {
   mergeSparseArrays,
   parseNumberString,
   getPackageVersion,
-  fileExists
+  fileExists,
 }

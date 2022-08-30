@@ -9,7 +9,7 @@ class ExpandingBuffer {
 
     this._backup = {
       _startIndex: 0,
-      _endIndex: 0
+      _endIndex: 0,
     }
   }
 

@@ -16,10 +16,10 @@ const {
   LenBits,
   LenCode,
   DistCode,
-  DistBits
+  DistBits,
 } = require('./constants.js')
 
-const setup = state => {
+const setup = (state) => {
   state.nChBits = repeat(0, 0x306)
   state.nChCodes = repeat(0, 0x306)
 
@@ -128,7 +128,7 @@ const findRepetitions = (inputBytes, endOfLastMatch, cursor) => {
     const distance = cursor - endOfLastMatch - matchIndex
     return {
       distance: distance - 1,
-      size: distance > 2 ? getSizeOfMatching(inputBytes, endOfLastMatch + matchIndex, cursor) : 2
+      size: distance > 2 ? getSizeOfMatching(inputBytes, endOfLastMatch + matchIndex, cursor) : 2,
     }
   }
 
@@ -162,7 +162,7 @@ const isRepetitionFlushable = (size, distance, startIndex, inputBufferSize) => {
 
 // repetitions are at least 2 bytes long,
 // so the initial 2 bytes can be moved to the output as is
-const handleFirstTwoBytes = state => {
+const handleFirstTwoBytes = (state) => {
   if (state.handledFirstTwoBytes) {
     return
   }
@@ -319,15 +319,15 @@ const implode = (compressionType, dictionarySizeBits, config = {}) => {
   handler._state = {
     isFirstChunk: true,
     streamEnded: false,
-    compressionType: compressionType,
-    dictionarySizeBits: dictionarySizeBits,
+    compressionType,
+    dictionarySizeBits,
     distCodes: clone(DistCode),
     distBits: clone(DistBits),
     startIndex: 0,
     inputBuffer: new ExpandingBuffer(inputBufferSize),
     outputBuffer: new ExpandingBuffer(outputBufferSize),
     handledFirstTwoBytes: false,
-    onInputFinished: callback => {
+    onInputFinished: (callback) => {
       const state = handler._state
       state.streamEnded = true
       try {
@@ -346,8 +346,8 @@ const implode = (compressionType, dictionarySizeBits, config = {}) => {
       }
     },
     stats: {
-      chunkCounter: 0
-    }
+      chunkCounter: 0,
+    },
   }
 
   return handler
@@ -361,5 +361,5 @@ module.exports = {
   isRepetitionFlushable,
   handleFirstTwoBytes,
   processChunkData,
-  implode
+  implode,
 }

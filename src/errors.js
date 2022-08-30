@@ -46,5 +46,5 @@ module.exports = {
   InvalidDataError,
   AbortedError,
   ExpectedBufferError,
-  ExpectedFunctionError
+  ExpectedFunctionError,
 }

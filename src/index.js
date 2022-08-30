@@ -14,5 +14,5 @@ module.exports = {
   decompress,
   constants,
   errors,
-  stream
+  stream,
 }
