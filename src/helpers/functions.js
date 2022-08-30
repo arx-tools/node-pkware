@@ -95,7 +95,9 @@ const mergeSparseArrays = (a, b) => {
 /*
 export const dumpBytes = bytes => {
   const formattedBytes = Array.from(bytes)
-    .map(byte => toHex(byte, 2, true))
+    .map(byte => {
+      return toHex(byte, 2, true)
+    })
     .join(' ')
   return `<${formattedBytes}>`
 }

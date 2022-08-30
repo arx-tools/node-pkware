@@ -15,8 +15,8 @@ const {
 
 const TEST_FILE_FOLDER = '../pkware-test-files/'
 
-const defineTestForImplodeSelfCheck =
-  (highWaterMark) => (folder, decompressedFile, compressionType, dictionarySize) => {
+const defineTestForImplodeSelfCheck = (highWaterMark) => {
+  return (folder, decompressedFile, compressionType, dictionarySize) => {
     it(`can compress ${folder}/${decompressedFile} with ${toHex(highWaterMark)} byte chunks`, (done) => {
       ;(async () => {
         let expected
@@ -43,9 +43,10 @@ const defineTestForImplodeSelfCheck =
       })()
     })
   }
+}
 
-const defineTestForImplodeSelfCheckWithOffset =
-  (highWaterMark) => (folder, decompressedFile, compressionType, dictionarySize, offset) => {
+const defineTestForImplodeSelfCheckWithOffset = (highWaterMark) => {
+  return (folder, decompressedFile, compressionType, dictionarySize, offset) => {
     it(`can compress ${folder}/${decompressedFile} with ${toHex(highWaterMark)} byte chunks and ${toHex(
       offset,
     )} offset`, (done) => {
@@ -88,10 +89,11 @@ const defineTestForImplodeSelfCheckWithOffset =
       })()
     })
   }
+}
 
 /*
-const defineTestForSimpleFiles =
-  highWaterMark => (folder, decompressedFile, compressedFile, compressionType, dictionarySize) => {
+const defineTestForSimpleFiles = (highWaterMark) => {
+  return (folder, decompressedFile, compressedFile, compressionType, dictionarySize) => {
     it(`can compress ${folder}/${decompressedFile} with ${toHex(highWaterMark)} byte chunks`, done => {
       ;(async () => {
         let expected
@@ -116,11 +118,12 @@ const defineTestForSimpleFiles =
       })()
     })
   }
+}
   */
 
 /*
-const defineTestForFilesWithOffset =
-  highWaterMark => (folder, decompressedFile, compressedFile, compressionType, dictionarySize, offset) => {
+const defineTestForFilesWithOffset = (highWaterMark) => {
+  return (folder, decompressedFile, compressedFile, compressionType, dictionarySize, offset) => {
     it(`can compress ${folder}/${decompressedFile}`, done => {
       ;(async () => {
         let expected
@@ -153,6 +156,7 @@ const defineTestForFilesWithOffset =
       })()
     })
   }
+}
   */
 
 // only run the tests, if the other repo is present

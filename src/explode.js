@@ -53,8 +53,10 @@ const readHeader = (buffer) => {
 }
 
 // PAT = populate ascii table
-const createPATIterator = (limit, stepper) => (n) => {
-  return n >= limit ? false : [n, n + (1 << stepper)]
+const createPATIterator = (limit, stepper) => {
+  return (n) => {
+    return n >= limit ? false : [n, n + (1 << stepper)]
+  }
 }
 
 const populateAsciiTable = (value, index, bits, limit) => {

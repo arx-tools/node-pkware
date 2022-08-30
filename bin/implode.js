@@ -67,7 +67,9 @@ const args = minimist(process.argv.slice(2), {
     hasErrors = true
   }
 
-  const sizes = [args.small, args.medium, args.large].filter((x) => x === true)
+  const sizes = [args.small, args.medium, args.large].filter((x) => {
+    return x === true
+  })
   if (sizes.length > 1) {
     console.error('error: multiple size types specified, can only work with one of --small, --medium and --large')
     hasErrors = true

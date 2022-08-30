@@ -8,10 +8,12 @@ const isPromise = promise => {
   return typeof promise === 'object' && promise.constructor.name === 'Promise'
 }
 
-const toConsole = () => (chunk, encoding, callback) => {
-  process.stdout.write(chunk)
-  process.stdout.write(Buffer.from(EOL))
-  callback(null, chunk)
+const toConsole = () => {
+  return (chunk, encoding, callback) => {
+    process.stdout.write(chunk)
+    process.stdout.write(Buffer.from(EOL))
+    callback(null, chunk)
+  }
 }
 
 const readToBuffer = (fileName, chunkSizeInBytes = 1024) => {
