@@ -75,7 +75,7 @@ describe('generateAsciiTables', () => {
   })
   it('returns an object', () => {
     const data = generateAsciiTables()
-    assert.ok(generateAsciiTables(data), `${data} is not an object`)
+    assert.ok(isPlainObject(data), `${data} is not an object`)
   })
   describe('returned object', () => {
     let data

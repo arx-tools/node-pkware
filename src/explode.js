@@ -1,4 +1,4 @@
-const { repeat, unfold, reduce, has, includes } = require('ramda')
+const { repeat, unfold, has } = require('ramda')
 const {
   InvalidDataError,
   InvalidCompressionTypeError,
@@ -39,10 +39,10 @@ const readHeader = (buffer) => {
 
   const compressionType = buffer.readUInt8(0)
   const dictionarySizeBits = buffer.readUInt8(1)
-  if (compressionType !== COMPRESSION_BINARY && compressionType !== COMPRESSION_ASCII) {
+  if (![COMPRESSION_BINARY, COMPRESSION_ASCII].includes(compressionType)) {
     throw new InvalidCompressionTypeError()
   }
-  if (!includes(dictionarySizeBits, [DICTIONARY_SIZE_SMALL, DICTIONARY_SIZE_MEDIUM, DICTIONARY_SIZE_LARGE])) {
+  if (![DICTIONARY_SIZE_SMALL, DICTIONARY_SIZE_MEDIUM, DICTIONARY_SIZE_LARGE].includes(dictionarySizeBits)) {
     throw new InvalidDictionarySizeError()
   }
 
@@ -62,14 +62,10 @@ const populateAsciiTable = (value, index, bits, limit) => {
   const seed = ChCodeAsc[index] >> bits
   const idxs = unfold(iterator, seed)
 
-  return reduce(
-    (acc, idx) => {
-      acc[idx] = index
-      return acc
-    },
-    [],
-    idxs,
-  )
+  return idxs.reduce((acc, idx) => {
+    acc[idx] = index
+    return acc
+  }, [])
 }
 
 const generateAsciiTables = () => {
