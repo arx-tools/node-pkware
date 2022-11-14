@@ -27,7 +27,8 @@ const decompress = (input, output, offset, keepHeader, config) => {
 
 ;(async () => {
   if (args.version) {
-    console.log(await getPackageVersion())
+    const version = await getPackageVersion()
+    console.log(`node-pkware - version ${version}`)
     process.exit(0)
   }
 
