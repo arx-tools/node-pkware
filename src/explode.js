@@ -104,7 +104,7 @@ const generateAsciiTables = () => {
   return tables
 }
 
-const parseInitialData = (state, debug = false) => {
+const parseInitialData = (state, verbose = false) => {
   if (state.inputBuffer.size() < 4) {
     return false
   }
@@ -124,7 +124,7 @@ const parseInitialData = (state, debug = false) => {
     })
   }
 
-  if (debug) {
+  if (verbose) {
     console.log(`explode: compression type: ${state.compressionType === COMPRESSION_BINARY ? 'binary' : 'ascii'}`)
     console.log(
       `explode: compression level: ${
@@ -244,13 +244,13 @@ const decodeDistance = (state, repeatLength) => {
   return distance + 1
 }
 
-const processChunkData = (state, debug = false) => {
+const processChunkData = (state, verbose = false) => {
   if (state.inputBuffer.isEmpty()) {
     return
   }
 
   if (!has('compressionType', state)) {
-    const parsedHeader = parseInitialData(state, debug)
+    const parsedHeader = parseInitialData(state, verbose)
     if (!parsedHeader || state.inputBuffer.isEmpty()) {
       return
     }
@@ -309,7 +309,7 @@ const generateDecodeTables = (startIndexes, lengthBits) => {
 }
 
 const explode = (config = {}) => {
-  const { debug = false, inputBufferSize = 0x0, outputBufferSize = 0x0 } = config
+  const { verbose = false, inputBufferSize = 0x0, outputBufferSize = 0x0 } = config
 
   const handler = function (chunk, encoding, callback) {
     if (!isFunction(callback)) {
@@ -327,11 +327,11 @@ const explode = (config = {}) => {
         this._flush = state.onInputFinished
       }
 
-      if (debug) {
+      if (verbose) {
         console.log(`explode: reading ${toHex(chunk.length)} bytes from chunk #${state.stats.chunkCounter++}`)
       }
 
-      processChunkData(state, debug)
+      processChunkData(state, verbose)
 
       const blockSize = 0x1000
       if (state.outputBuffer.size() > blockSize) {
@@ -364,7 +364,7 @@ const explode = (config = {}) => {
     onInputFinished: (callback) => {
       const state = handler._state
 
-      if (debug) {
+      if (verbose) {
         console.log('---------------')
         console.log('explode: total number of chunks read:', state.stats.chunkCounter)
         console.log('explode: inputBuffer heap size', toHex(state.inputBuffer.heapSize()))

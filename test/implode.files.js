@@ -32,8 +32,8 @@ const defineTestForImplodeSelfCheck = (highWaterMark) => {
 
         fs.createReadStream(`${TEST_FILE_FOLDER}${folder}/${decompressedFile}`, { highWaterMark })
           .on('error', done)
-          .pipe(through(implode(compressionType, dictionarySize, { debug: true })))
-          .pipe(through(explode({ debug: true })).on('error', done))
+          .pipe(through(implode(compressionType, dictionarySize, { verbose: true })))
+          .pipe(through(explode({ verbose: true })).on('error', done))
           .pipe(
             streamToBuffer((buffer) => {
               buffersShouldEqual(buffer, expected, 0, true)
@@ -69,12 +69,15 @@ const defineTestForImplodeSelfCheckWithOffset = (highWaterMark) => {
               transformSplitBy(
                 splitAt(offset),
                 transformIdentity(),
-                implode(compressionType, dictionarySize, { debug: true }),
+                implode(compressionType, dictionarySize, { verbose: true }),
               ),
             ),
           )
           .pipe(
-            through(transformSplitBy(splitAt(offset), transformIdentity(), explode({ debug: true }))).on('error', done),
+            through(transformSplitBy(splitAt(offset), transformIdentity(), explode({ verbose: true }))).on(
+              'error',
+              done,
+            ),
           )
           .pipe(
             streamToBuffer((buffer) => {
@@ -108,7 +111,7 @@ const defineTestForSimpleFiles = (highWaterMark) => {
         }
         fs.createReadStream(`${TEST_FILE_FOLDER}${folder}/${decompressedFile}`, { highWaterMark })
           .on('error', done)
-          .pipe(through(implode(compressionType, dictionarySize, { debug: true })).on('error', done))
+          .pipe(through(implode(compressionType, dictionarySize, { verbose: true })).on('error', done))
           .pipe(
             streamToBuffer(buffer => {
               buffersShouldEqual(buffer, expected, 0, true)
@@ -143,7 +146,7 @@ const defineTestForFilesWithOffset = (highWaterMark) => {
               transformSplitBy(
                 splitAt(offset),
                 transformIdentity(),
-                implode(compressionType, dictionarySize, { debug: true })
+                implode(compressionType, dictionarySize, { verbose: true })
               )
             ).on('error', done)
           )

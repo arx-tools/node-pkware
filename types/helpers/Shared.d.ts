@@ -27,10 +27,10 @@ export type PrivateState<T> = { _state: T }
  */
 export type Config = {
   /**
-   * Whether the code should display debug messages on the console or not
+   * Whether the code should display extra messages on the console or not
    * @default false
    */
-  debug?: boolean
+  verbose?: boolean
   /**
    * The starting size of the input buffer, may expand later as needed.
    * Not having to expand may have performance impact.

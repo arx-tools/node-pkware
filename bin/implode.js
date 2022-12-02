@@ -26,7 +26,7 @@ const decompress = (input, output, offset, keepHeader, compressionType, dictiona
 
 const args = minimist(process.argv.slice(2), {
   string: ['output', 'offset', 'input-buffer-size', 'output-buffer-size'],
-  boolean: ['version', 'binary', 'ascii', 'drop-before-offset', 'debug', 'small', 'medium', 'large'],
+  boolean: ['version', 'binary', 'ascii', 'drop-before-offset', 'verbose', 'small', 'medium', 'large'],
   alias: {
     a: 'ascii',
     b: 'binary',
@@ -100,7 +100,7 @@ const args = minimist(process.argv.slice(2), {
 
   const keepHeader = !args['drop-before-offset']
   const config = {
-    debug: args.debug,
+    verbose: args.verbose,
     inputBufferSize: parseNumberString(args['input-buffer-size'], 0x10000),
     outputBufferSize: parseNumberString(args['output-buffer-size'], 0x12000),
   }

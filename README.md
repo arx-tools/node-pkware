@@ -34,13 +34,13 @@ Calling either explode or implode with the `-v` or `--version` flag will display
 
 `implode test/files/fast.fts.unpacked --output=C:/fast.fts --binary --large --offset=1816`
 
-`explode test/files/fast.fts --auto-detect --debug --output=E:/fast.fts.unpacked`
+`explode test/files/fast.fts --auto-detect --verbose --output=E:/fast.fts.unpacked`
 
-`explode test/files/fast.fts --auto-detect --debug --output=E:/fast.fts.unpacked --offset=2000`
+`explode test/files/fast.fts --auto-detect --verbose --output=E:/fast.fts.unpacked --offset=2000`
 
 ### piping also works
 
-**Don't use --debug when piping, because debug messages will be outputted to where the decompressed data is being outputted!**
+**Don't use --verbose when piping, because verbose messages will be outputted to where the decompressed data is being outputted!**
 
 `cat c:/arx/level8.llf | explode > c:/arx/level8.llf.unpacked`
 
@@ -66,7 +66,7 @@ Takes an optional config object, which has the following properties:
 
 ```js
 {
-  debug: boolean, // whether the code should display debug messages on the console or not (default = false)
+  verbose: boolean, // whether the code should display extra debug messages on the console or not (default = false)
   inputBufferSize: int, // the starting size of the input buffer, may expand later as needed. Not having to expand may have performance impact (default 0)
   outputBufferSize: int // same as inputBufferSize, but for the outputBuffer (default 0)
 }
@@ -80,7 +80,7 @@ Takes an optional config object, which has the following properties:
 
 ```js
 {
-  debug: boolean, // whether the code should display debug messages on the console or not (default = false)
+  verbose: boolean, // whether the code should display extra debug messages on the console or not (default = false)
   inputBufferSize: int, // the starting size of the input buffer, may expand later as needed. Not having to expand may have performance impact (default 0)
   outputBufferSize: int // same as inputBufferSize, but for the outputBuffer (default 0)
 }
@@ -148,9 +148,9 @@ const { through, streamToBuffer } = stream
 Readable.from(buffer) // buffer is of type Buffer with compressed data
   .pipe(through(explode()))
   .pipe(
-    streamToBuffer(decompressedData => {
+    streamToBuffer((decompressedData) => {
       // decompressedData holds the decompressed buffer
-    })
+    }),
   )
 ```
 
@@ -190,18 +190,18 @@ const { explode, stream } = require('node-pkware')
 const { through } = stream
 
 fs.createReadStream(`path-to-compressed-file`)
-  .on('error', err => {
+  .on('error', (err) => {
     console.error('readstream error')
   })
   .pipe(
-    through(explode()).on('error', err => {
+    through(explode()).on('error', (err) => {
       console.error('explode error')
-    })
+    }),
   )
   .pipe(
-    fs.createWriteStream(`path-to-write-decompressed-data`).on('error', err => {
+    fs.createWriteStream(`path-to-write-decompressed-data`).on('error', (err) => {
       console.error('writestream error')
-    })
+    }),
   )
 ```
 

@@ -23,7 +23,7 @@ const defineTestForSimpleFiles = (highWaterMark) => {
         }
         fs.createReadStream(`${TEST_FILE_FOLDER}${folder}/${compressedFile}`, { highWaterMark })
           .on('error', done)
-          .pipe(through(explode({ debug: true })).on('error', done))
+          .pipe(through(explode({ verbose: true })).on('error', done))
           .pipe(
             streamToBuffer((buffer) => {
               buffersShouldEqual(buffer, expected, 0, true)
@@ -52,7 +52,10 @@ const defineTestForFilesWithOffset = (highWaterMark) => {
         fs.createReadStream(`${TEST_FILE_FOLDER}${folder}/${compressedFile}`, { highWaterMark })
           .on('error', done)
           .pipe(
-            through(transformSplitBy(splitAt(offset), transformIdentity(), explode({ debug: true }))).on('error', done),
+            through(transformSplitBy(splitAt(offset), transformIdentity(), explode({ verbose: true }))).on(
+              'error',
+              done,
+            ),
           )
           .pipe(
             streamToBuffer((buffer) => {

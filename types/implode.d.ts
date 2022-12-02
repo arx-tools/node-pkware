@@ -39,15 +39,15 @@ export function getSizeOfMatching(inputBytes: number[], a: number, b: number): n
 export function findRepetitions(
   inputBytes: number[],
   endOfLastMatch: number,
-  cursor: number
+  cursor: number,
 ): { size: number; distance: number }
 export function isRepetitionFlushable(
   size: number,
   distance: number,
   startIndex: number,
-  inputBufferSize: number
+  inputBufferSize: number,
 ): boolean | null
-export function processChunkData(state: PrivateExplodeState, debug?: boolean): void
+export function processChunkData(state: PrivateExplodeState, verbose?: boolean): void
 
 /**
  * Compresses stream
@@ -59,5 +59,5 @@ export function processChunkData(state: PrivateExplodeState, debug?: boolean): v
 export function implode(
   compressionType: CompressionType,
   dictionarySizeBits: DictionarySizeBits,
-  config?: Config
+  config?: Config,
 ): PrivateState<PrivateExplodeState> & Handler

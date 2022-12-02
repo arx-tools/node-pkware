@@ -49,7 +49,7 @@ export function generateAsciiTables(): {
   asciiTable2E34: number[]
   asciiTable2EB4: number[]
 }
-export function processChunkData(state: PrivateExplodeState, debug?: boolean): void
+export function processChunkData(state: PrivateExplodeState, verbose?: boolean): void
 export function wasteBits(state: PrivateExplodeState, numberOfBits: number): typeof PKDCL_STREAM_END | typeof PKDCL_OK
 export function decodeNextLiteral(state: PrivateExplodeState): typeof LITERAL_STREAM_ABORTED | number
 export function decodeDistance(state: PrivateExplodeState, repeatLength: number): number

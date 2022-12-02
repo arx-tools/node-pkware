@@ -8,7 +8,7 @@ const { explode } = require('../src/explode.js')
 
 const args = minimist(process.argv.slice(2), {
   string: ['output', 'offset', 'input-buffer-size', 'output-buffer-size'],
-  boolean: ['version', 'drop-before-offset', 'debug'],
+  boolean: ['version', 'drop-before-offset', 'verbose'],
   alias: {
     v: 'version',
   },
@@ -62,7 +62,7 @@ const decompress = (input, output, offset, keepHeader, config) => {
 
   const keepHeader = !args['drop-before-offset']
   const config = {
-    debug: args.debug,
+    verbose: args.verbose,
     inputBufferSize: parseNumberString(args['input-buffer-size'], 0x10000),
     outputBufferSize: parseNumberString(args['output-buffer-size'], 0x40000),
   }

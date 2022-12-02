@@ -178,7 +178,7 @@ const handleFirstTwoBytes = (state) => {
   state.startIndex += 2
 }
 
-const processChunkData = (state, debug = false) => {
+const processChunkData = (state, verbose = false) => {
   if (!has('dictionarySizeMask', state)) {
     setup(state)
   }
@@ -271,7 +271,7 @@ const processChunkData = (state, debug = false) => {
 }
 
 const implode = (compressionType, dictionarySizeBits, config = {}) => {
-  const { debug = false, inputBufferSize = 0x0, outputBufferSize = 0x0 } = config
+  const { verbose = false, inputBufferSize = 0x0, outputBufferSize = 0x0 } = config
 
   const handler = function (chunk, encoding, callback) {
     if (!isFunction(callback)) {
@@ -288,11 +288,11 @@ const implode = (compressionType, dictionarySizeBits, config = {}) => {
         this._flush = state.onInputFinished
       }
 
-      if (debug) {
+      if (verbose) {
         console.log(`implode: reading ${toHex(chunk.length)} bytes from chunk #${state.stats.chunkCounter++}`)
       }
 
-      processChunkData(state, debug)
+      processChunkData(state, verbose)
 
       const blockSize = 0x800
       if (state.outputBuffer.size() > blockSize) {
@@ -330,9 +330,9 @@ const implode = (compressionType, dictionarySizeBits, config = {}) => {
       const state = handler._state
       state.streamEnded = true
       try {
-        processChunkData(state, debug)
+        processChunkData(state, verbose)
 
-        if (debug) {
+        if (verbose) {
           console.log('---------------')
           console.log('implode: total number of chunks read:', state.stats.chunkCounter)
           console.log('implode: inputBuffer heap size', toHex(state.inputBuffer.heapSize()))
