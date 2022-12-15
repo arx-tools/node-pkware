@@ -15,6 +15,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
+    "prepublishOnly": "npm run build",
     "lint": "eslint \"{src,test}/**/*.{js,ts}\"",
     "lint:fix": "npm run lint -- --fix",
     "lint:staged": "lint-staged",
