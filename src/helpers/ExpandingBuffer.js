@@ -49,6 +49,7 @@ class ExpandingBuffer {
     if (offset < 0 || limit < 1) {
       return Buffer.from([])
     }
+
     if (limit === 1) {
       return this._heap[this._startIndex + offset]
     }
@@ -68,6 +69,7 @@ class ExpandingBuffer {
       if (numberOfBytes < this.heapSize()) {
         this._heap.copy(this._heap, 0, this._startIndex + numberOfBytes)
       }
+
       this._endIndex -= this._startIndex + numberOfBytes
       this._startIndex = 0
     }

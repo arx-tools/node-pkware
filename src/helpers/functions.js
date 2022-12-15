@@ -25,6 +25,7 @@ const isBetween = (min, max, num) => {
   if (!isNumber(min) || !isNumber(max) || !isNumber(num)) {
     return null
   }
+
   if (min > max) {
     ;[min, max] = [max, min]
   }
@@ -36,6 +37,7 @@ const nBitsOfOnes = (numberOfBits) => {
   if (!Number.isInteger(numberOfBits) || numberOfBits < 0) {
     return null
   }
+
   return (1 << numberOfBits) - 1
 }
 
@@ -44,9 +46,11 @@ const maskBits = (numberOfBits, number) => {
   if (bits === null) {
     return null
   }
+
   if (!Number.isInteger(number) || number < 0) {
     return null
   }
+
   return number & nBitsOfOnes(numberOfBits)
 }
 
@@ -59,9 +63,9 @@ const isDecimalString = test(/^\d+$/)
 const isFullHexString = (str) => {
   if (isString(str)) {
     return /^\s*0x[0-9a-f]+\s*$/.test(str)
-  } else {
-    return false
   }
+
+  return false
 }
 
 const toHex = (num, digits = 0, withoutPrefix = false) => {
@@ -69,13 +73,16 @@ const toHex = (num, digits = 0, withoutPrefix = false) => {
   if (!Number.isInteger(digits) || digits < 0) {
     return null
   }
+
   if (isFullHexString(num)) {
     const number = num.trim().replace(/^0x0*/, '')
     return `${prefix}${number.padStart(digits, '0')}`
   }
+
   if (!Number.isInteger(num)) {
     return null
   }
+
   return `${prefix}${num.toString(16).padStart(digits, '0')}`
 }
 
@@ -85,11 +92,13 @@ const mergeSparseArrays = (a, b) => {
   }
 
   const result = [...b, ...(b.length < a.length ? repeat(undefined, a.length - b.length) : [])]
+
   for (let i = 0; i < a.length; i++) {
     if (a[i] !== undefined) {
       result[i] = a[i]
     }
   }
+
   return result
 }
 
@@ -107,11 +116,13 @@ export const dumpBytes = bytes => {
 const parseNumberString = (n, defaultValue = 0) => {
   if (isDecimalString(n)) {
     return parseInt(n)
-  } else if (isFullHexString(n)) {
-    return parseInt(n.replace(/^0x/, ''), 16)
-  } else {
-    return defaultValue
   }
+
+  if (isFullHexString(n)) {
+    return parseInt(n.replace(/^0x/, ''), 16)
+  }
+
+  return defaultValue
 }
 
 const getPackageVersion = async () => {

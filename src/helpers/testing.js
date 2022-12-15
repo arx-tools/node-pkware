@@ -34,21 +34,26 @@ const readToBuffer = (fileName, chunkSizeInBytes = 1024) => {
 // source: https://stackoverflow.com/a/43197340/1806628
 const isClass = (obj) => {
   const isCtorClass = obj.constructor && obj.constructor.toString().substring(0, 5) === 'class'
+
   if (obj.prototype === undefined) {
     return isCtorClass
   }
+
   const isPrototypeCtorClass =
     obj.prototype.constructor &&
     obj.prototype.constructor.toString &&
     obj.prototype.constructor.toString().substring(0, 5) === 'class'
+
   return isCtorClass || isPrototypeCtorClass
 }
 
 // https://stackoverflow.com/a/48845122/1806628
 const bufferToString = (buffer, limit = 20) => {
   const isEllipsisNecessary = buffer.length > limit
+
   let hexString = buffer.slice(0, limit).toString('hex')
   hexString = hexString.length > 2 ? hexString.match(/../g).join(' ') : hexString
+
   return `<Buffer ${hexString}${isEllipsisNecessary ? '...' : ''}>`
 }
 
@@ -62,11 +67,13 @@ const buffersShouldEqual = (expected, result, offset = 0, displayAsHex = false) 
   }
 
   const diff = report(expected, result, compare(expected, result, offset), displayAsHex)
+
   assert.ok(expected.equals(result), diff)
 }
 
 const transformToABC = () => {
   let cntr = 0
+
   return function (chunk, encoding, callback) {
     callback(null, Buffer.from([65 + (cntr++ % 26)]))
   }

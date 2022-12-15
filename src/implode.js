@@ -283,6 +283,7 @@ const implode = (compressionType, dictionarySizeBits, config = {}) => {
 
     try {
       state.inputBuffer.append(chunk)
+
       if (state.isFirstChunk) {
         state.isFirstChunk = false
         this._flush = state.onInputFinished
@@ -295,6 +296,7 @@ const implode = (compressionType, dictionarySizeBits, config = {}) => {
       processChunkData(state, verbose)
 
       const blockSize = 0x800
+
       if (state.outputBuffer.size() > blockSize) {
         const numberOfBytes = (Math.floor(state.outputBuffer.size() / blockSize) - 1) * blockSize
         const output = Buffer.from(state.outputBuffer.read(0, numberOfBytes))

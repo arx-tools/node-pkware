@@ -33,15 +33,18 @@ const readHeader = (buffer) => {
   if (!Buffer.isBuffer(buffer)) {
     throw new ExpectedBufferError()
   }
+
   if (buffer.length < 4) {
     throw new InvalidDataError()
   }
 
   const compressionType = buffer.readUInt8(0)
   const dictionarySizeBits = buffer.readUInt8(1)
+
   if (![COMPRESSION_BINARY, COMPRESSION_ASCII].includes(compressionType)) {
     throw new InvalidCompressionTypeError()
   }
+
   if (![DICTIONARY_SIZE_SMALL, DICTIONARY_SIZE_MEDIUM, DICTIONARY_SIZE_LARGE].includes(dictionarySizeBits)) {
     throw new InvalidDictionarySizeError()
   }
@@ -119,6 +122,7 @@ const parseInitialData = (state, verbose = false) => {
 
   if (compressionType === COMPRESSION_ASCII) {
     const tables = generateAsciiTables()
+
     Object.entries(tables).forEach(([key, value]) => {
       state[key] = value
     })
@@ -181,47 +185,48 @@ const decodeNextLiteral = (state) => {
     }
 
     return lengthCode + 0x100
-  } else {
-    const lastByte = getLowestNBits(8, state.bitBuffer)
+  }
 
-    if (state.compressionType === COMPRESSION_BINARY) {
-      return wasteBits(state, 8) === PKDCL_STREAM_END ? LITERAL_STREAM_ABORTED : lastByte
-    } else {
-      let value
-      if (lastByte > 0) {
-        value = state.asciiTable2C34[lastByte]
+  const lastByte = getLowestNBits(8, state.bitBuffer)
 
-        if (value === 0xff) {
-          if (getLowestNBits(6, state.bitBuffer)) {
-            if (wasteBits(state, 4) === PKDCL_STREAM_END) {
-              return LITERAL_STREAM_ABORTED
-            }
+  if (state.compressionType === COMPRESSION_BINARY) {
+    return wasteBits(state, 8) === PKDCL_STREAM_END ? LITERAL_STREAM_ABORTED : lastByte
+  }
 
-            value = state.asciiTable2D34[getLowestNBits(8, state.bitBuffer)]
-          } else {
-            if (wasteBits(state, 6) === PKDCL_STREAM_END) {
-              return LITERAL_STREAM_ABORTED
-            }
+  let value
+  if (lastByte > 0) {
+    value = state.asciiTable2C34[lastByte]
 
-            value = state.asciiTable2E34[getLowestNBits(7, state.bitBuffer)]
-          }
-        }
-      } else {
-        if (wasteBits(state, 8) === PKDCL_STREAM_END) {
+    if (value === 0xff) {
+      if (getLowestNBits(6, state.bitBuffer)) {
+        if (wasteBits(state, 4) === PKDCL_STREAM_END) {
           return LITERAL_STREAM_ABORTED
         }
 
-        value = state.asciiTable2EB4[getLowestNBits(8, state.bitBuffer)]
-      }
+        value = state.asciiTable2D34[getLowestNBits(8, state.bitBuffer)]
+      } else {
+        if (wasteBits(state, 6) === PKDCL_STREAM_END) {
+          return LITERAL_STREAM_ABORTED
+        }
 
-      return wasteBits(state, state.chBitsAsc[value]) === PKDCL_STREAM_END ? LITERAL_STREAM_ABORTED : value
+        value = state.asciiTable2E34[getLowestNBits(7, state.bitBuffer)]
+      }
     }
+  } else {
+    if (wasteBits(state, 8) === PKDCL_STREAM_END) {
+      return LITERAL_STREAM_ABORTED
+    }
+
+    value = state.asciiTable2EB4[getLowestNBits(8, state.bitBuffer)]
   }
+
+  return wasteBits(state, state.chBitsAsc[value]) === PKDCL_STREAM_END ? LITERAL_STREAM_ABORTED : value
 }
 
 const decodeDistance = (state, repeatLength) => {
   const distPosCode = state.distPosCodes[getLowestNBits(8, state.bitBuffer)]
   const distPosBits = DistBits[distPosCode]
+
   if (wasteBits(state, distPosBits) === PKDCL_STREAM_END) {
     return 0
   }
@@ -263,6 +268,7 @@ const processChunkData = (state, verbose = false) => {
 
   while (nextLiteral !== LITERAL_END_STREAM && nextLiteral !== LITERAL_STREAM_ABORTED) {
     let addition
+
     if (nextLiteral >= 0x100) {
       const repeatLength = nextLiteral - 0xfe
       const minusDistance = decodeDistance(state, repeatLength)
@@ -334,6 +340,7 @@ const explode = (config = {}) => {
       processChunkData(state, verbose)
 
       const blockSize = 0x1000
+
       if (state.outputBuffer.size() > blockSize) {
         const numberOfBytes = (Math.floor(state.outputBuffer.size() / blockSize) - 1) * blockSize
         const output = Buffer.from(state.outputBuffer.read(0, numberOfBytes))

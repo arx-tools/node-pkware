@@ -63,7 +63,9 @@ const args = minimist(process.argv.slice(2), {
   if (args.ascii && args.binary) {
     console.error('error: multiple compression types specified, can only work with one of --ascii and --binary')
     hasErrors = true
-  } else if (!args.ascii && !args.binary) {
+  }
+
+  if (!args.ascii && !args.binary) {
     console.error('error: compression type missing, expected either --ascii or --binary')
     hasErrors = true
   }
@@ -71,6 +73,7 @@ const args = minimist(process.argv.slice(2), {
   const sizes = [args.small, args.medium, args.large].filter((x) => {
     return x === true
   })
+
   if (sizes.length > 1) {
     console.error('error: multiple size types specified, can only work with one of --small, --medium and --large')
     hasErrors = true
