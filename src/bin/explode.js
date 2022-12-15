@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S node --enable-source-maps
 
 const fs = require('fs')
 const minimist = require('minimist-lite')
