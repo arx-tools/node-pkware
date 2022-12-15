@@ -9,11 +9,11 @@
     "node": ">=8.5.0"
   },
   "bin": {
-    "explode": "bin/explode.js",
-    "implode": "bin/implode.js"
+    "explode": "src/bin/explode.js",
+    "implode": "src/bin/implode.js"
   },
   "scripts": {
-    "lint": "eslint \"{bin,src,test}/**/*.{js,ts}\"",
+    "lint": "eslint \"{src,test}/**/*.{js,ts}\"",
     "lint:fix": "npm run lint -- --fix",
     "lint:staged": "lint-staged",
     "test:unit": "set FORCE_COLOR=true && mocha test/**/*.spec.js --timeout 5000",

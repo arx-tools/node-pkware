@@ -8,10 +8,10 @@ const {
   DICTIONARY_SIZE_SMALL,
   DICTIONARY_SIZE_MEDIUM,
   DICTIONARY_SIZE_LARGE,
-} = require('../src/constants.js')
-const { getPackageVersion, parseNumberString, fileExists } = require('../src/helpers/functions.js')
-const { implode } = require('../src/implode.js')
-const { transformEmpty, transformIdentity, transformSplitBy, splitAt, through } = require('../src/helpers/stream.js')
+} = require('../constants.js')
+const { getPackageVersion, parseNumberString, fileExists } = require('../helpers/functions.js')
+const { implode } = require('../implode.js')
+const { transformEmpty, transformIdentity, transformSplitBy, splitAt, through } = require('../helpers/stream.js')
 
 const decompress = (input, output, offset, keepHeader, compressionType, dictionarySize, config) => {
   const leftHandler = keepHeader ? transformIdentity() : transformEmpty()
