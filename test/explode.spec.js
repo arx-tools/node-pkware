@@ -22,7 +22,7 @@ const {
   decodeDistance,
   generateDecodeTables,
 } = require('../src/explode.js')
-const ExpandingBuffer = require('../src/helpers/ExpandingBuffer.js')
+const { ExpandingBuffer } = require('../src/helpers/ExpandingBuffer.js')
 const { through } = require('../src/helpers/stream.js')
 const { buffersShouldEqual } = require('../src/helpers/testing.js')
 const { isFunction, noop, isPlainObject } = require('../src/helpers/functions.js')

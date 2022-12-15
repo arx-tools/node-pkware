@@ -27,7 +27,7 @@ const {
   LenCode,
   DistCode,
 } = require('./constants.js')
-const ExpandingBuffer = require('./helpers/ExpandingBuffer.js')
+const { ExpandingBuffer } = require('./helpers/ExpandingBuffer.js')
 
 const readHeader = (buffer) => {
   if (!Buffer.isBuffer(buffer)) {

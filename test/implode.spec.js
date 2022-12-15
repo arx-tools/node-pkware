@@ -7,7 +7,7 @@ const {
   DICTIONARY_SIZE_MEDIUM,
 } = require('../src/constants.js')
 const { InvalidDictionarySizeError, InvalidCompressionTypeError } = require('../src/errors.js')
-const ExpandingBuffer = require('../src/helpers/ExpandingBuffer.js')
+const { ExpandingBuffer } = require('../src/helpers/ExpandingBuffer.js')
 const { isFunction, isPlainObject } = require('../src/helpers/functions.js')
 const { setup, outputBits, processChunkData, implode, handleFirstTwoBytes } = require('../src/implode.js')
 

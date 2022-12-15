@@ -1,5 +1,5 @@
 import { CompressionType, DictionarySizeBits } from './constants'
-import ExpandingBuffer from './helpers/ExpandingBuffer'
+import { ExpandingBuffer } from './helpers/ExpandingBuffer'
 import { Callback, Config, Handler, PrivateState } from './helpers/Shared'
 
 type PrivateExplodeState = {

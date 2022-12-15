@@ -1,5 +1,5 @@
 const { has, repeat, clone, last, clamp } = require('ramda')
-const ExpandingBuffer = require('./helpers/ExpandingBuffer.js')
+const { ExpandingBuffer } = require('./helpers/ExpandingBuffer.js')
 const { toHex, getLowestNBits, nBitsOfOnes, isFunction } = require('./helpers/functions.js')
 const { ExpectedFunctionError, InvalidDictionarySizeError, InvalidCompressionTypeError } = require('./errors.js')
 const {

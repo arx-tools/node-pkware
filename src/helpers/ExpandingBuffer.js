@@ -120,4 +120,4 @@ class ExpandingBuffer {
   }
 }
 
-module.exports = ExpandingBuffer
+module.exports = { ExpandingBuffer }

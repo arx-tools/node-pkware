@@ -1,6 +1,6 @@
 const { Transform, Writable } = require('stream')
 const { promisify } = require('util')
-const ExpandingBuffer = require('./ExpandingBuffer.js')
+const { ExpandingBuffer } = require('./ExpandingBuffer.js')
 const { isFunction } = require('./functions.js')
 
 const emptyBuffer = Buffer.from([])

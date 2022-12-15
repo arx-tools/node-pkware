@@ -1,4 +1,4 @@
-import ExpandingBuffer from './helpers/ExpandingBuffer'
+import { ExpandingBuffer } from './helpers/ExpandingBuffer'
 import { Callback, Config, Handler, PrivateState } from './helpers/Shared'
 import { CompressionType, DictionarySizeBits, PKDCL_STREAM_END, PKDCL_OK, LITERAL_STREAM_ABORTED } from './constants'
 

@@ -1,5 +1,4 @@
-export = ExpandingBuffer
-declare class ExpandingBuffer {
+export declare class ExpandingBuffer {
   constructor(numberOfBytes?: number)
   _heap: Buffer
   _startIndex: number
