@@ -1,4 +1,5 @@
 const fs = require('fs')
+const path = require('path')
 const { repeat, test, type } = require('ramda')
 
 const isNumber = (x) => {
@@ -115,7 +116,8 @@ const parseNumberString = (n, defaultValue = 0) => {
 
 const getPackageVersion = async () => {
   try {
-    const { version } = require('../../package.json')
+    const rawIn = await fs.promises.readFile(path.resolve(__dirname, '../../package.json'), 'utf-8')
+    const { version } = JSON.parse(rawIn) /* as { version: string } */
     return version
   } catch (error) {
     return 'unknown'
