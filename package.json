@@ -13,6 +13,8 @@
     "implode": "src/bin/implode.js"
   },
   "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
     "lint": "eslint \"{src,test}/**/*.{js,ts}\"",
     "lint:fix": "npm run lint -- --fix",
     "lint:staged": "lint-staged",
@@ -37,6 +39,7 @@
   },
   "devDependencies": {
     "@types/node": "^18.11.15",
+    "@types/ramda": "^0.28.20",
     "arx-header-size": "^2.0.0",
     "binary-comparator": "^0.5.0",
     "esbuild": "^0.16.7",
