@@ -6,8 +6,8 @@ const {
   ExpectedBufferError,
   ExpectedFunctionError,
   AbortedError,
-} = require('./errors.js')
-const { mergeSparseArrays, getLowestNBits, nBitsOfOnes, toHex, isFunction } = require('./helpers/functions.js')
+} = require('./errors')
+const { mergeSparseArrays, getLowestNBits, nBitsOfOnes, toHex, isFunction } = require('./helpers/functions')
 const {
   ChBitsAsc,
   ChCodeAsc,
@@ -26,8 +26,8 @@ const {
   DistBits,
   LenCode,
   DistCode,
-} = require('./constants.js')
-const { ExpandingBuffer } = require('./helpers/ExpandingBuffer.js')
+} = require('./constants')
+const { ExpandingBuffer } = require('./helpers/ExpandingBuffer')
 
 const readHeader = (buffer) => {
   if (!Buffer.isBuffer(buffer)) {

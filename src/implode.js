@@ -1,7 +1,7 @@
 const { has, repeat, clone, last, clamp } = require('ramda')
-const { ExpandingBuffer } = require('./helpers/ExpandingBuffer.js')
-const { toHex, getLowestNBits, nBitsOfOnes, isFunction } = require('./helpers/functions.js')
-const { ExpectedFunctionError, InvalidDictionarySizeError, InvalidCompressionTypeError } = require('./errors.js')
+const { ExpandingBuffer } = require('./helpers/ExpandingBuffer')
+const { toHex, getLowestNBits, nBitsOfOnes, isFunction } = require('./helpers/functions')
+const { ExpectedFunctionError, InvalidDictionarySizeError, InvalidCompressionTypeError } = require('./errors')
 const {
   ChBitsAsc,
   ChCodeAsc,
@@ -16,7 +16,7 @@ const {
   LenCode,
   DistCode,
   DistBits,
-} = require('./constants.js')
+} = require('./constants')
 
 const setup = (state) => {
   state.nChBits = repeat(0, 0x306)

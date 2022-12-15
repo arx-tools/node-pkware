@@ -2,9 +2,9 @@
 
 const fs = require('fs')
 const minimist = require('minimist-lite')
-const { getPackageVersion, parseNumberString, fileExists } = require('../src/helpers/functions.js')
-const { transformEmpty, transformIdentity, transformSplitBy, splitAt, through } = require('../src/helpers/stream.js')
-const { explode } = require('../src/explode.js')
+const { getPackageVersion, parseNumberString, fileExists } = require('../src/helpers/functions')
+const { transformEmpty, transformIdentity, transformSplitBy, splitAt, through } = require('../src/helpers/stream')
+const { explode } = require('../src/explode')
 
 const args = minimist(process.argv.slice(2), {
   string: ['output', 'offset', 'input-buffer-size', 'output-buffer-size'],
