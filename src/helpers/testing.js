@@ -31,7 +31,7 @@ const readToBuffer = (fileName, chunkSizeInBytes = 1024) => {
 }
 */
 
-// source: https://stackoverflow.com/a/43197340/1806628
+/** @see https://stackoverflow.com/a/43197340/1806628 */
 const isClass = (obj) => {
   const isCtorClass = obj.constructor && obj.constructor.toString().substring(0, 5) === 'class'
 
@@ -47,7 +47,7 @@ const isClass = (obj) => {
   return isCtorClass || isPrototypeCtorClass
 }
 
-// https://stackoverflow.com/a/48845122/1806628
+/** @see https://stackoverflow.com/a/48845122/1806628 */
 const bufferToString = (buffer, limit = 20) => {
   const isEllipsisNecessary = buffer.length > limit
 

@@ -16,7 +16,7 @@ const isFunction = (x) => {
 
 const noop = () => {}
 
-// https://stackoverflow.com/a/68989785/1806628
+/** @see https://stackoverflow.com/a/68989785/1806628 */
 const isPlainObject = (x) => {
   return x.constructor === Object
 }
