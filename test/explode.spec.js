@@ -259,8 +259,9 @@ describe('explode', () => {
     })
     it('calling the handler via streams will call state.onInputFinished once the stream have finished', (done) => {
       let wasCalled = false
-      handler._state.onInputFinished = () => {
+      handler._state.onInputFinished = (callback) => {
         wasCalled = true
+        callback(null, Buffer.from([]))
       }
       const checkIfWasCalled = () => {
         if (wasCalled) {
