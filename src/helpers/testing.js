@@ -46,10 +46,10 @@ const isClass = (obj) => {
 
 // https://stackoverflow.com/a/48845122/1806628
 const bufferToString = (buffer, limit = 20) => {
-  const ellipsisNecessary = buffer.length > limit
+  const isEllipsisNecessary = buffer.length > limit
   let hexString = buffer.slice(0, limit).toString('hex')
   hexString = hexString.length > 2 ? hexString.match(/../g).join(' ') : hexString
-  return `<Buffer ${hexString}${ellipsisNecessary ? '...' : ''}>`
+  return `<Buffer ${hexString}${isEllipsisNecessary ? '...' : ''}>`
 }
 
 const buffersShouldEqual = (expected, result, offset = 0, displayAsHex = false) => {
