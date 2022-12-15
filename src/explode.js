@@ -341,15 +341,16 @@ const explode = (config = {}) => {
 
       const blockSize = 0x1000
 
-      if (state.outputBuffer.size() > blockSize) {
-        const numberOfBytes = (Math.floor(state.outputBuffer.size() / blockSize) - 1) * blockSize
-        const output = Buffer.from(state.outputBuffer.read(0, numberOfBytes))
-        state.outputBuffer.flushStart(numberOfBytes)
-
-        callback(null, output)
-      } else {
+      if (state.outputBuffer.size() <= blockSize) {
         callback(null, Buffer.from([]))
+        return
       }
+
+      const numberOfBytes = (Math.floor(state.outputBuffer.size() / blockSize) - 1) * blockSize
+      const output = Buffer.from(state.outputBuffer.read(0, numberOfBytes))
+      state.outputBuffer.flushStart(numberOfBytes)
+
+      callback(null, output)
     } catch (e) {
       callback(e)
     }
@@ -380,9 +381,10 @@ const explode = (config = {}) => {
 
       if (state.needMoreInput) {
         callback(new AbortedError())
-      } else {
-        callback(null, state.outputBuffer.read())
+        return
       }
+
+      callback(null, state.outputBuffer.read())
     },
     backup: () => {
       const state = handler._state

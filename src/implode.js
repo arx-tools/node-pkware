@@ -297,21 +297,22 @@ const implode = (compressionType, dictionarySizeBits, config = {}) => {
 
       const blockSize = 0x800
 
-      if (state.outputBuffer.size() > blockSize) {
-        const numberOfBytes = (Math.floor(state.outputBuffer.size() / blockSize) - 1) * blockSize
-        const output = Buffer.from(state.outputBuffer.read(0, numberOfBytes))
-        state.outputBuffer.flushStart(numberOfBytes)
-
-        if (state.outBits === 0) {
-          // set last byte to 0
-          state.outputBuffer.dropEnd(1)
-          state.outputBuffer.append(Buffer.from([0]))
-        }
-
-        callback(null, output)
-      } else {
+      if (state.outputBuffer.size() <= blockSize) {
         callback(null, Buffer.from([]))
+        return
       }
+
+      const numberOfBytes = (Math.floor(state.outputBuffer.size() / blockSize) - 1) * blockSize
+      const output = Buffer.from(state.outputBuffer.read(0, numberOfBytes))
+      state.outputBuffer.flushStart(numberOfBytes)
+
+      if (state.outBits === 0) {
+        // set last byte to 0
+        state.outputBuffer.dropEnd(1)
+        state.outputBuffer.append(Buffer.from([0]))
+      }
+
+      callback(null, output)
     } catch (e) {
       callback(e)
     }
