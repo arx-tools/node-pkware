@@ -390,13 +390,13 @@ const explode = (config = {}) => {
       const state = handler._state
       state._backup.extraBits = state.extraBits
       state._backup.bitBuffer = state.bitBuffer
-      state.inputBuffer._saveIndices()
+      state.inputBuffer.saveIndices()
     },
     restore: () => {
       const state = handler._state
       state.extraBits = state._backup.extraBits
       state.bitBuffer = state._backup.bitBuffer
-      state.inputBuffer._restoreIndices()
+      state.inputBuffer.restoreIndices()
     },
     stats: {
       chunkCounter: 0,
