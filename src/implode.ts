@@ -1,35 +1,31 @@
-const { has, repeat, clone, last, clamp } = require('ramda')
-const { ExpandingBuffer } = require('./helpers/ExpandingBuffer')
-const { toHex, getLowestNBits, nBitsOfOnes, isFunction } = require('./helpers/functions')
-const { ExpectedFunctionError, InvalidDictionarySizeError, InvalidCompressionTypeError } = require('./errors')
-const {
+import { repeat, clone, clamp, toHex, getLowestNBits, nBitsOfOnes, isFunction, last } from './functions'
+import { ExpandingBuffer } from './ExpandingBuffer'
+import {
   ChBitsAsc,
   ChCodeAsc,
   LONGEST_ALLOWED_REPETITION,
-  DICTIONARY_SIZE_LARGE,
-  DICTIONARY_SIZE_MEDIUM,
-  DICTIONARY_SIZE_SMALL,
-  COMPRESSION_BINARY,
-  COMPRESSION_ASCII,
+  Compression,
+  DictionarySize,
   ExLenBits,
   LenBits,
   LenCode,
   DistCode,
   DistBits,
-} = require('./constants')
+} from './constants'
+import { ExpectedFunctionError, InvalidDictionarySizeError, InvalidCompressionTypeError } from './errors'
 
-const setup = (state) => {
+export const setup = (state) => {
   state.nChBits = repeat(0, 0x306)
   state.nChCodes = repeat(0, 0x306)
 
   switch (state.dictionarySizeBits) {
-    case DICTIONARY_SIZE_LARGE:
+    case DictionarySize.Large:
       state.dictionarySizeMask = nBitsOfOnes(6)
       break
-    case DICTIONARY_SIZE_MEDIUM:
+    case DictionarySize.Medium:
       state.dictionarySizeMask = nBitsOfOnes(5)
       break
-    case DICTIONARY_SIZE_SMALL:
+    case DictionarySize.Small:
       state.dictionarySizeMask = nBitsOfOnes(4)
       break
     default:
@@ -37,14 +33,14 @@ const setup = (state) => {
   }
 
   switch (state.compressionType) {
-    case COMPRESSION_BINARY:
+    case Compression.Binary:
       for (let nChCode = 0, nCount = 0; nCount < 0x100; nCount++) {
         state.nChBits[nCount] = 9
         state.nChCodes[nCount] = nChCode
         nChCode = getLowestNBits(16, nChCode) + 2
       }
       break
-    case COMPRESSION_ASCII:
+    case Compression.Ascii:
       for (let nCount = 0; nCount < 0x100; nCount++) {
         state.nChBits[nCount] = ChBitsAsc[nCount] + 1
         state.nChCodes[nCount] = ChCodeAsc[nCount] * 2
@@ -67,7 +63,7 @@ const setup = (state) => {
   state.outBits = 0
 }
 
-const outputBits = (state, nBits, bitBuffer) => {
+export const outputBits = (state, nBits, bitBuffer) => {
   if (nBits > 8) {
     outputBits(state, 8, bitBuffer)
     bitBuffer = bitBuffer >> 8
@@ -97,7 +93,7 @@ const outputBits = (state, nBits, bitBuffer) => {
 
 // ---------------------------------
 
-const getSizeOfMatching = (inputBytes, a, b) => {
+export const getSizeOfMatching = (inputBytes, a, b) => {
   const limit = clamp(2, LONGEST_ALLOWED_REPETITION, b - a)
 
   for (let i = 2; i <= limit; i++) {
@@ -112,7 +108,7 @@ const getSizeOfMatching = (inputBytes, a, b) => {
 // TODO: make sure that we find the most recent one, which in turn allows
 // us to store backward length in less amount of bits
 // currently the code goes from the furthest point
-const findRepetitions = (inputBytes, endOfLastMatch, cursor) => {
+export const findRepetitions = (inputBytes: number[], endOfLastMatch, cursor) => {
   const notEnoughBytes = inputBytes.length - cursor < 2
   const tooClose = cursor === endOfLastMatch || cursor - endOfLastMatch < 2
   if (notEnoughBytes || tooClose) {
@@ -138,7 +134,7 @@ const findRepetitions = (inputBytes, endOfLastMatch, cursor) => {
 //   false - not flushable
 //   true - flushable
 //   null - flushable, but there might be a better repetition
-const isRepetitionFlushable = (size, distance, startIndex, inputBufferSize) => {
+export const isRepetitionFlushable = (size, distance, startIndex, inputBufferSize) => {
   if (size === 0) {
     return false
   }
@@ -161,7 +157,7 @@ const isRepetitionFlushable = (size, distance, startIndex, inputBufferSize) => {
 
 // repetitions are at least 2 bytes long,
 // so the initial 2 bytes can be moved to the output as is
-const handleFirstTwoBytes = (state) => {
+export const handleFirstTwoBytes = (state) => {
   if (state.handledFirstTwoBytes) {
     return
   }
@@ -178,8 +174,8 @@ const handleFirstTwoBytes = (state) => {
   state.startIndex += 2
 }
 
-const processChunkData = (state, verbose = false) => {
-  if (!has('dictionarySizeMask', state)) {
+export const processChunkData = (state, verbose = false) => {
+  if (!('dictionarySizeMask' in state)) {
     setup(state)
   }
 
@@ -245,13 +241,13 @@ const processChunkData = (state, verbose = false) => {
       endOfLastMatch = 0
       */
 
-      if (state.dictionarySizeBits === DICTIONARY_SIZE_SMALL && state.startIndex >= 0x400) {
+      if (state.dictionarySizeBits === DictionarySize.Small && state.startIndex >= 0x400) {
         state.inputBuffer.dropStart(0x400)
         state.startIndex -= 0x400
-      } else if (state.dictionarySizeBits === DICTIONARY_SIZE_MEDIUM && state.startIndex >= 0x800) {
+      } else if (state.dictionarySizeBits === DictionarySize.Medium && state.startIndex >= 0x800) {
         state.inputBuffer.dropStart(0x800)
         state.startIndex -= 0x800
-      } else if (state.dictionarySizeBits === DICTIONARY_SIZE_LARGE && state.startIndex >= 0x1000) {
+      } else if (state.dictionarySizeBits === DictionarySize.Large && state.startIndex >= 0x1000) {
         state.inputBuffer.dropStart(0x1000)
         state.startIndex -= 0x1000
       }
@@ -270,7 +266,7 @@ const processChunkData = (state, verbose = false) => {
   }
 }
 
-const implode = (compressionType, dictionarySizeBits, config = {}) => {
+export const implode = (compressionType, dictionarySizeBits, config = {}) => {
   const { verbose = false, inputBufferSize = 0x0, outputBufferSize = 0x0 } = config
 
   const handler = function (chunk, encoding, callback) {
@@ -353,15 +349,4 @@ const implode = (compressionType, dictionarySizeBits, config = {}) => {
   }
 
   return handler
-}
-
-module.exports = {
-  setup,
-  outputBits,
-  getSizeOfMatching,
-  findRepetitions,
-  isRepetitionFlushable,
-  handleFirstTwoBytes,
-  processChunkData,
-  implode,
 }

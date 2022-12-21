@@ -1,21 +1,10 @@
-const { repeat, unfold, has } = require('ramda')
-const {
-  InvalidDataError,
-  InvalidCompressionTypeError,
-  InvalidDictionarySizeError,
-  ExpectedBufferError,
-  ExpectedFunctionError,
-  AbortedError,
-} = require('./errors')
-const { mergeSparseArrays, getLowestNBits, nBitsOfOnes, toHex, isFunction } = require('./helpers/functions')
-const {
+import { unfold } from 'ramda'
+import { repeat, mergeSparseArrays, getLowestNBits, nBitsOfOnes, toHex, isFunction } from './functions'
+import {
   ChBitsAsc,
   ChCodeAsc,
-  COMPRESSION_BINARY,
-  COMPRESSION_ASCII,
-  DICTIONARY_SIZE_SMALL,
-  DICTIONARY_SIZE_MEDIUM,
-  DICTIONARY_SIZE_LARGE,
+  Compression,
+  DictionarySize,
   PKDCL_OK,
   PKDCL_STREAM_END,
   LITERAL_STREAM_ABORTED,
@@ -26,14 +15,17 @@ const {
   DistBits,
   LenCode,
   DistCode,
-} = require('./constants')
-const { ExpandingBuffer } = require('./helpers/ExpandingBuffer')
+} from './constants'
+import {
+  InvalidDataError,
+  InvalidCompressionTypeError,
+  InvalidDictionarySizeError,
+  ExpectedFunctionError,
+  AbortedError,
+} from './errors'
+import { ExpandingBuffer } from './ExpandingBuffer'
 
-const readHeader = (buffer) => {
-  if (!Buffer.isBuffer(buffer)) {
-    throw new ExpectedBufferError()
-  }
-
+export const readHeader = (buffer: Buffer) => {
   if (buffer.length < 4) {
     throw new InvalidDataError()
   }
@@ -41,11 +33,11 @@ const readHeader = (buffer) => {
   const compressionType = buffer.readUInt8(0)
   const dictionarySizeBits = buffer.readUInt8(1)
 
-  if (![COMPRESSION_BINARY, COMPRESSION_ASCII].includes(compressionType)) {
+  if (![Compression.Ascii, Compression.Binary].includes(compressionType)) {
     throw new InvalidCompressionTypeError()
   }
 
-  if (![DICTIONARY_SIZE_SMALL, DICTIONARY_SIZE_MEDIUM, DICTIONARY_SIZE_LARGE].includes(dictionarySizeBits)) {
+  if (![DictionarySize.Small, DictionarySize.Medium, DictionarySize.Large].includes(dictionarySizeBits)) {
     throw new InvalidDictionarySizeError()
   }
 
@@ -56,13 +48,13 @@ const readHeader = (buffer) => {
 }
 
 // PAT = populate ascii table
-const createPATIterator = (limit, stepper) => {
-  return (n) => {
-    return n >= limit ? false : [n, n + (1 << stepper)]
+export const createPATIterator = (limit: number, stepper: number) => {
+  return (n: number) => {
+    return n >= limit ? false : ([n, n + (1 << stepper)] as [number, number])
   }
 }
 
-const populateAsciiTable = (value, index, bits, limit) => {
+export const populateAsciiTable = (value: number, index: number, bits: number, limit: number) => {
   const iterator = createPATIterator(limit, value - bits)
   const seed = ChCodeAsc[index] >> bits
   const idxs = unfold(iterator, seed)
@@ -70,15 +62,16 @@ const populateAsciiTable = (value, index, bits, limit) => {
   return idxs.reduce((acc, idx) => {
     acc[idx] = index
     return acc
-  }, [])
+  }, [] as number[])
 }
 
-const generateAsciiTables = () => {
+export const generateAsciiTables = () => {
   const tables = {
     asciiTable2C34: repeat(0, 0x100),
     asciiTable2D34: repeat(0, 0x100),
     asciiTable2E34: repeat(0, 0x80),
     asciiTable2EB4: repeat(0, 0x100),
+    chBitsAsc: [] as number[],
   }
 
   tables.chBitsAsc = ChBitsAsc.map((value, index) => {
@@ -107,7 +100,7 @@ const generateAsciiTables = () => {
   return tables
 }
 
-const parseInitialData = (state, verbose = false) => {
+export const parseInitialData = (state, verbose = false) => {
   if (state.inputBuffer.size() < 4) {
     return false
   }
@@ -120,7 +113,7 @@ const parseInitialData = (state, verbose = false) => {
   state.inputBuffer.dropStart(3)
   state.dictionarySizeMask = nBitsOfOnes(dictionarySizeBits)
 
-  if (compressionType === COMPRESSION_ASCII) {
+  if (compressionType === Compression.Ascii) {
     const tables = generateAsciiTables()
 
     Object.entries(tables).forEach(([key, value]) => {
@@ -129,7 +122,7 @@ const parseInitialData = (state, verbose = false) => {
   }
 
   if (verbose) {
-    console.log(`explode: compression type: ${state.compressionType === COMPRESSION_BINARY ? 'binary' : 'ascii'}`)
+    console.log(`explode: compression type: ${state.compressionType === Compression.Binary ? 'binary' : 'ascii'}`)
     console.log(
       `explode: compression level: ${
         state.dictionarySizeBits === 4 ? 'small' : state.dictionarySizeBits === 5 ? 'medium' : 'large'
@@ -140,7 +133,7 @@ const parseInitialData = (state, verbose = false) => {
   return true
 }
 
-const wasteBits = (state, numberOfBits) => {
+export const wasteBits = (state, numberOfBits) => {
   if (numberOfBits > state.extraBits && state.inputBuffer.isEmpty()) {
     return PKDCL_STREAM_END
   }
@@ -159,7 +152,7 @@ const wasteBits = (state, numberOfBits) => {
   return PKDCL_OK
 }
 
-const decodeNextLiteral = (state) => {
+export const decodeNextLiteral = (state) => {
   const lastBit = state.bitBuffer & 1
 
   if (wasteBits(state, 1) === PKDCL_STREAM_END) {
@@ -189,7 +182,7 @@ const decodeNextLiteral = (state) => {
 
   const lastByte = getLowestNBits(8, state.bitBuffer)
 
-  if (state.compressionType === COMPRESSION_BINARY) {
+  if (state.compressionType === Compression.Binary) {
     return wasteBits(state, 8) === PKDCL_STREAM_END ? LITERAL_STREAM_ABORTED : lastByte
   }
 
@@ -223,7 +216,7 @@ const decodeNextLiteral = (state) => {
   return wasteBits(state, state.chBitsAsc[value]) === PKDCL_STREAM_END ? LITERAL_STREAM_ABORTED : value
 }
 
-const decodeDistance = (state, repeatLength) => {
+export const decodeDistance = (state, repeatLength) => {
   const distPosCode = state.distPosCodes[getLowestNBits(8, state.bitBuffer)]
   const distPosBits = DistBits[distPosCode]
 
@@ -249,12 +242,12 @@ const decodeDistance = (state, repeatLength) => {
   return distance + 1
 }
 
-const processChunkData = (state, verbose = false) => {
+export const processChunkData = (state, verbose = false) => {
   if (state.inputBuffer.isEmpty()) {
     return
   }
 
-  if (!has('compressionType', state)) {
+  if (!('compressionType' in state)) {
     const parsedHeader = parseInitialData(state, verbose)
     if (!parsedHeader || state.inputBuffer.isEmpty()) {
       return
@@ -281,7 +274,7 @@ const processChunkData = (state, verbose = false) => {
 
       if (repeatLength > minusDistance) {
         const multipliedData = repeat(availableData, Math.ceil(repeatLength / availableData.length))
-        addition = Buffer.concat(multipliedData).slice(0, repeatLength)
+        addition = Buffer.concat(multipliedData).subarray(0, repeatLength)
       } else {
         addition = availableData
       }
@@ -304,7 +297,7 @@ const processChunkData = (state, verbose = false) => {
   }
 }
 
-const generateDecodeTables = (startIndexes, lengthBits) => {
+export const generateDecodeTables = (startIndexes, lengthBits) => {
   return lengthBits.reduce((acc, lengthBit, i) => {
     for (let index = startIndexes[i]; index < 0x100; index += 1 << lengthBit) {
       acc[index] = i
@@ -314,7 +307,7 @@ const generateDecodeTables = (startIndexes, lengthBits) => {
   }, repeat(0, 0x100))
 }
 
-const explode = (config = {}) => {
+export const explode = (config = {}) => {
   const { verbose = false, inputBufferSize = 0x0, outputBufferSize = 0x0 } = config
 
   const handler = function (chunk, encoding, callback) {
@@ -404,17 +397,4 @@ const explode = (config = {}) => {
   }
 
   return handler
-}
-
-module.exports = {
-  readHeader,
-  explode,
-  createPATIterator,
-  populateAsciiTable,
-  generateAsciiTables,
-  processChunkData,
-  wasteBits,
-  decodeNextLiteral,
-  decodeDistance,
-  generateDecodeTables,
 }

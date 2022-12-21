@@ -46,13 +46,6 @@ export class AbortedError extends Error {
   }
 }
 
-export class ExpectedBufferError extends TypeError {
-  constructor() {
-    super('Expected variable to be of type Buffer')
-    this.name = 'ExpectedBufferError'
-  }
-}
-
 export class ExpectedFunctionError extends TypeError {
   constructor() {
     super('Expected variable to be a Function')

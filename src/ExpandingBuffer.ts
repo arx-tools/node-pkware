@@ -1,5 +1,5 @@
 import { Buffer } from 'node:buffer'
-import { clamp } from 'ramda'
+import { clamp } from './functions'
 
 export class ExpandingBuffer {
   private heap: Buffer

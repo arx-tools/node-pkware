@@ -1,7 +1,7 @@
-const { Transform, Writable } = require('stream')
-const { promisify } = require('util')
-const { ExpandingBuffer } = require('./ExpandingBuffer')
-const { isFunction } = require('./functions')
+import { Transform, Writable } from 'node:stream'
+import { promisify } from 'node:util'
+import { isFunction } from './functions'
+import { ExpandingBuffer } from './ExpandingBuffer'
 
 const emptyBuffer = Buffer.from([])
 
@@ -15,7 +15,7 @@ class QuasiTransform {
   }
 }
 
-const splitAt = (index) => {
+export const splitAt = (index: number) => {
   let cntr = 0
 
   if (!Number.isInteger(index) || index < 0) {
@@ -44,8 +44,8 @@ const splitAt = (index) => {
       isLeftDone = index === cntr + chunk.length
     } else {
       // cntr ..... index ..... chunk.length
-      left = chunk.slice(0, index - cntr)
-      right = chunk.slice(index - cntr)
+      left = chunk.subarray(0, index - cntr)
+      right = chunk.subarray(index - cntr)
     }
 
     cntr += chunk.length
@@ -54,25 +54,25 @@ const splitAt = (index) => {
   }
 }
 
-const transformIdentity = () => {
+export const transformIdentity = () => {
   return function (chunk, encoding, callback) {
     callback(null, chunk)
   }
 }
 
-const transformEmpty = () => {
+export const transformEmpty = () => {
   return function (chunk, encoding, callback) {
     callback(null, emptyBuffer)
   }
 }
 
-const through = (handler) => {
+export const through = (handler) => {
   return new Transform({
     transform: handler,
   })
 }
 
-const transformSplitBy = (predicate, leftHandler, rightHandler) => {
+export const transformSplitBy = (predicate, leftHandler, rightHandler) => {
   let isFirstChunk = true
   let wasLeftFlushCalled = false
   const damChunkSize = 0x10000
@@ -153,9 +153,9 @@ const transformSplitBy = (predicate, leftHandler, rightHandler) => {
           const data = Buffer.from(dam.read(0, chunks * damChunkSize))
           dam.flushStart(chunks * damChunkSize)
           for (let i = 0; i < chunks - 1; i++) {
-            this.push(data.slice(i * damChunkSize, i * damChunkSize + damChunkSize))
+            this.push(data.subarray(i * damChunkSize, i * damChunkSize + damChunkSize))
           }
-          callback(null, data.slice((chunks - 1) * damChunkSize))
+          callback(null, data.subarray((chunks - 1) * damChunkSize))
         } else {
           callback(null, emptyBuffer)
         }
@@ -166,25 +166,17 @@ const transformSplitBy = (predicate, leftHandler, rightHandler) => {
   }
 }
 
-const streamToBuffer = (done) => {
-  const buffer = new ExpandingBuffer()
-  return new Writable({
-    write(chunk, encoding, callback) {
-      buffer.append(chunk)
-      callback()
-    },
-    final(callback) {
-      done(buffer.getHeap())
-      callback()
-    },
+export const streamToBuffer = (input: NodeJS.ReadableStream): Promise<Buffer> => {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = []
+    input.on('data', (chunk: Buffer) => {
+      chunks.push(chunk)
+    })
+    input.on('end', () => {
+      resolve(Buffer.concat(chunks))
+    })
+    input.on('error', (e: unknown) => {
+      reject(e)
+    })
   })
-}
-
-module.exports = {
-  splitAt,
-  transformIdentity,
-  transformEmpty,
-  through,
-  transformSplitBy,
-  streamToBuffer,
 }

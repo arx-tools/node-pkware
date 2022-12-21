@@ -1,7 +1,10 @@
-// const { EOL } = require('os')
-// const fs = require('fs')
-const assert = require('assert')
-const { compare, report } = require('binary-comparator')
+// import { EOL } from 'node:os'
+
+import { Handler } from './types'
+
+// import fs from 'node:fs'
+import assert from 'node:assert'
+import { compare, report } from 'binary-comparator'
 
 /*
 const isPromise = promise => {
@@ -31,8 +34,10 @@ const readToBuffer = (fileName, chunkSizeInBytes = 1024) => {
 }
 */
 
-/** @see https://stackoverflow.com/a/43197340/1806628 */
-const isClass = (obj) => {
+/**
+ * @see https://stackoverflow.com/a/43197340/1806628
+ */
+export const isClass = (obj: any): obj is object => {
   const isCtorClass = obj.constructor && obj.constructor.toString().substring(0, 5) === 'class'
 
   if (obj.prototype === undefined) {
@@ -47,17 +52,24 @@ const isClass = (obj) => {
   return isCtorClass || isPrototypeCtorClass
 }
 
-/** @see https://stackoverflow.com/a/48845122/1806628 */
-const bufferToString = (buffer, limit = 20) => {
+/**
+ * @see https://stackoverflow.com/a/48845122/1806628
+ */
+export const bufferToString = (buffer: Buffer, limit: number = 20) => {
   const isEllipsisNecessary = buffer.length > limit
 
-  let hexString = buffer.slice(0, limit).toString('hex')
+  let hexString = buffer.subarray(0, limit).toString('hex')
   hexString = hexString.length > 2 ? hexString.match(/../g).join(' ') : hexString
 
   return `<Buffer ${hexString}${isEllipsisNecessary ? '...' : ''}>`
 }
 
-const buffersShouldEqual = (expected, result, offset = 0, displayAsHex = false) => {
+export const buffersShouldEqual = (
+  expected: Buffer,
+  result: Buffer,
+  offset: number = 0,
+  displayAsHex: boolean = false,
+) => {
   if (!Buffer.isBuffer(expected)) {
     throw new Error('expected is not a Buffer')
   }
@@ -71,17 +83,10 @@ const buffersShouldEqual = (expected, result, offset = 0, displayAsHex = false) 
   assert.ok(expected.equals(result), diff)
 }
 
-const transformToABC = () => {
+export const transformToABC = () => {
   let cntr = 0
 
   return function (chunk, encoding, callback) {
     callback(null, Buffer.from([65 + (cntr++ % 26)]))
-  }
-}
-
-module.exports = {
-  isClass,
-  buffersShouldEqual,
-  bufferToString,
-  transformToABC,
+  } as Handler
 }
