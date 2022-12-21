@@ -62,10 +62,6 @@ export const toHex = (num: any, digits: number = 0, withoutPrefix: boolean = fal
 }
 
 export const mergeSparseArrays = <T>(a: T[], b: T[]) => {
-  if (!Array.isArray(a) || !Array.isArray(b)) {
-    return []
-  }
-
   const result = [...b, ...(b.length < a.length ? repeat(undefined, a.length - b.length) : [])]
 
   for (let i = 0; i < a.length; i++) {
