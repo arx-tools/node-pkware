@@ -15,14 +15,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "prepublishOnly": "npm run build",
-    "lint": "eslint \"{src,test}/**/*.{js,ts}\"",
-    "lint:fix": "npm run lint -- --fix",
-    "lint:staged": "lint-staged",
-    "test:unit": "set FORCE_COLOR=true && mocha test/{,**/}*.spec.js --timeout 5000",
-    "test:unit:watch": "nodemon --exec \"npm run test:unit\" --watch test --watch src",
-    "test:files": "set FORCE_COLOR=true && mocha test/{,**/}*.files.js --timeout 10000",
-    "test:files:watch": "nodemon --exec \"npm run test:files\" --watch test --watch src"
+    "prepublishOnly": "npm run build"
   },
   "repository": {
     "type": "git",
@@ -39,31 +32,7 @@
   },
   "devDependencies": {
     "@types/node": "^18.11.15",
-    "arx-header-size": "^2.0.0",
-    "binary-comparator": "^0.5.0",
-    "esbuild": "^0.16.7",
-    "eslint": "^8.29.0",
-    "eslint-config-prettier": "^8.5.0",
-    "eslint-config-prettier-standard": "^4.0.1",
-    "eslint-config-standard": "^17.0.0",
-    "eslint-plugin-import": "^2.26.0",
-    "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-prettier": "^4.2.1",
-    "eslint-plugin-promise": "^6.1.1",
-    "eslint-plugin-standard": "^4.1.0",
-    "lint-staged": "^13.1.0",
-    "mocha": "^10.2.0",
-    "nodemon": "^2.0.20",
-    "pre-commit": "^1.2.2",
-    "prettier": "^2.8.1",
-    "prettier-config-standard": "^5.0.0",
     "typescript": "^4.9.4"
-  },
-  "pre-commit": [
-    "lint:staged"
-  ],
-  "lint-staged": {
-    "*.js": "eslint --fix"
   },
   "keywords": [
     "arx-fatalis",
@@ -72,6 +41,7 @@
     "implode",
     "explode",
     "compression",
+    "decompression",
     "blast"
   ]
 }
