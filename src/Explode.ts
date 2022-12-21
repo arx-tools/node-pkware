@@ -11,8 +11,10 @@ export class Explode {
   #isFirstChunk: boolean = true
   #extraBits: number = 0
   #bitBuffer: number = 0
-  #backupExtraBits: number = -1
-  #backupBitBuffer: number = -1
+  #backupData: { extraBits: number; bitBuffer: number } = {
+    extraBits: -1,
+    bitBuffer: -1,
+  }
   #chBitsAsc: number[] = repeat(0, 0x100)
   // #lengthCodes
   // #distPosCodes
@@ -63,17 +65,19 @@ export class Explode {
       callback(new AbortedError())
       return
     }
+
+    callback(null, this.#outputBuffer.read())
   }
 
   #backup() {
-    this.#backupExtraBits = this.#extraBits
-    this.#backupBitBuffer = this.#bitBuffer
+    this.#backupData.extraBits = this.#extraBits
+    this.#backupData.bitBuffer = this.#bitBuffer
     this.#inputBuffer.saveIndices()
   }
 
   #restore() {
-    this.#extraBits = this.#backupExtraBits
-    this.#bitBuffer = this.#backupBitBuffer
+    this.#extraBits = this.#backupData.extraBits
+    this.#bitBuffer = this.#backupData.bitBuffer
     this.#inputBuffer.restoreIndices()
   }
 }
