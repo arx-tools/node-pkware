@@ -1,4 +1,4 @@
-import { repeat, clone, clamp, toHex, getLowestNBits, nBitsOfOnes, isFunction, last } from './functions'
+import { repeat, clone, clamp, toHex, getLowestNBits, nBitsOfOnes, last } from './functions'
 import { ExpandingBuffer } from './ExpandingBuffer'
 import {
   ChBitsAsc,

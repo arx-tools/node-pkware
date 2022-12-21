@@ -1,4 +1,4 @@
-import { repeat, mergeSparseArrays, getLowestNBits, nBitsOfOnes, toHex, isFunction, unfold } from './functions'
+import { repeat, mergeSparseArrays, getLowestNBits, nBitsOfOnes, toHex, unfold } from './functions'
 import {
   ChBitsAsc,
   ChCodeAsc,
