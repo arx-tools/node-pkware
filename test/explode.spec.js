@@ -6,7 +6,6 @@ const {
   InvalidDataError,
   InvalidCompressionTypeError,
   InvalidDictionarySizeError,
-  ExpectedBufferError,
   ExpectedFunctionError,
 } = require('../src/errors.js')
 const {
@@ -29,14 +28,6 @@ const { isFunction, noop, isPlainObject } = require('../src/helpers/functions.js
 describe('readHeader', () => {
   it('is a function', () => {
     assert.ok(isFunction(readHeader), `${readHeader} is not a function`)
-  })
-  it('expects first parameter to be a buffer', () => {
-    assert.throws(() => {
-      readHeader(123)
-    }, ExpectedBufferError)
-    assert.throws(() => {
-      readHeader()
-    }, ExpectedBufferError)
   })
   it('throws an InvalidDataError, when given Buffer is less, than 4 bytes', () => {
     assert.throws(() => {

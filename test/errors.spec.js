@@ -5,9 +5,8 @@ const {
   InvalidCompressionTypeError,
   InvalidDataError,
   AbortedError,
-  ExpectedBufferError,
   ExpectedFunctionError,
-} = require('../../src/errors.js')
+} = require('../src/errors.js')
 
 describe('InvalidDictionarySizeError', () => {
   it('is an Error', () => {
@@ -62,20 +61,6 @@ describe('AbortedError', () => {
   it('does not change the message, when created with a string specified', () => {
     const e = new AbortedError('hello!')
     assert.strictEqual(e.message, 'Aborted')
-  })
-})
-
-describe('ExpectedBufferError', () => {
-  it('is a TypeError', () => {
-    assert.ok(ExpectedBufferError.prototype instanceof TypeError)
-  })
-  it('contains "Expected variable to be of type Buffer" as the message', () => {
-    const e = new ExpectedBufferError()
-    assert.strictEqual(e.message, 'Expected variable to be of type Buffer')
-  })
-  it('does not change the message, when created with a string specified', () => {
-    const e = new ExpectedBufferError('hello!')
-    assert.strictEqual(e.message, 'Expected variable to be of type Buffer')
   })
 })
 

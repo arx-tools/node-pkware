@@ -1,8 +1,7 @@
 const assert = require('assert')
 const { describe, it, beforeEach } = require('mocha')
-const { ExpectedBufferError } = require('../../src/errors.js')
-const { ExpandingBuffer } = require('../../src/helpers/ExpandingBuffer.js')
-const { isClass, buffersShouldEqual, bufferToString } = require('../../src/helpers/testing.js')
+const { ExpandingBuffer } = require('../src/ExpandingBuffer.js')
+const { isClass, buffersShouldEqual, bufferToString } = require('../src/testing.js')
 
 describe('ExpandingBuffer', () => {
   let buffer
@@ -211,10 +210,5 @@ describe('ExpandingBuffer', () => {
     const expected = Buffer.from([1, 2, 3])
     const result = buffer.read()
     buffersShouldEqual(expected, result)
-  })
-  it('throws an error when append gets non-buffer data', () => {
-    assert.throws(() => {
-      buffer.append('Hello')
-    }, ExpectedBufferError)
   })
 })
