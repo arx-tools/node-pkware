@@ -1,5 +1,4 @@
-import { unfold } from 'ramda'
-import { repeat, mergeSparseArrays, getLowestNBits, nBitsOfOnes, toHex, isFunction } from './functions'
+import { repeat, mergeSparseArrays, getLowestNBits, nBitsOfOnes, toHex, isFunction, unfold } from './functions'
 import {
   ChBitsAsc,
   ChCodeAsc,

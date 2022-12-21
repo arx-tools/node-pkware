@@ -1,7 +1,6 @@
 const assert = require('assert')
 const { Readable } = require('stream')
 const { describe, it, before, beforeEach } = require('mocha')
-// const { has } = require('ramda')
 const { ChBitsAsc, ChCodeAsc /*, COMPRESSION_ASCII, COMPRESSION_BINARY */ } = require('../src/constants.js')
 const {
   InvalidDataError,
@@ -343,14 +342,14 @@ describe('explode', () => {
       }
       state1.inputBuffer.append(Buffer.from([COMPRESSION_ASCII, 4, 5, 6]))
       processChunkData(state1)
-      assert.ok(has('asciiTable2E34', state1))
+      assert.ok('asciiTable2E34' in state1)
 
       const state2 = {
         inputBuffer: new ExpandingBuffer()
       }
       state2.inputBuffer.append(Buffer.from([COMPRESSION_BINARY, 4, 5, 6]))
       processChunkData(state2)
-      assert.ok(!has('asciiTable2E34', state2))
+      assert.ok(!('asciiTable2E34' in state2))
     })
     */
   })

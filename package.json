@@ -35,12 +35,10 @@
   "author": "Lajos Meszaros <m_lajos@hotmail.com>",
   "license": "GPL-3.0-or-later",
   "dependencies": {
-    "minimist-lite": "^2.2.1",
-    "ramda": "^0.28.0"
+    "minimist-lite": "^2.2.1"
   },
   "devDependencies": {
     "@types/node": "^18.11.15",
-    "@types/ramda": "^0.28.20",
     "arx-header-size": "^2.0.0",
     "binary-comparator": "^0.5.0",
     "esbuild": "^0.16.7",
@@ -52,7 +50,6 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^4.2.1",
     "eslint-plugin-promise": "^6.1.1",
-    "eslint-plugin-ramda": "^2.5.1",
     "eslint-plugin-standard": "^4.1.0",
     "lint-staged": "^13.1.0",
     "mocha": "^10.2.0",

@@ -1,6 +1,5 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { type } from 'ramda'
 
 export const repeat = <T>(value: T, repetitions: number): T[] => {
   return Array(repetitions).fill(value)
@@ -21,7 +20,7 @@ export const clone = <T>(data: T): T => {
 }
 
 export const isFunction = (x: any): x is Function => {
-  return type(x) === 'Function'
+  return Object.prototype.toString.call(x) === '[object Function]'
 }
 
 export const nBitsOfOnes = (numberOfBits: number) => {
@@ -111,4 +110,14 @@ export const fileExists = async (filename: string) => {
 
 export const last = <T>(arr: T[]) => {
   return arr[arr.length - 1]
+}
+
+export const unfold = <T, TResult>(fn: (seed: T) => [TResult, T] | false, seed: T): TResult[] => {
+  let pair = fn(seed)
+  const result: TResult[] = []
+  while (pair && pair.length) {
+    result[result.length] = pair[0]
+    pair = fn(pair[1])
+  }
+  return result
 }
