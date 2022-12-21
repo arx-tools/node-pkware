@@ -10,7 +10,7 @@ const {
   DICTIONARY_SIZE_LARGE,
 } = require('../constants')
 const { getPackageVersion, parseNumberString, fileExists } = require('../functions')
-const { implode } = require('../implode')
+const { implode } = require('../_implode')
 const { transformEmpty, transformIdentity, transformSplitBy, splitAt, through } = require('../stream')
 
 const decompress = (input, output, offset, keepHeader, compressionType, dictionarySize, config) => {

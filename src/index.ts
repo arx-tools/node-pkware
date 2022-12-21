@@ -1,7 +1,7 @@
-export { implode } from './implode'
-export { implode as compress } from './implode'
-export { explode } from './explode'
-export { explode as decompress } from './explode'
+export { implode } from './_implode'
+export { implode as compress } from './_implode'
+export { explode } from './_explode'
+export { explode as decompress } from './_explode'
 
 export * as constants from './constants'
 export * as errors from './errors'

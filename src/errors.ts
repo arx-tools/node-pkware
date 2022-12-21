@@ -45,10 +45,3 @@ export class AbortedError extends Error {
     this.name = 'AbortedError'
   }
 }
-
-export class ExpectedFunctionError extends TypeError {
-  constructor() {
-    super('Expected variable to be a Function')
-    this.name = 'ExpectedFunctionError'
-  }
-}

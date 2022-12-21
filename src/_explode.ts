@@ -15,13 +15,7 @@ import {
   LenCode,
   DistCode,
 } from './constants'
-import {
-  InvalidDataError,
-  InvalidCompressionTypeError,
-  InvalidDictionarySizeError,
-  ExpectedFunctionError,
-  AbortedError,
-} from './errors'
+import { InvalidDataError, InvalidCompressionTypeError, InvalidDictionarySizeError, AbortedError } from './errors'
 import { ExpandingBuffer } from './ExpandingBuffer'
 
 export const readHeader = (buffer: Buffer) => {
@@ -330,11 +324,6 @@ export const explode = (config = {}) => {
   const { verbose = false, inputBufferSize = 0x0, outputBufferSize = 0x0 } = config
 
   const handler = function (chunk, encoding, callback) {
-    if (!isFunction(callback)) {
-      // can't call callback to pass in data or errors, so we throw up
-      throw new ExpectedFunctionError()
-    }
-
     const state = handler._state
     state.needMoreInput = true
 
@@ -376,7 +365,7 @@ export const explode = (config = {}) => {
     needMoreInput: true,
     isFirstChunk: true,
     extraBits: 0,
-    chBitsAsc: repeat(0, 0x100), // DecodeLit and GenAscTabs uses this
+    chBitsAsc: repeat(0, 0x100),
     lengthCodes: generateDecodeTables(LenCode, LenBits),
     distPosCodes: generateDecodeTables(DistCode, DistBits),
     inputBuffer: new ExpandingBuffer(inputBufferSize),

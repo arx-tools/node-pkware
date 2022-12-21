@@ -12,7 +12,7 @@ import {
   DistCode,
   DistBits,
 } from './constants'
-import { ExpectedFunctionError, InvalidDictionarySizeError, InvalidCompressionTypeError } from './errors'
+import { InvalidDictionarySizeError, InvalidCompressionTypeError } from './errors'
 
 export const setup = (state) => {
   state.nChBits = repeat(0, 0x306)
@@ -270,11 +270,6 @@ export const implode = (compressionType, dictionarySizeBits, config = {}) => {
   const { verbose = false, inputBufferSize = 0x0, outputBufferSize = 0x0 } = config
 
   const handler = function (chunk, encoding, callback) {
-    if (!isFunction(callback)) {
-      // can't call callback to pass in data or errors, so we throw up
-      throw new ExpectedFunctionError()
-    }
-
     const state = handler._state
 
     try {
