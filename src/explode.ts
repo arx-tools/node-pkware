@@ -32,11 +32,11 @@ export const readHeader = (buffer: Buffer) => {
   const compressionType = buffer.readUInt8(0)
   const dictionarySizeBits = buffer.readUInt8(1)
 
-  if (![Compression.Ascii, Compression.Binary].includes(compressionType)) {
+  if (!(compressionType in Compression)) {
     throw new InvalidCompressionTypeError()
   }
 
-  if (![DictionarySize.Small, DictionarySize.Medium, DictionarySize.Large].includes(dictionarySizeBits)) {
+  if (!(dictionarySizeBits in DictionarySize)) {
     throw new InvalidDictionarySizeError()
   }
 
@@ -64,35 +64,55 @@ export const populateAsciiTable = (value: number, index: number, bits: number, l
   }, [] as number[])
 }
 
+type AsciiTables = {
+  asciiTable2C34: number[]
+  asciiTable2D34: number[]
+  asciiTable2E34: number[]
+  asciiTable2EB4: number[]
+  chBitsAsc: number[]
+}
+
 export const generateAsciiTables = () => {
-  const tables = {
+  const tables: AsciiTables = {
     asciiTable2C34: repeat(0, 0x100),
     asciiTable2D34: repeat(0, 0x100),
     asciiTable2E34: repeat(0, 0x80),
     asciiTable2EB4: repeat(0, 0x100),
-    chBitsAsc: [] as number[],
+    chBitsAsc: [],
   }
 
   tables.chBitsAsc = ChBitsAsc.map((value, index) => {
     if (value <= 8) {
-      tables.asciiTable2C34 = mergeSparseArrays(populateAsciiTable(value, index, 0, 0x100), tables.asciiTable2C34)
+      tables.asciiTable2C34 = mergeSparseArrays(
+        populateAsciiTable(value, index, 0, 0x100),
+        tables.asciiTable2C34,
+      ) as number[]
       return value - 0
     }
 
     const acc = getLowestNBits(8, ChCodeAsc[index])
     if (acc === 0) {
-      tables.asciiTable2EB4 = mergeSparseArrays(populateAsciiTable(value, index, 8, 0x100), tables.asciiTable2EB4)
+      tables.asciiTable2EB4 = mergeSparseArrays(
+        populateAsciiTable(value, index, 8, 0x100),
+        tables.asciiTable2EB4,
+      ) as number[]
       return value - 8
     }
 
     tables.asciiTable2C34[acc] = 0xff
 
     if (getLowestNBits(6, ChCodeAsc[index]) === 0) {
-      tables.asciiTable2E34 = mergeSparseArrays(populateAsciiTable(value, index, 6, 0x80), tables.asciiTable2E34)
+      tables.asciiTable2E34 = mergeSparseArrays(
+        populateAsciiTable(value, index, 6, 0x80),
+        tables.asciiTable2E34,
+      ) as number[]
       return value - 6
     }
 
-    tables.asciiTable2D34 = mergeSparseArrays(populateAsciiTable(value, index, 4, 0x100), tables.asciiTable2D34)
+    tables.asciiTable2D34 = mergeSparseArrays(
+      populateAsciiTable(value, index, 4, 0x100),
+      tables.asciiTable2D34,
+    ) as number[]
     return value - 4
   })
 
