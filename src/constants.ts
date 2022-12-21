@@ -2,6 +2,7 @@
  * Compression types for implode
  */
 export enum Compression {
+  Unknown = -1,
   Binary = 0,
   Ascii,
 }
@@ -13,6 +14,7 @@ export enum Compression {
  * On the other hand, large compression allows more lookback allowing more effective compression, thus generating smaller, more compressed files.
  */
 export enum DictionarySize {
+  Unknown = -1,
   Small = 4,
   Medium,
   Large,

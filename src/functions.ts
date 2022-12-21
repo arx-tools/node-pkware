@@ -25,7 +25,7 @@ export const isFunction = (x: any): x is Function => {
 
 export const nBitsOfOnes = (numberOfBits: number) => {
   if (!Number.isInteger(numberOfBits) || numberOfBits < 0) {
-    return null
+    return 0
   }
 
   return (1 << numberOfBits) - 1
@@ -45,6 +45,7 @@ const isFullHexString = (input: string) => {
 
 export const toHex = (num: any, digits: number = 0, withoutPrefix: boolean = false) => {
   const prefix = withoutPrefix ? '' : '0x'
+
   if (!Number.isInteger(digits) || digits < 0) {
     return null
   }

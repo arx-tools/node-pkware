@@ -1,9 +1,43 @@
 import { Buffer } from 'node:buffer'
 import { Transform, TransformCallback } from 'node:stream'
-import { AbortedError } from './errors'
+import { Compression, DictionarySize, DistBits, DistCode, LenBits, LenCode } from './constants'
+import { AbortedError, InvalidCompressionTypeError, InvalidDictionarySizeError } from './errors'
 import { ExpandingBuffer } from './ExpandingBuffer'
-import { repeat, toHex } from './functions'
+import { nBitsOfOnes, repeat, toHex } from './functions'
 import { Config, Stats } from './types'
+
+/**
+ * This function assumes there are at least 2 bytes of data in the buffer
+ */
+const readHeader = (buffer: Buffer) => {
+  const compressionType = buffer.readUInt8(0)
+  const dictionarySizeBits = buffer.readUInt8(1)
+
+  if (!(compressionType in Compression) || compressionType === Compression.Unknown) {
+    throw new InvalidCompressionTypeError()
+  }
+
+  if (!(dictionarySizeBits in DictionarySize) || dictionarySizeBits === DictionarySize.Unknown) {
+    throw new InvalidDictionarySizeError()
+  }
+
+  return {
+    compressionType,
+    dictionarySizeBits,
+  }
+}
+
+const generateDecodeTables = (startIndexes: number[], lengthBits: number[]) => {
+  const codes = repeat(0, 0x100)
+
+  lengthBits.forEach((lengthBit, i) => {
+    for (let index = startIndexes[i]; index < 0x100; index += 1 << lengthBit) {
+      codes[index] = i
+    }
+  })
+
+  return codes
+}
 
 export class Explode {
   #verbose: boolean
@@ -16,11 +50,14 @@ export class Explode {
     bitBuffer: -1,
   }
   #chBitsAsc: number[] = repeat(0, 0x100)
-  // #lengthCodes
-  // #distPosCodes
+  #lengthCodes: number[] = generateDecodeTables(LenCode, LenBits)
+  #distPosCodes: number[] = generateDecodeTables(DistCode, DistBits)
   #inputBuffer: ExpandingBuffer
   #outputBuffer: ExpandingBuffer
   #stats: Stats = { chunkCounter: 0 }
+  #compressionType: Compression = Compression.Unknown
+  #dictionarySizeBits: DictionarySize = DictionarySize.Unknown
+  #dictionarySizeMask: number = 0
 
   constructor(config: Config = {}) {
     this.#verbose = config?.verbose ?? false
@@ -36,6 +73,7 @@ export class Explode {
 
       try {
         instance.#inputBuffer.append(chunk)
+
         if (instance.#isFirstChunk) {
           instance.#isFirstChunk = false
           this._flush = instance.#onInputFinished.bind(instance)
@@ -45,6 +83,8 @@ export class Explode {
           instance.#stats.chunkCounter++
           console.log(`explode: reading ${toHex(chunk.length)} bytes from chunk #${instance.#stats.chunkCounter}`)
         }
+
+        instance.#processChunkData()
 
         // TODO: migrate the rest of the function
       } catch (e: unknown) {
@@ -67,6 +107,37 @@ export class Explode {
     }
 
     callback(null, this.#outputBuffer.read())
+  }
+
+  #processChunkData() {
+    if (this.#inputBuffer.isEmpty()) {
+      return
+    }
+
+    if (this.#compressionType === Compression.Unknown) {
+      const headerParsedSuccessfully = this.#parseInitialData()
+      if (!headerParsedSuccessfully || this.#inputBuffer.isEmpty()) {
+        return
+      }
+    }
+
+    // TODO: implement the rest of the method
+  }
+
+  #parseInitialData() {
+    if (this.#inputBuffer.size() < 4) {
+      return false
+    }
+
+    const { compressionType, dictionarySizeBits } = readHeader(this.#inputBuffer.read(0, 2))
+
+    this.#compressionType = compressionType
+    this.#dictionarySizeBits = dictionarySizeBits
+    this.#bitBuffer = this.#inputBuffer.readByte(2)
+    this.#inputBuffer.dropStart(3)
+    this.#dictionarySizeMask = nBitsOfOnes(dictionarySizeBits)
+
+    // TODO: implement the rest of the method
   }
 
   #backup() {

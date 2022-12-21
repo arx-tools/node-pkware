@@ -49,15 +49,15 @@ export class ExpandingBuffer {
       return Buffer.from([])
     }
 
-    if (limit === 1) {
-      return this.#heap[this.#startIndex + offset]
-    }
-
     if (offset + limit < this.size()) {
       return this.#heap.subarray(this.#startIndex + offset, this.#startIndex + limit + offset)
     }
 
     return this.#getActualData(offset)
+  }
+
+  readByte(offset: number = 0) {
+    return this.#heap[this.#startIndex + offset]
   }
 
   /**
