@@ -7,7 +7,7 @@ const {
   transformEmpty,
   through,
   transformSplitBy,
-  streamToBuffer,
+  toBuffer,
 } = require('../../src/helpers/stream.js')
 const { buffersShouldEqual, transformToABC } = require('../../src/helpers/testing.js')
 const { isFunction } = require('../../src/helpers/functions.js')
@@ -148,7 +148,7 @@ describe('helpers/stream', () => {
         Readable.from('this is a test')
           .pipe(through(transformIdentity()))
           .pipe(
-            streamToBuffer((buffer) => {
+            toBuffer((buffer) => {
               buffersShouldEqual(buffer, Buffer.from('this is a test'))
               done()
             }),
@@ -179,7 +179,7 @@ describe('helpers/stream', () => {
         Readable.from('this is a test')
           .pipe(through(transformEmpty()))
           .pipe(
-            streamToBuffer((buffer) => {
+            toBuffer((buffer) => {
               buffersShouldEqual(buffer, Buffer.from([]))
               done()
             }),
@@ -231,7 +231,7 @@ describe('helpers/stream', () => {
       Readable.from('abcde')
         .pipe(through(handler))
         .pipe(
-          streamToBuffer((buffer) => {
+          toBuffer((buffer) => {
             buffersShouldEqual(Buffer.from('abc'), buffer)
             done()
           }),
@@ -244,7 +244,7 @@ describe('helpers/stream', () => {
       Readable.from('abcde')
         .pipe(through(handler))
         .pipe(
-          streamToBuffer((buffer) => {
+          toBuffer((buffer) => {
             buffersShouldEqual(Buffer.from('de'), buffer)
             done()
           }),
@@ -260,7 +260,7 @@ describe('helpers/stream', () => {
         },
       })
       stream.pipe(through(handler)).pipe(
-        streamToBuffer((buffer) => {
+        toBuffer((buffer) => {
           buffersShouldEqual(Buffer.from('ABCD'), buffer)
           done()
         }),
@@ -310,7 +310,7 @@ describe('helpers/stream', () => {
       })
 
       stream.pipe(through(handler)).pipe(
-        streamToBuffer((buffer) => {
+        toBuffer((buffer) => {
           buffersShouldEqual(Buffer.from('abcdefghijAklmnopqrstuvwxB'), buffer)
           done()
         }),
@@ -361,7 +361,7 @@ describe('helpers/stream', () => {
       })
 
       stream.pipe(through(handler)).pipe(
-        streamToBuffer((buffer) => {
+        toBuffer((buffer) => {
           buffersShouldEqual(Buffer.from('abcdefghijklmnopqrstuvwxAB'), buffer)
           done()
         }),
@@ -376,23 +376,23 @@ describe('helpers/stream', () => {
   })
 })
 
-describe('streamToBuffer', () => {
+describe('toBuffer', () => {
   it('is a function', () => {
-    assert.ok(isFunction(streamToBuffer), `${streamToBuffer} is not a function`)
+    assert.ok(isFunction(toBuffer), `${toBuffer} is not a function`)
   })
   it('returns a writable stream when calling it as a function', () => {
-    const handler = streamToBuffer()
+    const handler = toBuffer()
     assert.ok(handler instanceof Writable)
   })
   it('takes a callback function, which is called, when writable gets no more data', (done) => {
-    const handler = streamToBuffer(() => {
+    const handler = toBuffer(() => {
       done()
     })
     Readable.from('lorem ipsum dolor').pipe(handler)
   })
   it('only calls the callback function once all the input have been gathered', (done) => {
     let isCalled = false
-    const handler = streamToBuffer((data) => {
+    const handler = toBuffer((data) => {
       isCalled = true
     })
     const stream = new Readable({
@@ -407,7 +407,7 @@ describe('streamToBuffer', () => {
     }, 100)
   })
   it('calls the callback with the data accumulated via piping once the stream is finished', (done) => {
-    const handler = streamToBuffer((data) => {
+    const handler = toBuffer((data) => {
       buffersShouldEqual(data, Buffer.from('lorem ipsum dolor sit amet'))
       done()
     })

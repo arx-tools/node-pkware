@@ -2,11 +2,14 @@ import { Transform, Writable } from 'node:stream'
 import { promisify } from 'node:util'
 import { isFunction } from './functions'
 import { ExpandingBuffer } from './ExpandingBuffer'
+import { Callback, QuasiTransformConstructorParameter } from './types'
 
 const emptyBuffer = Buffer.from([])
 
 class QuasiTransform {
-  constructor(handler) {
+  handler: any
+
+  constructor(handler: any) {
     this.handler = handler
   }
 
@@ -15,6 +18,17 @@ class QuasiTransform {
   }
 }
 
+/**
+ * Creates a "**predicate**" function, that awaits Buffers, keeps an internal counter of the bytes from them and splits the appropriate buffer at the given index.
+ * Splitting is done by returning an array with `[left: Buffer, right: Buffer, isLeftDone: bool]`.
+ * If you want to split data at the 100th byte and you keep feeding 60 byte long buffers to the function returned by `splitAt(100)`, then it will return arrays in the following manner:
+ * 1. `[inputBuffer, emptyBuffer, false]`
+ * 2. `[inputBuffer.slice(0, 40), inputBuffer.slice(40, 60), true]`
+ * 3. `[emptyBuffer, inputBuffer, true]`
+ * 4. `[emptyBuffer, inputBuffer, true]`
+ * 5. ... and so on
+ * @param index at which to split the buffer
+ */
 export const splitAt = (index: number) => {
   let cntr = 0
 
@@ -54,25 +68,45 @@ export const splitAt = (index: number) => {
   }
 }
 
+/**
+ * A `transform._transform` type function, which lets the input chunks through without any change
+ */
 export const transformIdentity = () => {
-  return function (chunk, encoding, callback) {
+  return function (chunk: Buffer, encoding: unknown, callback: Callback) {
     callback(null, chunk)
   }
 }
 
+/**
+ * A `transform._transform` type function, which for every input chunk will output an empty buffer
+ */
 export const transformEmpty = () => {
-  return function (chunk, encoding, callback) {
+  return function (chunk: unknown, encoding: unknown, callback: Callback) {
     callback(null, emptyBuffer)
   }
 }
 
-export const through = (handler) => {
+/**
+ * Takes a `transform._transform` type function and turns it into a Transform stream instance
+ * @param handler a transform._transform type function
+ * @returns a Transform stream instance
+ */
+export const through = (handler: Exclude<ConstructorParameters<typeof Transform>[0], undefined>['transform']) => {
   return new Transform({
     transform: handler,
   })
 }
 
-export const transformSplitBy = (predicate, leftHandler, rightHandler) => {
+/**
+ * Higher order function for introducing conditional logic to `transform._transform` functions.
+ * This is used internally to handle offsets for `explode()`.
+ * @returns `transform._transform`
+ */
+export const transformSplitBy = (
+  predicate: (chunk: Buffer) => [Buffer, Buffer, boolean],
+  leftHandler: QuasiTransformConstructorParameter,
+  rightHandler: QuasiTransformConstructorParameter,
+): ((chunk: Buffer, encoding: string, callback: Callback) => void) => {
   let isFirstChunk = true
   let wasLeftFlushCalled = false
   const damChunkSize = 0x10000
@@ -166,17 +200,20 @@ export const transformSplitBy = (predicate, leftHandler, rightHandler) => {
   }
 }
 
-export const streamToBuffer = (input: NodeJS.ReadableStream): Promise<Buffer> => {
-  return new Promise((resolve, reject) => {
-    const chunks: Buffer[] = []
-    input.on('data', (chunk: Buffer) => {
-      chunks.push(chunk)
-    })
-    input.on('end', () => {
-      resolve(Buffer.concat(chunks))
-    })
-    input.on('error', (e: unknown) => {
-      reject(e)
-    })
+/**
+ * Data can be piped to the returned function from a stream and it will concatenate all chunks into a single buffer.
+ * @param done a callback function, which will receive the concatenated buffer as a parameter
+ */
+export const toBuffer = (done: (buffer: Buffer) => void) => {
+  const buffer = new ExpandingBuffer()
+  return new Writable({
+    write(chunk, encoding, callback) {
+      buffer.append(chunk)
+      callback()
+    },
+    final(callback) {
+      done(buffer.getHeap())
+      callback()
+    },
   })
 }

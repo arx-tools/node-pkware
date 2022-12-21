@@ -1,7 +1,7 @@
 const fs = require('fs')
 const { before, describe, it } = require('mocha')
 const { buffersShouldEqual } = require('../src/helpers/testing.js')
-const { through, streamToBuffer, transformSplitBy, splitAt, transformIdentity } = require('../src/helpers/stream.js')
+const { through, toBuffer, transformSplitBy, splitAt, transformIdentity } = require('../src/helpers/stream.js')
 const { implode } = require('../src/implode.js')
 const { explode } = require('../src/explode.js')
 const { toHex, fileExists } = require('../src/helpers/functions.js')
@@ -35,7 +35,7 @@ const defineTestForImplodeSelfCheck = (highWaterMark) => {
           .pipe(through(implode(compressionType, dictionarySize, { verbose: true })))
           .pipe(through(explode({ verbose: true })).on('error', done))
           .pipe(
-            streamToBuffer((buffer) => {
+            toBuffer((buffer) => {
               buffersShouldEqual(buffer, expected, 0, true)
               done()
             }),
@@ -80,7 +80,7 @@ const defineTestForImplodeSelfCheckWithOffset = (highWaterMark) => {
             ),
           )
           .pipe(
-            streamToBuffer((buffer) => {
+            toBuffer((buffer) => {
               try {
                 buffersShouldEqual(buffer, expected, 0, true)
                 done()
@@ -113,7 +113,7 @@ const defineTestForSimpleFiles = (highWaterMark) => {
           .on('error', done)
           .pipe(through(implode(compressionType, dictionarySize, { verbose: true })).on('error', done))
           .pipe(
-            streamToBuffer(buffer => {
+            toBuffer(buffer => {
               buffersShouldEqual(buffer, expected, 0, true)
               done()
             })
@@ -151,7 +151,7 @@ const defineTestForFilesWithOffset = (highWaterMark) => {
             ).on('error', done)
           )
           .pipe(
-            streamToBuffer(buffer => {
+            toBuffer(buffer => {
               buffersShouldEqual(buffer, expected, 0, false)
               done()
             })

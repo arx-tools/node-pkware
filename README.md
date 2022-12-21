@@ -60,6 +60,8 @@ Calling either explode or implode with the `-v` or `--version` flag will display
 
 `explode(config: object): transform._transform` - decompresses stream
 
+`decompress(config: object): transform._transform` - alias for explode
+
 Returns a function, that you can use as a [transform.\_transform](https://nodejs.org/api/stream.html#stream_transform_transform_chunk_encoding_callback) method. The returned function has the `(chunk: Buffer, encoding: string, callback: function)` parameter signature.
 
 Takes an optional config object, which has the following properties:
@@ -67,28 +69,26 @@ Takes an optional config object, which has the following properties:
 ```js
 {
   verbose: boolean, // whether the code should display extra debug messages on the console or not (default = false)
-  inputBufferSize: int, // the starting size of the input buffer, may expand later as needed. Not having to expand may have performance impact (default 0)
+  inputBufferSize: int, // the starting size of the input buffer, may expand later as needed. Not having to expand may have positive performance impact (default 0)
   outputBufferSize: int // same as inputBufferSize, but for the outputBuffer (default 0)
 }
 ```
-
-`decompress(config: object): transform._transform` - alias for explode
 
 `implode(compressionType: int, dictionarySize: int, config: object): transform._transform` - compresses stream
 
+`compress(compressionType: int, dictionarySize: int, config: object): transform._transform` - alias for implode
+
 Takes an optional config object, which has the following properties:
 
 ```js
 {
   verbose: boolean, // whether the code should display extra debug messages on the console or not (default = false)
-  inputBufferSize: int, // the starting size of the input buffer, may expand later as needed. Not having to expand may have performance impact (default 0)
+  inputBufferSize: int, // the starting size of the input buffer, may expand later as needed. Not having to expand may have positive performance impact (default 0)
   outputBufferSize: int // same as inputBufferSize, but for the outputBuffer (default 0)
 }
 ```
 
 Returns a function, that you can use as a [transform.\_transform](https://nodejs.org/api/stream.html#stream_transform_transform_chunk_encoding_callback) method. The returned function has the `(chunk: Buffer, encoding: string, callback: function)` parameter signature.
-
-`compress(compressionType: int, dictionarySize: int, config: object): transform._transform` - aliasa for implode
 
 `stream` - an object of helper functions for channeling streams to and from explode/implode
 
@@ -110,7 +110,7 @@ Returns a function, that you can use as a [transform.\_transform](https://nodejs
 
 `stream.transformSplitBy(predicate: predicate, left: transform._transform, right: transform._transform): transform._transform` - higher order function for introducing conditional logic to transform.\_transform functions. This is used internally to handle offsets for explode()
 
-`stream.streamToBuffer(callback: function): writable._write` - data can be piped to the returned function from a stream and it will concatenate all chunks into a single buffer. Takes a callback function, which will receive the concatenated buffer as a parameter
+`stream.toBuffer(callback: function): writable._write` - data can be piped to the returned function from a stream and it will concatenate all chunks into a single buffer. Takes a callback function, which will receive the concatenated buffer as a parameter
 
 `constants.COMPRESSION_BINARY` and `constants.COMPRESSION_ASCII` - compression types for implode
 
@@ -143,12 +143,12 @@ fs.createReadStream(`path-to-compressed-file`)
 ```javascript
 const { Readable } = require('stream')
 const { explode, stream } = require('node-pkware')
-const { through, streamToBuffer } = stream
+const { through, toBuffer } = stream
 
 Readable.from(buffer) // buffer is of type Buffer with compressed data
   .pipe(through(explode()))
   .pipe(
-    streamToBuffer((decompressedData) => {
+    toBuffer((decompressedData) => {
       // decompressedData holds the decompressed buffer
     }),
   )

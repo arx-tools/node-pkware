@@ -44,3 +44,12 @@ export type Config = {
    */
   outputBufferSize?: number
 }
+
+export type QuasiTransformConstructorParameter = (
+  obj: {
+    handler: QuasiTransformConstructorParameter
+    handle(chunk: Buffer, encoding: string): Promise<void>
+  },
+  chunk: Buffer,
+  encoding: string,
+) => void

@@ -1,7 +1,7 @@
 const fs = require('fs')
 const { describe, it, before } = require('mocha')
 const { buffersShouldEqual } = require('../src/helpers/testing.js')
-const { through, splitAt, transformSplitBy, transformIdentity, streamToBuffer } = require('../src/helpers/stream.js')
+const { through, splitAt, transformSplitBy, transformIdentity, toBuffer } = require('../src/helpers/stream.js')
 const { explode } = require('../src/explode.js')
 const { toHex, fileExists } = require('../src/helpers/functions.js')
 
@@ -25,7 +25,7 @@ const defineTestForSimpleFiles = (highWaterMark) => {
           .on('error', done)
           .pipe(through(explode({ verbose: true })).on('error', done))
           .pipe(
-            streamToBuffer((buffer) => {
+            toBuffer((buffer) => {
               buffersShouldEqual(buffer, expected, 0, true)
               done()
             }),
@@ -58,7 +58,7 @@ const defineTestForFilesWithOffset = (highWaterMark) => {
             ),
           )
           .pipe(
-            streamToBuffer((buffer) => {
+            toBuffer((buffer) => {
               buffersShouldEqual(buffer, expected, 0, false)
               done()
             }),
