@@ -1,8 +1,4 @@
 /**
- * Shared type signatures used throughout the library.
- */
-
-/**
  * A traditional "nodeback<Buffer>" callback type.
  * @param error The error, if any.
  * @param data The data, if any.
