@@ -54,7 +54,9 @@ const generateDecodeTables = (startIndexes: number[], lengthBits: number[]) => {
   return codes
 }
 
-// PAT = populate ascii table
+/**
+ * PAT = populate ascii table
+ */
 const createPATIterator = (limit: number, stepper: number) => {
   return (n: number) => {
     return n >= limit ? false : ([n, n + (1 << stepper)] as [number, number])
