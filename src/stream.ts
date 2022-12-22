@@ -58,7 +58,7 @@ export const splitAt = (index: number) => {
 
     cntr += chunk.length
 
-    return [left, right, isLeftDone]
+    return [left, right, isLeftDone] as [Buffer, Buffer, boolean]
   }
 }
 

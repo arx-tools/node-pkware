@@ -74,7 +74,11 @@ export const mergeSparseArrays = <T>(a: T[], b: T[]) => {
   return result
 }
 
-export const parseNumberString = (n: string, defaultValue: number = 0) => {
+export const parseNumberString = (n?: string, defaultValue: number = 0) => {
+  if (typeof n === 'undefined') {
+    return defaultValue
+  }
+
   if (isDecimalString(n)) {
     return parseInt(n)
   }

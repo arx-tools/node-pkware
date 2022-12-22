@@ -1,10 +1,10 @@
 #!/usr/bin/env -S node --enable-source-maps
 
-const fs = require('fs')
-const minimist = require('minimist-lite')
-const { getPackageVersion, parseNumberString, fileExists } = require('../src/helpers/functions')
-const { transformEmpty, transformIdentity, transformSplitBy, splitAt, through } = require('../src/helpers/stream')
-const { explode } = require('../src/explode')
+import fs from 'node:fs'
+import minimist from 'minimist-lite'
+import { getPackageVersion, parseNumberString, fileExists } from '../functions'
+import { transformEmpty, transformIdentity, transformSplitBy, splitAt, through } from '../stream'
+import { explode } from '../index'
 
 const args = minimist(process.argv.slice(2), {
   string: ['output', 'offset', 'input-buffer-size', 'output-buffer-size'],

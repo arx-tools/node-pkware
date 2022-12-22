@@ -1,19 +1,13 @@
 #!/usr/bin/env -S node --enable-source-maps
 
-const fs = require('fs')
-const minimist = require('minimist-lite')
-const {
-  COMPRESSION_BINARY,
-  COMPRESSION_ASCII,
-  DICTIONARY_SIZE_SMALL,
-  DICTIONARY_SIZE_MEDIUM,
-  DICTIONARY_SIZE_LARGE,
-} = require('../constants')
-const { getPackageVersion, parseNumberString, fileExists } = require('../functions')
-const { implode } = require('../_implode')
-const { transformEmpty, transformIdentity, transformSplitBy, splitAt, through } = require('../stream')
+import fs from 'node:fs'
+import minimist from 'minimist-lite'
+import { Compression, DictionarySize } from '../constants'
+import { getPackageVersion, parseNumberString, fileExists } from '../functions'
+import { implode } from '../index'
+import { transformEmpty, transformIdentity, transformSplitBy, splitAt, through } from '../stream'
 
-const decompress = (input, output, offset, keepHeader, compressionType, dictionarySize, config) => {
+const compress = (input, output, offset, keepHeader, compressionType, dictionarySize, config) => {
   const leftHandler = keepHeader ? transformIdentity() : transformEmpty()
   const rightHandler = implode(compressionType, dictionarySize, config)
 
@@ -24,16 +18,38 @@ const decompress = (input, output, offset, keepHeader, compressionType, dictiona
   })
 }
 
-const args = minimist(process.argv.slice(2), {
+type AppArgs = {
+  _: string[]
+  output?: string
+  offset?: string
+  'input-buffer-size'?: string
+  'output-buffer-size'?: string
+  version: boolean
+  binary: boolean
+  ascii: boolean
+  'drop-before-offset': boolean
+  verbose: boolean
+  small: boolean
+  medium: boolean
+  large: boolean
+  v: boolean
+  b: boolean
+  a: boolean
+  s: boolean
+  m: boolean
+  l: boolean
+}
+
+const args: AppArgs = minimist(process.argv.slice(2), {
   string: ['output', 'offset', 'input-buffer-size', 'output-buffer-size'],
-  boolean: ['version', 'binary', 'ascii', 'drop-before-offset', 'verbose', 'small', 'medium', 'large'],
+  boolean: ['version', 'ascii', 'binary', 'small', 'medium', 'large', 'drop-before-offset', 'verbose'],
   alias: {
+    v: 'version',
     a: 'ascii',
     b: 'binary',
     s: 'small',
     m: 'medium',
     l: 'large',
-    v: 'version',
   },
 })
 
@@ -44,8 +60,7 @@ const args = minimist(process.argv.slice(2), {
     process.exit(0)
   }
 
-  let input = args._[0] || args.input
-  let output = args.output
+  let input = args._[0]
 
   let hasErrors = false
 
@@ -82,8 +97,9 @@ const args = minimist(process.argv.slice(2), {
     hasErrors = true
   }
 
-  if (output) {
-    output = fs.createWriteStream(output)
+  let output
+  if (args.output) {
+    output = fs.createWriteStream(args.output)
   } else {
     output = process.stdout
   }
@@ -92,12 +108,8 @@ const args = minimist(process.argv.slice(2), {
     process.exit(1)
   }
 
-  const compressionType = args.ascii ? COMPRESSION_ASCII : COMPRESSION_BINARY
-  const dictionarySize = args.small
-    ? DICTIONARY_SIZE_SMALL
-    : args.medium
-    ? DICTIONARY_SIZE_MEDIUM
-    : DICTIONARY_SIZE_LARGE
+  const compressionType = args.ascii ? Compression.Ascii : Compression.Binary
+  const dictionarySize = args.small ? DictionarySize.Small : args.medium ? DictionarySize.Medium : DictionarySize.Large
 
   const offset = parseNumberString(args.offset, 0)
 
@@ -108,7 +120,7 @@ const args = minimist(process.argv.slice(2), {
     outputBufferSize: parseNumberString(args['output-buffer-size'], 0x12000),
   }
 
-  decompress(input, output, offset, keepHeader, compressionType, dictionarySize, config)
+  compress(input, output, offset, keepHeader, compressionType, dictionarySize, config)
     .then(() => {
       process.exit(0)
     })
