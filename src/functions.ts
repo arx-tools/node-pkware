@@ -118,3 +118,7 @@ export const unfold = <T, TResult>(fn: (seed: T) => [TResult, T] | false, seed: 
   }
   return result
 }
+
+export const evenAndRemainder = (divisor: number, n: number): [number, number] => {
+  return [Math.floor(n / divisor), n % divisor]
+}

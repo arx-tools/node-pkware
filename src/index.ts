@@ -2,6 +2,10 @@ import { Explode } from './Explode'
 import { Implode } from './Implode'
 import { Config } from './types'
 
+/**
+ * Decompresses stream
+ * @returns a function, that you can use as a `transform._transform` method.
+ */
 export const explode = (config: Config = {}) => {
   const instance = new Explode(config)
   return instance.getHandler()

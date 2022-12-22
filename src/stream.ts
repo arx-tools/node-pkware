@@ -1,8 +1,8 @@
-import { Transform, Writable } from 'node:stream'
+import { Transform, Writable, TransformCallback } from 'node:stream'
 import { promisify } from 'node:util'
 import { isFunction } from './functions'
 import { ExpandingBuffer } from './ExpandingBuffer'
-import { Callback, QuasiTransformConstructorParameter } from './types'
+import { QuasiTransformConstructorParameter } from './types'
 
 const emptyBuffer = Buffer.from([])
 
@@ -72,7 +72,7 @@ export const splitAt = (index: number) => {
  * A `transform._transform` type function, which lets the input chunks through without any change
  */
 export const transformIdentity = () => {
-  return function (chunk: Buffer, encoding: unknown, callback: Callback) {
+  return function (this: Transform, chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback) {
     callback(null, chunk)
   }
 }
@@ -81,7 +81,7 @@ export const transformIdentity = () => {
  * A `transform._transform` type function, which for every input chunk will output an empty buffer
  */
 export const transformEmpty = () => {
-  return function (chunk: unknown, encoding: unknown, callback: Callback) {
+  return function (this: Transform, chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback) {
     callback(null, emptyBuffer)
   }
 }
@@ -106,7 +106,7 @@ export const transformSplitBy = (
   predicate: (chunk: Buffer) => [Buffer, Buffer, boolean],
   leftHandler: QuasiTransformConstructorParameter,
   rightHandler: QuasiTransformConstructorParameter,
-): ((chunk: Buffer, encoding: string, callback: Callback) => void) => {
+): ((chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback) => void) => {
   let isFirstChunk = true
   let wasLeftFlushCalled = false
   const damChunkSize = 0x10000
@@ -115,7 +115,7 @@ export const transformSplitBy = (
   const leftTransform = new QuasiTransform(leftHandler)
   const rightTransform = new QuasiTransform(rightHandler)
 
-  return function (chunk, encoding, callback) {
+  return function (this: Transform, chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback) {
     const [left, right, isLeftDone] = predicate(chunk)
 
     const _left = leftTransform.handle(left, encoding)
