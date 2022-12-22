@@ -91,7 +91,7 @@ export const getPackageVersion = async () => {
     const rawIn = await fs.promises.readFile(path.resolve(__dirname, '../../package.json'), 'utf-8')
     const { version } = JSON.parse(rawIn) as { version: string }
     return version
-  } catch (error) {
+  } catch (error: unknown) {
     return 'unknown'
   }
 }
@@ -100,7 +100,7 @@ export const fileExists = async (filename: string) => {
   try {
     await fs.promises.access(filename, fs.constants.R_OK)
     return true
-  } catch (error) {
+  } catch (error: unknown) {
     return false
   }
 }
