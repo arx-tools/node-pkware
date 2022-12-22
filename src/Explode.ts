@@ -26,19 +26,19 @@ import { Config, Stats } from './types'
  */
 const readHeader = (buffer: Buffer) => {
   const compressionType = buffer.readUInt8(0)
-  const dictionarySizeBits = buffer.readUInt8(1)
+  const dictionarySize = buffer.readUInt8(1)
 
   if (!(compressionType in Compression) || compressionType === Compression.Unknown) {
     throw new InvalidCompressionTypeError()
   }
 
-  if (!(dictionarySizeBits in DictionarySize) || dictionarySizeBits === DictionarySize.Unknown) {
+  if (!(dictionarySize in DictionarySize) || dictionarySize === DictionarySize.Unknown) {
     throw new InvalidDictionarySizeError()
   }
 
   return {
     compressionType: compressionType as Compression,
-    dictionarySizeBits: dictionarySizeBits as DictionarySize,
+    dictionarySize: dictionarySize as DictionarySize,
   }
 }
 
@@ -91,7 +91,7 @@ export class Explode {
   #outputBuffer: ExpandingBuffer
   #stats: Stats = { chunkCounter: 0 }
   #compressionType: Compression = Compression.Unknown
-  #dictionarySizeBits: DictionarySize = DictionarySize.Unknown
+  #dictionarySize: DictionarySize = DictionarySize.Unknown
   #dictionarySizeMask: number = 0
   #chBitsAsc: number[] = repeat(0, 0x100)
   #asciiTable2C34: number[] = repeat(0, 0x100)
@@ -303,8 +303,8 @@ export class Explode {
       distance = (distPosCode << 2) | getLowestNBits(2, this.#bitBuffer)
       bitsToWaste = 2
     } else {
-      distance = (distPosCode << this.#dictionarySizeBits) | (this.#bitBuffer & this.#dictionarySizeMask)
-      bitsToWaste = this.#dictionarySizeBits
+      distance = (distPosCode << this.#dictionarySize) | (this.#bitBuffer & this.#dictionarySizeMask)
+      bitsToWaste = this.#dictionarySize
     }
 
     if (this.#wasteBits(bitsToWaste) === PKDCL_STREAM_END) {
@@ -377,13 +377,13 @@ export class Explode {
       return false
     }
 
-    const { compressionType, dictionarySizeBits } = readHeader(this.#inputBuffer.read(0, 2))
+    const { compressionType, dictionarySize } = readHeader(this.#inputBuffer.read(0, 2))
 
     this.#compressionType = compressionType
-    this.#dictionarySizeBits = dictionarySizeBits
+    this.#dictionarySize = dictionarySize
     this.#bitBuffer = this.#inputBuffer.readByte(2)
     this.#inputBuffer.dropStart(3)
-    this.#dictionarySizeMask = nBitsOfOnes(dictionarySizeBits)
+    this.#dictionarySizeMask = nBitsOfOnes(dictionarySize)
 
     if (this.#compressionType === Compression.Ascii) {
       this.#generateAsciiTables()
@@ -391,7 +391,7 @@ export class Explode {
 
     if (this.#verbose) {
       console.log(`explode: compression type: ${Compression[this.#compressionType]}`)
-      console.log(`explode: compression level: ${DictionarySize[this.#dictionarySizeBits]}`)
+      console.log(`explode: compression level: ${DictionarySize[this.#dictionarySize]}`)
     }
 
     return true
