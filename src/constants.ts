@@ -20,6 +20,8 @@ export enum DictionarySize {
   Large,
 }
 
+export const EMPTY_BUFFER = Buffer.from([])
+
 export const LONGEST_ALLOWED_REPETITION = 0x204
 
 export const PKDCL_OK = 'OK'

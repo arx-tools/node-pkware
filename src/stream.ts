@@ -2,6 +2,7 @@ import { Transform, Writable, TransformCallback } from 'node:stream'
 import { promisify } from 'node:util'
 import { isFunction } from './functions'
 import { ExpandingBuffer } from './ExpandingBuffer'
+import { EMPTY_BUFFER } from './constants'
 
 class QuasiTransform {
   #handler: (this: Transform, chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback) => void
@@ -17,8 +18,6 @@ class QuasiTransform {
     return promisify(this.#handler).call(this, chunk, encoding)
   }
 }
-
-const emptyBuffer = Buffer.from([])
 
 /**
  * Creates a "**predicate**" function, that awaits Buffers, keeps an internal counter of the bytes from them and splits the appropriate buffer at the given index.
@@ -41,13 +40,13 @@ export const splitAt = (index: number) => {
 
     if (index <= cntr) {
       // index ..... cntr ..... chunk.length
-      left = emptyBuffer
+      left = EMPTY_BUFFER
       right = chunk
       isLeftDone = true
     } else if (index >= cntr + chunk.length) {
       // cntr ..... chunk.length ..... index
       left = chunk
-      right = emptyBuffer
+      right = EMPTY_BUFFER
       isLeftDone = index === cntr + chunk.length
     } else {
       // cntr ..... index ..... chunk.length
@@ -76,7 +75,7 @@ export const transformIdentity = () => {
  */
 export const transformEmpty = () => {
   return function (this: Transform, chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback) {
-    callback(null, emptyBuffer)
+    callback(null, EMPTY_BUFFER)
   }
 }
 
@@ -126,7 +125,7 @@ export const transformSplitBy = (
 
         const leftFiller = new Promise((resolve, reject) => {
           if (wasLeftFlushCalled || !isFunction(leftTransform._flush)) {
-            resolve(emptyBuffer)
+            resolve(EMPTY_BUFFER)
             return
           }
 
@@ -141,7 +140,7 @@ export const transformSplitBy = (
 
         const rightFiller = new Promise((resolve, reject) => {
           if (!isFunction(rightTransform._flush)) {
-            resolve(emptyBuffer)
+            resolve(EMPTY_BUFFER)
             return
           }
 
@@ -176,7 +175,7 @@ export const transformSplitBy = (
           }
         })
       } else {
-        resolve(emptyBuffer)
+        resolve(EMPTY_BUFFER)
       }
     })
 
@@ -193,7 +192,7 @@ export const transformSplitBy = (
           }
           callback(null, data.subarray((chunks - 1) * damChunkSize))
         } else {
-          callback(null, emptyBuffer)
+          callback(null, EMPTY_BUFFER)
         }
       })
       .catch((err) => {
