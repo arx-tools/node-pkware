@@ -1,9 +1,8 @@
 #!/usr/bin/env -S node --enable-source-maps
 
-import fs from 'node:fs'
 import minimist from 'minimist-lite'
 import { Compression, DictionarySize } from '../constants'
-import { getPackageVersion, parseNumberString, fileExists } from '../functions'
+import { getPackageVersion, parseNumberString, getInputStream, getOutputStream } from '../functions'
 import { implode } from '../index'
 import { transformEmpty, transformIdentity, transformSplitBy, splitAt, through } from '../stream'
 
@@ -60,51 +59,30 @@ const args: AppArgs = minimist(process.argv.slice(2), {
     process.exit(0)
   }
 
-  let input = args._[0]
-
-  let hasErrors = false
-
-  if (input) {
-    if (await fileExists(input)) {
-      input = fs.createReadStream(input)
-    } else {
-      console.error('error: given file does not exist')
-      hasErrors = true
+  let input: NodeJS.ReadableStream
+  let output: NodeJS.WritableStream
+  try {
+    if (!args.ascii && !args.binary) {
+      throw new Error('compression type missing, expected either --ascii or --binary')
     }
-  } else {
-    input = process.openStdin()
-  }
 
-  if (args.ascii && args.binary) {
-    console.error('error: multiple compression types specified, can only work with one of --ascii and --binary')
-    hasErrors = true
-  }
+    if (args.ascii && args.binary) {
+      throw new Error('multiple compression types specified, can only work with one of --ascii and --binary')
+    }
 
-  if (!args.ascii && !args.binary) {
-    console.error('error: compression type missing, expected either --ascii or --binary')
-    hasErrors = true
-  }
+    if (!args.small && !args.medium && !args.large) {
+      throw new Error('size type missing, expected either --small, --medium or --large')
+    }
 
-  const sizes = [args.small, args.medium, args.large].filter((x) => {
-    return x === true
-  })
+    if ((args.small ? 1 : 0) + (args.medium ? 1 : 0) + (args.large ? 1 : 0) > 1) {
+      throw new Error('multiple size types specified, can only work with one of --small, --medium and --large')
+    }
 
-  if (sizes.length > 1) {
-    console.error('error: multiple size types specified, can only work with one of --small, --medium and --large')
-    hasErrors = true
-  } else if (sizes.length === 0) {
-    console.error('error: size type missing, expected either --small, --medium or --large')
-    hasErrors = true
-  }
-
-  let output
-  if (args.output) {
-    output = fs.createWriteStream(args.output)
-  } else {
-    output = process.stdout
-  }
-
-  if (hasErrors) {
+    input = await getInputStream(args._[0])
+    output = await getOutputStream(args.output)
+  } catch (e: unknown) {
+    const error = e as Error
+    console.error('error:', error.message)
     process.exit(1)
   }
 

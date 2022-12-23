@@ -100,7 +100,7 @@ export const getPackageVersion = async () => {
   }
 }
 
-export const fileExists = async (filename: string) => {
+const fileExists = async (filename: string) => {
   try {
     await fs.promises.access(filename, fs.constants.R_OK)
     return true
@@ -125,4 +125,24 @@ export const unfold = <T, TResult>(fn: (seed: T) => [TResult, T] | false, seed: 
 
 export const evenAndRemainder = (divisor: number, n: number): [number, number] => {
   return [Math.floor(n / divisor), n % divisor]
+}
+
+export const getInputStream = async (filename?: string): Promise<NodeJS.ReadableStream> => {
+  if (typeof filename === 'undefined') {
+    return process.openStdin()
+  }
+
+  if (await fileExists(filename)) {
+    return fs.createReadStream(filename)
+  }
+
+  throw new Error('input file does not exist')
+}
+
+export const getOutputStream = async (filename?: string): Promise<NodeJS.WritableStream> => {
+  if (typeof filename === 'undefined') {
+    return process.stdout
+  }
+
+  return fs.createWriteStream(filename)
 }

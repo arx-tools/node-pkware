@@ -1,12 +1,23 @@
 #!/usr/bin/env -S node --enable-source-maps
 
-import fs from 'node:fs'
 import minimist from 'minimist-lite'
-import { getPackageVersion, parseNumberString, fileExists } from '../functions'
+import { getPackageVersion, parseNumberString, getInputStream, getOutputStream } from '../functions'
 import { transformEmpty, transformIdentity, transformSplitBy, splitAt, through } from '../stream'
 import { explode } from '../index'
 
-const args = minimist(process.argv.slice(2), {
+type AppArgs = {
+  _: string[]
+  output?: string
+  offset?: string
+  'input-buffer-size'?: string
+  'output-buffer-size'?: string
+  version: boolean
+  'drop-before-offset': boolean
+  verbose: boolean
+  v: boolean
+}
+
+const args: AppArgs = minimist(process.argv.slice(2), {
   string: ['output', 'offset', 'input-buffer-size', 'output-buffer-size'],
   boolean: ['version', 'drop-before-offset', 'verbose'],
   alias: {
@@ -32,29 +43,14 @@ const decompress = (input, output, offset, keepHeader, config) => {
     process.exit(0)
   }
 
-  let input = args._[0] || args.input
-  let output = args.output
-
-  let hasErrors = false
-
-  if (input) {
-    if (await fileExists(input)) {
-      input = fs.createReadStream(input)
-    } else {
-      console.error('error: input file does not exist')
-      hasErrors = true
-    }
-  } else {
-    input = process.openStdin()
-  }
-
-  if (output) {
-    output = fs.createWriteStream(output)
-  } else {
-    output = process.stdout
-  }
-
-  if (hasErrors) {
+  let input: NodeJS.ReadableStream
+  let output: NodeJS.WritableStream
+  try {
+    input = await getInputStream(args._[0])
+    output = await getOutputStream(args.output)
+  } catch (e: unknown) {
+    const error = e as Error
+    console.error('error:', error.message)
     process.exit(1)
   }
 
