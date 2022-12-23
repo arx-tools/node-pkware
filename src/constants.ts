@@ -25,7 +25,6 @@ export const EMPTY_BUFFER = Buffer.from([])
 export const LONGEST_ALLOWED_REPETITION = 0x204
 
 export const LITERAL_END_STREAM = 0x305
-export const LITERAL_STREAM_ABORTED = 0x306
 
 // prettier-ignore
 export const DistCode = [

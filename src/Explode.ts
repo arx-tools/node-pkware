@@ -12,7 +12,6 @@ import {
   LenBits,
   LenCode,
   LITERAL_END_STREAM,
-  LITERAL_STREAM_ABORTED,
 } from './constants'
 import { AbortedError, InvalidCompressionTypeError, InvalidDictionarySizeError } from './errors'
 import { ExpandingBuffer } from './ExpandingBuffer'
