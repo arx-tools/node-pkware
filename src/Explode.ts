@@ -13,8 +13,6 @@ import {
   LenCode,
   LITERAL_END_STREAM,
   LITERAL_STREAM_ABORTED,
-  PKDCL_OK,
-  PKDCL_STREAM_END,
 } from './constants'
 import { AbortedError, InvalidCompressionTypeError, InvalidDictionarySizeError } from './errors'
 import { ExpandingBuffer } from './ExpandingBuffer'
@@ -204,46 +202,51 @@ export class Explode {
     callback(null, this.#outputBuffer.read())
   }
 
-  #wasteBits(numberOfBits: number) {
-    if (numberOfBits > this.#extraBits && this.#inputBuffer.isEmpty()) {
-      return PKDCL_STREAM_END
-    }
+  #canBitsBeWasted(numberOfBits: number) {
+    return numberOfBits <= this.#extraBits || !this.#inputBuffer.isEmpty()
+  }
 
+  #wasteBits(numberOfBits: number) {
     if (numberOfBits <= this.#extraBits) {
       this.#bitBuffer = this.#bitBuffer >> numberOfBits
       this.#extraBits = this.#extraBits - numberOfBits
-    } else {
-      const nextByte = this.#inputBuffer.readByte(0)
-      this.#inputBuffer.dropStart(1)
-
-      this.#bitBuffer = ((this.#bitBuffer >> this.#extraBits) | (nextByte << 8)) >> (numberOfBits - this.#extraBits)
-      this.#extraBits = this.#extraBits + 8 - numberOfBits
+      return
     }
 
-    return PKDCL_OK
+    const nextByte = this.#inputBuffer.readByte(0)
+    this.#inputBuffer.dropStart(1)
+
+    this.#bitBuffer = ((this.#bitBuffer >> this.#extraBits) | (nextByte << 8)) >> (numberOfBits - this.#extraBits)
+    this.#extraBits = this.#extraBits + 8 - numberOfBits
   }
 
   #decodeNextLiteral() {
     const lastBit = getLowestNBits(1, this.#bitBuffer)
 
-    if (this.#wasteBits(1) === PKDCL_STREAM_END) {
+    if (!this.#canBitsBeWasted(1)) {
       return LITERAL_STREAM_ABORTED
     }
+
+    this.#wasteBits(1)
 
     if (lastBit) {
       let lengthCode = this.#lengthCodes[getLowestNBits(8, this.#bitBuffer)]
 
-      if (this.#wasteBits(LenBits[lengthCode]) === PKDCL_STREAM_END) {
+      if (!this.#canBitsBeWasted(LenBits[lengthCode])) {
         return LITERAL_STREAM_ABORTED
       }
+
+      this.#wasteBits(LenBits[lengthCode])
 
       const extraLenghtBits = ExLenBits[lengthCode]
       if (extraLenghtBits !== 0) {
         const extraLength = getLowestNBits(extraLenghtBits, this.#bitBuffer)
 
-        if (this.#wasteBits(extraLenghtBits) === PKDCL_STREAM_END && lengthCode + extraLength !== 0x10e) {
+        if (!this.#canBitsBeWasted(extraLenghtBits) && lengthCode + extraLength !== 0x10e) {
           return LITERAL_STREAM_ABORTED
         }
+
+        this.#wasteBits(extraLenghtBits)
 
         lengthCode = LenBase[lengthCode] + extraLength
       }
@@ -254,9 +257,11 @@ export class Explode {
     const lastByte = getLowestNBits(8, this.#bitBuffer)
 
     if (this.#compressionType === Compression.Binary) {
-      if (this.#wasteBits(8) === PKDCL_STREAM_END) {
+      if (!this.#canBitsBeWasted(8)) {
         return LITERAL_STREAM_ABORTED
       }
+
+      this.#wasteBits(8)
 
       return lastByte
     }
@@ -268,37 +273,51 @@ export class Explode {
 
       if (value === 0xff) {
         if (getLowestNBits(6, this.#bitBuffer)) {
-          if (this.#wasteBits(4) === PKDCL_STREAM_END) {
+          if (!this.#canBitsBeWasted(4)) {
             return LITERAL_STREAM_ABORTED
           }
 
+          this.#wasteBits(4)
+
           value = this.#asciiTable2D34[getLowestNBits(8, this.#bitBuffer)]
         } else {
-          if (this.#wasteBits(6) === PKDCL_STREAM_END) {
+          if (!this.#canBitsBeWasted(6)) {
             return LITERAL_STREAM_ABORTED
           }
+
+          this.#wasteBits(6)
 
           value = this.#asciiTable2E34[getLowestNBits(7, this.#bitBuffer)]
         }
       }
     } else {
-      if (this.#wasteBits(8) === PKDCL_STREAM_END) {
+      if (!this.#canBitsBeWasted(8)) {
         return LITERAL_STREAM_ABORTED
       }
+
+      this.#wasteBits(8)
 
       value = this.#asciiTable2EB4[getLowestNBits(8, this.#bitBuffer)]
     }
 
-    return this.#wasteBits(this.#chBitsAsc[value]) === PKDCL_STREAM_END ? LITERAL_STREAM_ABORTED : value
+    if (!this.#canBitsBeWasted(this.#chBitsAsc[value])) {
+      return LITERAL_STREAM_ABORTED
+    }
+
+    this.#wasteBits(this.#chBitsAsc[value])
+
+    return value
   }
 
   #decodeDistance(repeatLength: number) {
     const distPosCode = this.#distPosCodes[getLowestNBits(8, this.#bitBuffer)]
     const distPosBits = DistBits[distPosCode]
 
-    if (this.#wasteBits(distPosBits) === PKDCL_STREAM_END) {
+    if (!this.#canBitsBeWasted(distPosBits)) {
       return 0
     }
+
+    this.#wasteBits(distPosBits)
 
     let distance: number
     let bitsToWaste: number
@@ -311,9 +330,11 @@ export class Explode {
       bitsToWaste = this.#dictionarySize
     }
 
-    if (this.#wasteBits(bitsToWaste) === PKDCL_STREAM_END) {
+    if (!this.#canBitsBeWasted(bitsToWaste)) {
       return 0
     }
+
+    this.#wasteBits(bitsToWaste)
 
     return distance + 1
   }

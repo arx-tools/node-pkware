@@ -24,8 +24,6 @@ export const EMPTY_BUFFER = Buffer.from([])
 
 export const LONGEST_ALLOWED_REPETITION = 0x204
 
-export const PKDCL_OK = 'OK'
-export const PKDCL_STREAM_END = 'All data from the input stream is read'
 export const PKDCL_NEED_DICT = 'Need more data (dictionary)'
 export const PKDCL_CONTINUE = 'Continue (internal flag)'
 export const PKDCL_GET_INPUT = 'Get input (internal flag)'
