@@ -105,44 +105,6 @@ export class Explode {
     this.#outputBuffer = new ExpandingBuffer(config?.outputBufferSize ?? 0)
   }
 
-  #generateAsciiTables() {
-    this.#chBitsAsc = ChBitsAsc.map((value, index) => {
-      if (value <= 8) {
-        this.#asciiTable2C34 = mergeSparseArrays(
-          populateAsciiTable(value, index, 0, 0x100),
-          this.#asciiTable2C34,
-        ) as number[]
-        return value - 0
-      }
-
-      const acc = getLowestNBits(8, ChCodeAsc[index])
-      if (acc === 0) {
-        this.#asciiTable2EB4 = mergeSparseArrays(
-          populateAsciiTable(value, index, 8, 0x100),
-          this.#asciiTable2EB4,
-        ) as number[]
-        return value - 8
-      }
-
-      this.#asciiTable2C34[acc] = 0xff
-
-      if (getLowestNBits(6, acc) === 0) {
-        this.#asciiTable2E34 = mergeSparseArrays(
-          populateAsciiTable(value, index, 6, 0x80),
-          this.#asciiTable2E34,
-        ) as number[]
-        return value - 6
-      }
-
-      this.#asciiTable2D34 = mergeSparseArrays(
-        populateAsciiTable(value, index, 4, 0x100),
-        this.#asciiTable2D34,
-      ) as number[]
-
-      return value - 4
-    })
-  }
-
   getHandler() {
     const instance = this
 
@@ -186,6 +148,44 @@ export class Explode {
         callback(e as Error)
       }
     }
+  }
+
+  #generateAsciiTables() {
+    this.#chBitsAsc = ChBitsAsc.map((value, index) => {
+      if (value <= 8) {
+        this.#asciiTable2C34 = mergeSparseArrays(
+          populateAsciiTable(value, index, 0, 0x100),
+          this.#asciiTable2C34,
+        ) as number[]
+        return value - 0
+      }
+
+      const acc = getLowestNBits(8, ChCodeAsc[index])
+      if (acc === 0) {
+        this.#asciiTable2EB4 = mergeSparseArrays(
+          populateAsciiTable(value, index, 8, 0x100),
+          this.#asciiTable2EB4,
+        ) as number[]
+        return value - 8
+      }
+
+      this.#asciiTable2C34[acc] = 0xff
+
+      if (getLowestNBits(6, acc) === 0) {
+        this.#asciiTable2E34 = mergeSparseArrays(
+          populateAsciiTable(value, index, 6, 0x80),
+          this.#asciiTable2E34,
+        ) as number[]
+        return value - 6
+      }
+
+      this.#asciiTable2D34 = mergeSparseArrays(
+        populateAsciiTable(value, index, 4, 0x100),
+        this.#asciiTable2D34,
+      ) as number[]
+
+      return value - 4
+    })
   }
 
   #onInputFinished(callback: TransformCallback) {
