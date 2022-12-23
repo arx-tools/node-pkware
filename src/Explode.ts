@@ -224,11 +224,11 @@ export class Explode {
   }
 
   #decodeNextLiteral() {
+    const lastBit = getLowestNBits(1, this.#bitBuffer)
+
     if (this.#wasteBits(1) === PKDCL_STREAM_END) {
       return LITERAL_STREAM_ABORTED
     }
-
-    const lastBit = getLowestNBits(1, this.#bitBuffer)
 
     if (lastBit) {
       let lengthCode = this.#lengthCodes[getLowestNBits(8, this.#bitBuffer)]
