@@ -1,7 +1,7 @@
 #!/usr/bin/env -S node --enable-source-maps
 
 import minimist from 'minimist-lite'
-import { getPackageVersion, parseNumberString, getInputStream, getOutputStream } from '../functions'
+import { getPackageVersion, parseNumberString, getInputStream, getOutputStream } from './helpers'
 import { transformEmpty, transformIdentity, transformSplitBy, splitAt, through } from '../stream'
 import { Config } from '../types'
 import { explode } from '../index'
@@ -62,7 +62,6 @@ const decompress = (
   }
 
   const offset = parseNumberString(args.offset, 0)
-
   const keepHeader = !args['drop-before-offset']
   const config: Config = {
     verbose: args.verbose,

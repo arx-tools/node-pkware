@@ -1,6 +1,3 @@
-import fs from 'node:fs'
-import path from 'node:path'
-
 export const repeat = <T>(value: T, repetitions: number): T[] => {
   return Array(repetitions).fill(value)
 }
@@ -35,29 +32,12 @@ export const getLowestNBits = (numberOfBits: number, number: number) => {
   return number & nBitsOfOnes(numberOfBits)
 }
 
-const isDecimalString = (input: string) => {
-  return /^\d+$/.test(input)
-}
+export const toHex = (num: number, digits: number = 0, withoutPrefix: boolean = false) => {
+  if (!Number.isInteger(num) || !Number.isInteger(digits) || digits < 0) {
+    return ''
+  }
 
-const isFullHexString = (input: string) => {
-  return /^\s*0x[0-9a-f]+\s*$/.test(input)
-}
-
-export const toHex = (num: any, digits: number = 0, withoutPrefix: boolean = false) => {
   const prefix = withoutPrefix ? '' : '0x'
-
-  if (!Number.isInteger(digits) || digits < 0) {
-    return null
-  }
-
-  if (isFullHexString(num)) {
-    const number = num.trim().replace(/^0x0*/, '')
-    return `${prefix}${number.padStart(digits, '0')}`
-  }
-
-  if (!Number.isInteger(num)) {
-    return null
-  }
 
   return `${prefix}${num.toString(16).padStart(digits, '0')}`
 }
@@ -72,41 +52,6 @@ export const mergeSparseArrays = <T>(a: T[], b: T[]) => {
   }
 
   return result
-}
-
-export const parseNumberString = (n?: string, defaultValue: number = 0) => {
-  if (typeof n === 'undefined') {
-    return defaultValue
-  }
-
-  if (isDecimalString(n)) {
-    return parseInt(n)
-  }
-
-  if (isFullHexString(n)) {
-    return parseInt(n.replace(/^0x/, ''), 16)
-  }
-
-  return defaultValue
-}
-
-export const getPackageVersion = async () => {
-  try {
-    const rawIn = await fs.promises.readFile(path.resolve(__dirname, '../../package.json'), 'utf-8')
-    const { version } = JSON.parse(rawIn) as { version: string }
-    return version
-  } catch (error: unknown) {
-    return 'unknown'
-  }
-}
-
-const fileExists = async (filename: string) => {
-  try {
-    await fs.promises.access(filename, fs.constants.R_OK)
-    return true
-  } catch (error: unknown) {
-    return false
-  }
 }
 
 export const last = <T>(arr: T[]) => {
@@ -125,24 +70,4 @@ export const unfold = <T, TResult>(fn: (seed: T) => [TResult, T] | false, seed: 
 
 export const evenAndRemainder = (divisor: number, n: number): [number, number] => {
   return [Math.floor(n / divisor), n % divisor]
-}
-
-export const getInputStream = async (filename?: string): Promise<NodeJS.ReadableStream> => {
-  if (typeof filename === 'undefined') {
-    return process.openStdin()
-  }
-
-  if (await fileExists(filename)) {
-    return fs.createReadStream(filename)
-  }
-
-  throw new Error('input file does not exist')
-}
-
-export const getOutputStream = async (filename?: string): Promise<NodeJS.WritableStream> => {
-  if (typeof filename === 'undefined') {
-    return process.stdout
-  }
-
-  return fs.createWriteStream(filename)
 }

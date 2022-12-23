@@ -2,7 +2,7 @@
 
 import minimist from 'minimist-lite'
 import { Compression, DictionarySize } from '../constants'
-import { getPackageVersion, parseNumberString, getInputStream, getOutputStream } from '../functions'
+import { getPackageVersion, parseNumberString, getInputStream, getOutputStream } from './helpers'
 import { transformEmpty, transformIdentity, transformSplitBy, splitAt, through } from '../stream'
 import { Config } from '../types'
 import { implode } from '../index'
@@ -76,15 +76,15 @@ const compress = (
     }
 
     if (args.ascii && args.binary) {
-      throw new Error('multiple compression types specified, can only work with one of --ascii and --binary')
+      throw new Error('multiple compression types specified, can only work with either --ascii or --binary')
     }
 
     if (!args.small && !args.medium && !args.large) {
-      throw new Error('size type missing, expected either --small, --medium or --large')
+      throw new Error('dictionary size missing, expected either --small, --medium or --large')
     }
 
     if ((args.small ? 1 : 0) + (args.medium ? 1 : 0) + (args.large ? 1 : 0) > 1) {
-      throw new Error('multiple size types specified, can only work with one of --small, --medium and --large')
+      throw new Error('multiple dictionary sizes specified, can only work with either --small, --medium or --large')
     }
 
     input = await getInputStream(args._[0])
@@ -97,11 +97,8 @@ const compress = (
 
   const compressionType = args.ascii ? Compression.Ascii : Compression.Binary
   const dictionarySize = args.small ? DictionarySize.Small : args.medium ? DictionarySize.Medium : DictionarySize.Large
-
   const offset = parseNumberString(args.offset, 0)
-
   const keepHeader = !args['drop-before-offset']
-
   const config: Config = {
     verbose: args.verbose,
     inputBufferSize: parseNumberString(args['input-buffer-size'], 0x10000),
