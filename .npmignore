@@ -5,3 +5,4 @@ test
 .gitignore
 .prettierrc
 tsconfig.json
+src
