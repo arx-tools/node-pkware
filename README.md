@@ -122,7 +122,7 @@ Returns a function, that you can use as a [transform.\_transform](https://nodejs
 
 #### decompressing file with no offset into a file
 
-```javascript
+```js
 const fs = require('fs')
 const { explode, stream } = require('node-pkware')
 const { through } = stream
@@ -134,7 +134,7 @@ fs.createReadStream(`path-to-compressed-file`)
 
 #### decompressing buffer with no offset into a buffer
 
-```javascript
+```js
 const { Readable } = require('stream')
 const { explode, stream } = require('node-pkware')
 const { through, toBuffer } = stream
@@ -150,7 +150,7 @@ Readable.from(buffer) // buffer is of type Buffer with compressed data
 
 #### decompressing file with offset into a file, keeping initial part intact
 
-```javascript
+```js
 const fs = require('fs')
 const { explode, stream } = require('node-pkware')
 const { through, transformSplitBy, splitAt, transformIdentity } = stream
@@ -164,7 +164,7 @@ fs.createReadStream(`path-to-compressed-file`)
 
 #### decompressing file with offset into a file, discarding initial part
 
-```javascript
+```js
 const fs = require('fs')
 const { explode, stream } = require('node-pkware')
 const { through, transformSplitBy, splitAt, transformEmpty } = stream
@@ -178,7 +178,7 @@ fs.createReadStream(`path-to-compressed-file`)
 
 ### Catching errors
 
-```javascript
+```js
 const fs = require('fs')
 const { explode, stream } = require('node-pkware')
 const { through } = stream
