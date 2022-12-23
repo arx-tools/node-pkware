@@ -3,19 +3,9 @@
 import minimist from 'minimist-lite'
 import { Compression, DictionarySize } from '../constants'
 import { getPackageVersion, parseNumberString, getInputStream, getOutputStream } from '../functions'
-import { implode } from '../index'
 import { transformEmpty, transformIdentity, transformSplitBy, splitAt, through } from '../stream'
-
-const compress = (input, output, offset, keepHeader, compressionType, dictionarySize, config) => {
-  const leftHandler = keepHeader ? transformIdentity() : transformEmpty()
-  const rightHandler = implode(compressionType, dictionarySize, config)
-
-  const handler = transformSplitBy(splitAt(offset), leftHandler, rightHandler)
-
-  return new Promise((resolve, reject) => {
-    input.pipe(through(handler).on('error', reject)).pipe(output).on('finish', resolve).on('error', reject)
-  })
-}
+import { Config } from '../types'
+import { implode } from '../index'
 
 type AppArgs = {
   _: string[]
@@ -51,6 +41,25 @@ const args: AppArgs = minimist(process.argv.slice(2), {
     l: 'large',
   },
 })
+
+const compress = (
+  input: NodeJS.ReadableStream,
+  output: NodeJS.WritableStream,
+  offset: number,
+  keepHeader: boolean,
+  compressionType: Compression,
+  dictionarySize: DictionarySize,
+  config: Config,
+) => {
+  const leftHandler = keepHeader ? transformIdentity() : transformEmpty()
+  const rightHandler = implode(compressionType, dictionarySize, config)
+
+  const handler = transformSplitBy(splitAt(offset), leftHandler, rightHandler)
+
+  return new Promise((resolve, reject) => {
+    input.pipe(through(handler).on('error', reject)).pipe(output).on('finish', resolve).on('error', reject)
+  })
+}
 
 ;(async () => {
   if (args.version) {
@@ -92,7 +101,8 @@ const args: AppArgs = minimist(process.argv.slice(2), {
   const offset = parseNumberString(args.offset, 0)
 
   const keepHeader = !args['drop-before-offset']
-  const config = {
+
+  const config: Config = {
     verbose: args.verbose,
     inputBufferSize: parseNumberString(args['input-buffer-size'], 0x10000),
     outputBufferSize: parseNumberString(args['output-buffer-size'], 0x12000),

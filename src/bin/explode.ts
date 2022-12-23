@@ -3,6 +3,7 @@
 import minimist from 'minimist-lite'
 import { getPackageVersion, parseNumberString, getInputStream, getOutputStream } from '../functions'
 import { transformEmpty, transformIdentity, transformSplitBy, splitAt, through } from '../stream'
+import { Config } from '../types'
 import { explode } from '../index'
 
 type AppArgs = {
@@ -25,7 +26,13 @@ const args: AppArgs = minimist(process.argv.slice(2), {
   },
 })
 
-const decompress = (input, output, offset, keepHeader, config) => {
+const decompress = (
+  input: NodeJS.ReadableStream,
+  output: NodeJS.WritableStream,
+  offset: number,
+  keepHeader: boolean,
+  config: Config,
+) => {
   const leftHandler = keepHeader ? transformIdentity() : transformEmpty()
   const rightHandler = explode(config)
 
@@ -57,7 +64,7 @@ const decompress = (input, output, offset, keepHeader, config) => {
   const offset = parseNumberString(args.offset, 0)
 
   const keepHeader = !args['drop-before-offset']
-  const config = {
+  const config: Config = {
     verbose: args.verbose,
     inputBufferSize: parseNumberString(args['input-buffer-size'], 0x10000),
     outputBufferSize: parseNumberString(args['output-buffer-size'], 0x40000),
