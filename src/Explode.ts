@@ -254,7 +254,11 @@ export class Explode {
     const lastByte = getLowestNBits(8, this.#bitBuffer)
 
     if (this.#compressionType === Compression.Binary) {
-      return this.#wasteBits(8) === PKDCL_STREAM_END ? LITERAL_STREAM_ABORTED : lastByte
+      if (this.#wasteBits(8) === PKDCL_STREAM_END) {
+        return LITERAL_STREAM_ABORTED
+      }
+
+      return lastByte
     }
 
     let value: number
@@ -329,7 +333,6 @@ export class Explode {
     this.#needMoreInput = false
 
     this.#backup()
-
     let nextLiteral = this.#decodeNextLiteral()
 
     while (nextLiteral !== LITERAL_END_STREAM && nextLiteral !== LITERAL_STREAM_ABORTED) {
@@ -359,7 +362,6 @@ export class Explode {
       this.#outputBuffer.append(addition)
 
       this.#backup()
-
       nextLiteral = this.#decodeNextLiteral()
     }
 
