@@ -1,28 +1,36 @@
 # node-pkware
 
-Node JS implementation of StormLib's Pkware compression/decompression algorithm
+Node JS implementation of StormLib's Pkware compression/decompression algorithm, which is not the same as the zip pkware
+format that is commonly used today
 
-It was the de-facto compression for games from around Y2K, like Arx Fatalis
+It was the de-facto compression for games from around Y2K, like [Arx Fatalis](https://en.wikipedia.org/wiki/Arx_Fatalis)
 
 ## installation / update existing version
 
 `npm i -g node-pkware`
 
-minimum required node version: 8.5+
+minimum required node version: 18.0.0
 
-development and testing should be done in node 12.3+ because of the tests utilizing `Readable.from()` - source: https://stackoverflow.com/a/59638132/1806628
+## command line interface (CLI)
 
-tested in node version 14.9.0
+`explode [<filename>] [--offset=<offset>] [--drop-before-offset] [--output=<filename> [--verbose]]` - decompresses a file or a stream
 
-## command line interface
+`implode [<filename>] <compression type> <dictionary size> [--offset=<offset>] [--drop-before-offset] [--output=<filename> [--verbose]]` - compresses a file or a stream
 
-`implode <filename> --output=<filename> --ascii|-a|--binary|-b --small|-s|--medium|-m|--large|-l` - compresses file. If `--output` is omitted, then output will be placed next to input and names as `<filename>.compressed`. Optionally you can specify an offset from which the compressed data starts with the `--offset=<int|hex>`, which is useful for mixed files, such as the fts files of Arx Fatalis
+`<filename>`, `--output` or both can be omitted when the input is being piped from stdin or when the output is being piped into stdout
 
-`explode <filename> --output=<filename>` - decompresses file. If `--output` is omitted, then output will be placed next to input and names as `<filename>.decompressed`. Optionally you can specify an offset from which the compressed data starts with the `--offset=<int|hex>`, which is useful for mixed files, such as the fts files of Arx Fatalis
+The `--offset` can have a numeric value in either decimal or hexadecimal format which tells explode or implode to start decompression at a later point.
+This is useful for partially compressed files where the initial header part is uncompressed while the remaining part is compressed.
 
 The `--drop-before-offset` flag tells node-pkware to drop the portion before `--offset`, otherwise it will keep it untouched and attach it to the output file.
 
-Calling either explode or implode with the `-v` or `--version` flag will display the package's version
+The `--verbose` flag will display additional information while running the commands
+
+For implode `<compression type>` can either be `--ascii` or `--binary`
+
+For implode `<dictionary size>` can either be `--small`, `--medium` or `--large`
+
+Calling either explode or implode with only the `-v` or `--version` flag will display the package's version
 
 ## examples
 
@@ -33,8 +41,6 @@ Calling either explode or implode with the `-v` or `--version` flag will display
 `implode test/files/fast.fts.unpacked --output=C:/fast.fts --binary --large --offset=1816`
 
 ### piping also works
-
-**Don't use --verbose when piping, because verbose messages will be outputted to where the decompressed data is being outputted!**
 
 `cat c:/arx/level8.llf | explode > c:/arx/level8.llf.unpacked`
 
@@ -56,7 +62,8 @@ Calling either explode or implode with the `-v` or `--version` flag will display
 
 `decompress(config: object): transform._transform` - alias for explode
 
-Returns a function, that you can use as a [transform.\_transform](https://nodejs.org/api/stream.html#stream_transform_transform_chunk_encoding_callback) method. The returned function has the `(chunk: Buffer, encoding: string, callback: function)` parameter signature.
+Returns a function, that you can use as a [transform.\_transform](https://nodejs.org/api/stream.html#stream_transform_transform_chunk_encoding_callback) method.
+The returned function has the `(chunk: Buffer, encoding: string, callback: function)` parameter signature.
 
 Takes an optional config object, which has the following properties:
 
@@ -82,7 +89,8 @@ Takes an optional config object, which has the following properties:
 }
 ```
 
-Returns a function, that you can use as a [transform.\_transform](https://nodejs.org/api/stream.html#stream_transform_transform_chunk_encoding_callback) method. The returned function has the `(chunk: Buffer, encoding: string, callback: function)` parameter signature.
+Returns a function, that you can use as a [transform.\_transform](https://nodejs.org/api/stream.html#stream_transform_transform_chunk_encoding_callback) method.
+The returned function has the `(chunk: Buffer, encoding: string, callback: function)` parameter signature.
 
 `stream` - an object of helper functions for channeling streams to and from explode/implode
 
@@ -96,7 +104,7 @@ Returns a function, that you can use as a [transform.\_transform](https://nodejs
 
 ```
 1) [inputBuffer, emptyBuffer, false]
-2) [inputBuffer.slice(0, 40), inputBuffer.slice(40, 60), true]
+2) [inputBuffer.subarray(0, 40), inputBuffer.subarray(40, 60), true]
 3) [emptyBuffer, inputBuffer, true]
 4) [emptyBuffer, inputBuffer, true]
 ... and so on
@@ -106,9 +114,9 @@ Returns a function, that you can use as a [transform.\_transform](https://nodejs
 
 `stream.toBuffer(callback: function): writable._write` - data can be piped to the returned function from a stream and it will concatenate all chunks into a single buffer. Takes a callback function, which will receive the concatenated buffer as a parameter
 
-`constants.COMPRESSION_BINARY` and `constants.COMPRESSION_ASCII` - compression types for implode
+`constants.Compression.Binary` and `constants.Compression.Ascii` - compression types for implode
 
-`constants.DICTIONARY_SIZE_SMALL`, `constants.DICTIONARY_SIZE_MEDIUM` and `constants.DICTIONARY_SIZE_LARGE` - dictionary sizes for implode, determines how well the file get compressed. Small dictionary size means less memory to lookback in data for repetitions, meaning it will be less effective, the file stays larger, less compressed. On the other hand, large compression allows more lookback allowing more effective compression, thus generating smaller, more compressed files.
+`constants.DictionarySize.Small`, `constants.DictionarySize.Medium` and `constants.DictionarySize.Large` - dictionary sizes for implode, determines how well the file get compressed. Small dictionary size means less memory to lookback in data for repetitions, meaning it will be less effective, the file stays larger, less compressed. On the other hand, large compression allows more lookback allowing more effective compression, thus generating smaller, more compressed files. The original C library used less memory when the dictionary size was smaller, plus there might be files out there which only support smaller dictionary sizes
 
 `errors.InvalidDictionarySizeError` - thrown by implode when invalid dictionary size was specified or by explode when it encounters invalid data in the header section (the first 2 bytes of a compressed files)
 
@@ -123,7 +131,7 @@ Returns a function, that you can use as a [transform.\_transform](https://nodejs
 #### decompressing file with no offset into a file
 
 ```js
-const fs = require('fs')
+const fs = require('node:fs')
 const { explode, stream } = require('node-pkware')
 const { through } = stream
 
@@ -135,7 +143,7 @@ fs.createReadStream(`path-to-compressed-file`)
 #### decompressing buffer with no offset into a buffer
 
 ```js
-const { Readable } = require('stream')
+const { Readable } = require('node:stream')
 const { explode, stream } = require('node-pkware')
 const { through, toBuffer } = stream
 
@@ -151,7 +159,7 @@ Readable.from(buffer) // buffer is of type Buffer with compressed data
 #### decompressing file with offset into a file, keeping initial part intact
 
 ```js
-const fs = require('fs')
+const fs = require('node:fs')
 const { explode, stream } = require('node-pkware')
 const { through, transformSplitBy, splitAt, transformIdentity } = stream
 
@@ -165,7 +173,7 @@ fs.createReadStream(`path-to-compressed-file`)
 #### decompressing file with offset into a file, discarding initial part
 
 ```js
-const fs = require('fs')
+const fs = require('node:fs')
 const { explode, stream } = require('node-pkware')
 const { through, transformSplitBy, splitAt, transformEmpty } = stream
 
@@ -179,7 +187,7 @@ fs.createReadStream(`path-to-compressed-file`)
 ### Catching errors
 
 ```js
-const fs = require('fs')
+const fs = require('node:fs')
 const { explode, stream } = require('node-pkware')
 const { through } = stream
 

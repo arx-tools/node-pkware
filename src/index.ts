@@ -24,6 +24,7 @@ export const implode = (compressionType: Compression, dictionarySize: Dictionary
 export { explode as decompress }
 export { implode as compress }
 
-// export * as constants from './constants'
-// export * as errors from './errors'
-// export * as stream from './helpers/stream'
+export { Compression, DictionarySize } from './constants'
+export * as errors from './errors'
+export * as stream from './stream'
+export type { Config } from './types'
