@@ -22,8 +22,6 @@ tested in node version 14.9.0
 
 The `--drop-before-offset` flag tells node-pkware to drop the portion before `--offset`, otherwise it will keep it untouched and attach it to the output file.
 
-**currently disabled, WIP** There is an `--auto-detect` flag, which will search for the first pkware header starting from the beginning of the file. If `--offset` is defined, then it will start searching from that point.
-
 Calling either explode or implode with the `-v` or `--version` flag will display the package's version
 
 ## examples
@@ -33,10 +31,6 @@ Calling either explode or implode with the `-v` or `--version` flag will display
 `explode test/files/fast.fts --output=C:/fast.fts.decompressed --offset=0x718`
 
 `implode test/files/fast.fts.unpacked --output=C:/fast.fts --binary --large --offset=1816`
-
-`explode test/files/fast.fts --auto-detect --verbose --output=E:/fast.fts.unpacked`
-
-`explode test/files/fast.fts --auto-detect --verbose --output=E:/fast.fts.unpacked --offset=2000`
 
 ### piping also works
 
