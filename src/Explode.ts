@@ -202,11 +202,14 @@ export class Explode {
     callback(null, this.#outputBuffer.read())
   }
 
-  #canBitsBeWasted(numberOfBits: number) {
-    return numberOfBits <= this.#extraBits || !this.#inputBuffer.isEmpty()
-  }
-
+  /**
+   * @throws {@link AbortedError} when there isn't enough data to be wasted
+   */
   #wasteBits(numberOfBits: number) {
+    if (numberOfBits > this.#extraBits && this.#inputBuffer.isEmpty()) {
+      throw new AbortedError()
+    }
+
     if (numberOfBits <= this.#extraBits) {
       this.#bitBuffer = this.#bitBuffer >> numberOfBits
       this.#extraBits = this.#extraBits - numberOfBits
@@ -220,21 +223,16 @@ export class Explode {
     this.#extraBits = this.#extraBits + 8 - numberOfBits
   }
 
+  /**
+   * @throws {@link AbortedError}
+   */
   #decodeNextLiteral() {
     const lastBit = getLowestNBits(1, this.#bitBuffer)
-
-    if (!this.#canBitsBeWasted(1)) {
-      return LITERAL_STREAM_ABORTED
-    }
 
     this.#wasteBits(1)
 
     if (lastBit) {
       let lengthCode = this.#lengthCodes[getLowestNBits(8, this.#bitBuffer)]
-
-      if (!this.#canBitsBeWasted(LenBits[lengthCode])) {
-        return LITERAL_STREAM_ABORTED
-      }
 
       this.#wasteBits(LenBits[lengthCode])
 
@@ -242,11 +240,13 @@ export class Explode {
       if (extraLenghtBits !== 0) {
         const extraLength = getLowestNBits(extraLenghtBits, this.#bitBuffer)
 
-        if (!this.#canBitsBeWasted(extraLenghtBits) && lengthCode + extraLength !== 0x10e) {
-          return LITERAL_STREAM_ABORTED
+        try {
+          this.#wasteBits(extraLenghtBits)
+        } catch (e) {
+          if (lengthCode + extraLength !== 0x10e) {
+            throw new AbortedError()
+          }
         }
-
-        this.#wasteBits(extraLenghtBits)
 
         lengthCode = LenBase[lengthCode] + extraLength
       }
@@ -257,12 +257,7 @@ export class Explode {
     const lastByte = getLowestNBits(8, this.#bitBuffer)
 
     if (this.#compressionType === Compression.Binary) {
-      if (!this.#canBitsBeWasted(8)) {
-        return LITERAL_STREAM_ABORTED
-      }
-
       this.#wasteBits(8)
-
       return lastByte
     }
 
@@ -273,35 +268,19 @@ export class Explode {
 
       if (value === 0xff) {
         if (getLowestNBits(6, this.#bitBuffer)) {
-          if (!this.#canBitsBeWasted(4)) {
-            return LITERAL_STREAM_ABORTED
-          }
-
           this.#wasteBits(4)
 
           value = this.#asciiTable2D34[getLowestNBits(8, this.#bitBuffer)]
         } else {
-          if (!this.#canBitsBeWasted(6)) {
-            return LITERAL_STREAM_ABORTED
-          }
-
           this.#wasteBits(6)
 
           value = this.#asciiTable2E34[getLowestNBits(7, this.#bitBuffer)]
         }
       }
     } else {
-      if (!this.#canBitsBeWasted(8)) {
-        return LITERAL_STREAM_ABORTED
-      }
-
       this.#wasteBits(8)
 
       value = this.#asciiTable2EB4[getLowestNBits(8, this.#bitBuffer)]
-    }
-
-    if (!this.#canBitsBeWasted(this.#chBitsAsc[value])) {
-      return LITERAL_STREAM_ABORTED
     }
 
     this.#wasteBits(this.#chBitsAsc[value])
@@ -309,13 +288,12 @@ export class Explode {
     return value
   }
 
+  /**
+   * @throws {@link AbortedError}
+   */
   #decodeDistance(repeatLength: number) {
     const distPosCode = this.#distPosCodes[getLowestNBits(8, this.#bitBuffer)]
     const distPosBits = DistBits[distPosCode]
-
-    if (!this.#canBitsBeWasted(distPosBits)) {
-      return 0
-    }
 
     this.#wasteBits(distPosBits)
 
@@ -328,10 +306,6 @@ export class Explode {
     } else {
       distance = (distPosCode << this.#dictionarySize) | (this.#bitBuffer & this.#dictionarySizeMask)
       bitsToWaste = this.#dictionarySize
-    }
-
-    if (!this.#canBitsBeWasted(bitsToWaste)) {
-      return 0
     }
 
     this.#wasteBits(bitsToWaste)
@@ -354,39 +328,36 @@ export class Explode {
     this.#needMoreInput = false
 
     this.#backup()
-    let nextLiteral = this.#decodeNextLiteral()
 
-    while (nextLiteral !== LITERAL_END_STREAM && nextLiteral !== LITERAL_STREAM_ABORTED) {
-      let addition: Buffer
+    try {
+      let nextLiteral = this.#decodeNextLiteral()
 
-      if (nextLiteral >= 0x100) {
-        const repeatLength = nextLiteral - 0xfe
-        const minusDistance = this.#decodeDistance(repeatLength)
+      while (nextLiteral !== LITERAL_END_STREAM) {
+        let addition: Buffer
 
-        if (minusDistance === 0) {
-          this.#needMoreInput = true
-          break
-        }
+        if (nextLiteral >= 0x100) {
+          const repeatLength = nextLiteral - 0xfe
 
-        const availableData = this.#outputBuffer.read(this.#outputBuffer.size() - minusDistance, repeatLength)
+          const minusDistance = this.#decodeDistance(repeatLength)
+          const availableData = this.#outputBuffer.read(this.#outputBuffer.size() - minusDistance, repeatLength)
 
-        if (repeatLength > minusDistance) {
-          const multipliedData = repeat(availableData, Math.ceil(repeatLength / availableData.length))
-          addition = Buffer.concat(multipliedData).subarray(0, repeatLength)
+          if (repeatLength > minusDistance) {
+            const multipliedData = repeat(availableData, Math.ceil(repeatLength / availableData.length))
+            addition = Buffer.concat(multipliedData).subarray(0, repeatLength)
+          } else {
+            addition = availableData
+          }
         } else {
-          addition = availableData
+          addition = Buffer.from([nextLiteral])
         }
-      } else {
-        addition = Buffer.from([nextLiteral])
+
+        this.#outputBuffer.append(addition)
+
+        this.#backup()
+
+        nextLiteral = this.#decodeNextLiteral()
       }
-
-      this.#outputBuffer.append(addition)
-
-      this.#backup()
-      nextLiteral = this.#decodeNextLiteral()
-    }
-
-    if (nextLiteral === LITERAL_STREAM_ABORTED) {
+    } catch (e) {
       this.#needMoreInput = true
     }
 
