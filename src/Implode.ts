@@ -116,7 +116,7 @@ export class Implode {
           return
         }
 
-        let [numberOfBlocks] = evenAndRemainder(instance.#outputBuffer.size(), blockSize)
+        let [numberOfBlocks] = evenAndRemainder(blockSize, instance.#outputBuffer.size())
 
         // making sure to leave one block worth of data for lookback when processing chunk data
         numberOfBlocks--
