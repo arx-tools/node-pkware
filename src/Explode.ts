@@ -7,6 +7,7 @@ import {
   DictionarySize,
   DistBits,
   DistCode,
+  EMPTY_BUFFER,
   ExLenBits,
   LenBase,
   LenBits,
@@ -95,6 +96,7 @@ export class Explode {
   #asciiTable2D34: number[] = repeat(0, 0x100)
   #asciiTable2E34: number[] = repeat(0, 0x80)
   #asciiTable2EB4: number[] = repeat(0, 0x100)
+  #reusableByte: Buffer = Buffer.alloc(1)
 
   constructor(config: Config = {}) {
     this.#verbose = config?.verbose ?? false
@@ -126,7 +128,7 @@ export class Explode {
         const blockSize = 0x1000
 
         if (instance.#outputBuffer.size() <= blockSize) {
-          callback(null, Buffer.from([]))
+          callback(null, EMPTY_BUFFER)
           return
         }
 
@@ -347,7 +349,8 @@ export class Explode {
             addition = availableData
           }
         } else {
-          addition = Buffer.from([nextLiteral])
+          this.#reusableByte[0] = nextLiteral
+          addition = this.#reusableByte
         }
 
         this.#outputBuffer.append(addition)

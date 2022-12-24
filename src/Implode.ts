@@ -7,10 +7,12 @@ import {
   DictionarySize,
   DistBits,
   DistCode,
+  EMPTY_BUFFER,
   ExLenBits,
   LenBits,
   LenCode,
   LONGEST_ALLOWED_REPETITION,
+  SINGLE_ZERO_BUFFER,
 } from './constants'
 import { InvalidCompressionTypeError, InvalidDictionarySizeError } from './errors'
 import { ExpandingBuffer } from './ExpandingBuffer'
@@ -73,6 +75,7 @@ export class Implode {
   #outBits: number = 0
   #nChBits: number[] = repeat(0, 0x306)
   #nChCodes: number[] = repeat(0, 0x306)
+  #reusableByte: Buffer = Buffer.alloc(1)
 
   constructor(compressionType: Compression, dictionarySize: DictionarySize, config: Config) {
     if (!(compressionType in Compression) || compressionType === Compression.Unknown) {
@@ -112,7 +115,7 @@ export class Implode {
         const blockSize = 0x800
 
         if (instance.#outputBuffer.size() <= blockSize) {
-          callback(null, Buffer.from([]))
+          callback(null, EMPTY_BUFFER)
           return
         }
 
@@ -129,7 +132,7 @@ export class Implode {
         if (instance.#outBits === 0) {
           // set last byte to 0
           instance.#outputBuffer.dropEnd(1)
-          instance.#outputBuffer.append(Buffer.from([0]))
+          instance.#outputBuffer.append(SINGLE_ZERO_BUFFER)
         }
 
         callback(null, output)
@@ -350,18 +353,20 @@ export class Implode {
 
     const lastBytes = this.#outputBuffer.readByte(this.#outputBuffer.size() - 1)
     this.#outputBuffer.dropEnd(1)
-    this.#outputBuffer.append(Buffer.from([lastBytes | getLowestNBits(8, bitBuffer << outBits)]))
+    this.#reusableByte[0] = lastBytes | getLowestNBits(8, bitBuffer << outBits)
+    this.#outputBuffer.append(this.#reusableByte)
 
     this.#outBits = this.#outBits + nBits
 
     if (this.#outBits > 8) {
       bitBuffer = bitBuffer >> (8 - outBits)
-      this.#outputBuffer.append(Buffer.from([getLowestNBits(8, bitBuffer)]))
+      this.#reusableByte[0] = getLowestNBits(8, bitBuffer)
+      this.#outputBuffer.append(this.#reusableByte)
       this.#outBits = getLowestNBits(3, this.#outBits)
     } else {
       this.#outBits = getLowestNBits(3, this.#outBits)
       if (this.#outBits === 0) {
-        this.#outputBuffer.append(Buffer.from([0]))
+        this.#outputBuffer.append(SINGLE_ZERO_BUFFER)
       }
     }
   }

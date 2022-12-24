@@ -1,4 +1,5 @@
 import { Buffer } from 'node:buffer'
+import { EMPTY_BUFFER } from './constants'
 import { clamp } from './functions'
 
 export class ExpandingBuffer {
@@ -46,7 +47,7 @@ export class ExpandingBuffer {
    */
   read(offset: number = 0, limit: number = this.size()) {
     if (offset < 0 || limit < 1) {
-      return Buffer.from([])
+      return EMPTY_BUFFER
     }
 
     if (offset + limit < this.size()) {

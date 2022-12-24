@@ -21,6 +21,7 @@ export enum DictionarySize {
 }
 
 export const EMPTY_BUFFER = Buffer.from([])
+export const SINGLE_ZERO_BUFFER = Buffer.from([0])
 
 export const LONGEST_ALLOWED_REPETITION = 0x204
 
