@@ -96,7 +96,7 @@ export class Explode {
   #asciiTable2D34: number[] = repeat(0, 0x100)
   #asciiTable2E34: number[] = repeat(0, 0x80)
   #asciiTable2EB4: number[] = repeat(0, 0x100)
-  #reusableByte: Buffer = Buffer.alloc(1)
+  #reusableByte: Buffer = Buffer.allocUnsafe(1)
 
   constructor(config: Config = {}) {
     this.#verbose = config?.verbose ?? false

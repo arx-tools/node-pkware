@@ -2,6 +2,8 @@ import { Buffer } from 'node:buffer'
 import { EMPTY_BUFFER } from './constants'
 import { clamp } from './functions'
 
+let cntr = 0
+
 export class ExpandingBuffer {
   #heap: Buffer
   #startIndex: number = 0
@@ -28,18 +30,28 @@ export class ExpandingBuffer {
   }
 
   heapSize() {
-    return this.#heap.length
+    return this.#heap.byteLength
   }
 
-  append(buffer: Buffer) {
-    if (this.#endIndex + buffer.length < this.heapSize()) {
-      buffer.copy(this.#heap, this.#endIndex)
-      this.#endIndex += buffer.length
-    } else {
-      this.#heap = Buffer.concat([this.#getActualData(), buffer])
-      this.#startIndex = 0
-      this.#endIndex = this.heapSize()
+  append(newData: Buffer) {
+    if (this.#endIndex + newData.byteLength < this.heapSize()) {
+      newData.copy(this.#heap, this.#endIndex)
+      this.#endIndex += newData.byteLength
+      return
     }
+
+    const blockSize = 0x1000
+
+    const currentData = this.#getActualData()
+
+    this.#heap = Buffer.allocUnsafe(
+      (Math.ceil((currentData.byteLength + newData.byteLength) / blockSize) + 1) * blockSize,
+    )
+    currentData.copy(this.#heap, 0)
+    newData.copy(this.#heap, currentData.byteLength)
+
+    this.#startIndex = 0
+    this.#endIndex = currentData.byteLength + newData.byteLength
   }
 
   /**

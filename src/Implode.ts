@@ -75,7 +75,7 @@ export class Implode {
   #outBits: number = 0
   #nChBits: number[] = repeat(0, 0x306)
   #nChCodes: number[] = repeat(0, 0x306)
-  #reusableByte: Buffer = Buffer.alloc(1)
+  #reusableByte: Buffer = Buffer.allocUnsafe(1)
 
   constructor(compressionType: Compression, dictionarySize: DictionarySize, config: Config) {
     if (!(compressionType in Compression) || compressionType === Compression.Unknown) {
