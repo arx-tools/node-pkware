@@ -96,7 +96,6 @@ export class Explode {
   #asciiTable2D34: number[] = repeat(0, 0x100)
   #asciiTable2E34: number[] = repeat(0, 0x80)
   #asciiTable2EB4: number[] = repeat(0, 0x100)
-  #reusableByte: Buffer = Buffer.allocUnsafe(1)
 
   constructor(config: Config = {}) {
     this.#verbose = config?.verbose ?? false
@@ -334,13 +333,13 @@ export class Explode {
       let nextLiteral = this.#decodeNextLiteral()
 
       while (nextLiteral !== LITERAL_END_STREAM) {
-        let addition: Buffer
-
         if (nextLiteral >= 0x100) {
           const repeatLength = nextLiteral - 0xfe
 
           const minusDistance = this.#decodeDistance(repeatLength)
           const availableData = this.#outputBuffer.read(this.#outputBuffer.size() - minusDistance, repeatLength)
+
+          let addition: Buffer
 
           if (repeatLength > minusDistance) {
             const multipliedData = repeat(availableData, Math.ceil(repeatLength / availableData.length))
@@ -348,12 +347,11 @@ export class Explode {
           } else {
             addition = availableData
           }
-        } else {
-          this.#reusableByte[0] = nextLiteral
-          addition = this.#reusableByte
-        }
 
-        this.#outputBuffer.append(addition)
+          this.#outputBuffer.append(addition)
+        } else {
+          this.#outputBuffer.appendByte(nextLiteral)
+        }
 
         this.#backup()
 

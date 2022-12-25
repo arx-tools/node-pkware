@@ -2,8 +2,6 @@ import { Buffer } from 'node:buffer'
 import { EMPTY_BUFFER } from './constants'
 import { clamp } from './functions'
 
-let cntr = 0
-
 export class ExpandingBuffer {
   #heap: Buffer
   #startIndex: number = 0
@@ -31,6 +29,44 @@ export class ExpandingBuffer {
 
   heapSize() {
     return this.#heap.byteLength
+  }
+
+  /**
+   * Set a single byte of the stored data
+   *
+   * If offset is negative, then the method calculates the index from the end backwards
+   */
+  setByte(offset: number, value: number) {
+    if (offset < 0) {
+      if (this.#endIndex + offset < this.#startIndex) {
+        return
+      }
+
+      this.#heap[this.#endIndex + offset] = value
+      return
+    }
+
+    if (this.#startIndex + offset >= this.#endIndex) {
+      this.#heap[this.#startIndex + offset] = value
+    }
+  }
+
+  appendByte(value: number) {
+    if (this.#endIndex + 1 < this.heapSize()) {
+      this.#heap[this.#endIndex] = value
+      this.#endIndex += 1
+      return
+    }
+
+    const blockSize = 0x1000
+
+    const currentData = this.#getActualData()
+
+    this.#heap = Buffer.allocUnsafe((Math.ceil((currentData.byteLength + 1) / blockSize) + 1) * blockSize)
+    currentData.copy(this.#heap, 0)
+    this.#heap[currentData.byteLength] = value
+    this.#startIndex = 0
+    this.#endIndex = currentData.byteLength + 1
   }
 
   append(newData: Buffer) {
@@ -113,11 +149,13 @@ export class ExpandingBuffer {
    * When the heap gets empty it also resets the indices as a cleanup
    */
   dropStart(numberOfBytes: number) {
-    if (numberOfBytes > 0) {
-      this.#startIndex += numberOfBytes
-      if (this.#startIndex >= this.#endIndex) {
-        this.clear()
-      }
+    if (numberOfBytes <= 0) {
+      return
+    }
+
+    this.#startIndex += numberOfBytes
+    if (this.#startIndex >= this.#endIndex) {
+      this.clear()
     }
   }
 
@@ -129,11 +167,13 @@ export class ExpandingBuffer {
    * When the heap gets empty it also resets the indices as a cleanup
    */
   dropEnd(numberOfBytes: number) {
-    if (numberOfBytes > 0) {
-      this.#endIndex -= numberOfBytes
-      if (this.#startIndex >= this.#endIndex) {
-        this.clear()
-      }
+    if (numberOfBytes <= 0) {
+      return
+    }
+
+    this.#endIndex -= numberOfBytes
+    if (this.#startIndex >= this.#endIndex) {
+      this.clear()
     }
   }
 
