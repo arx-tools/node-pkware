@@ -211,7 +211,7 @@ fs.createReadStream(`path-to-compressed-file`)
 
 ### test files
 
-https://github.com/meszaros-lajos-gyorgy/pkware-test-files
+https://github.com/arx-tools/pkware-test-files
 
 ### sources
 

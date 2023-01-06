@@ -1,7 +1,7 @@
 {
   "name": "node-pkware",
   "version": "3.0.4",
-  "description": "The nodejs implementation of StormLib's pkware compressor/de-compressor",
+  "description": "nodejs implementation of StormLib's pkware compressor/de-compressor",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "engines": {
@@ -19,12 +19,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/meszaros-lajos-gyorgy/node-pkware.git"
+    "url": "git+https://github.com/arx-tools/node-pkware.git"
   },
   "bugs": {
-    "url": "https://github.com/meszaros-lajos-gyorgy/node-pkware/issues"
+    "url": "https://github.com/arx-tools/node-pkware/issues"
   },
-  "homepage": "https://github.com/meszaros-lajos-gyorgy/node-pkware#readme",
+  "homepage": "https://github.com/arx-tools/node-pkware#readme",
   "author": "Lajos Meszaros <m_lajos@hotmail.com>",
   "license": "GPL-3.0-or-later",
   "dependencies": {
