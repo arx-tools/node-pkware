@@ -2,6 +2,8 @@ import { Buffer } from 'node:buffer'
 import { EMPTY_BUFFER } from './constants'
 import { clamp } from './functions'
 
+const blockSize = 0x1000
+
 export class ExpandingBuffer {
   #heap: Buffer
   #startIndex: number = 0
@@ -19,6 +21,9 @@ export class ExpandingBuffer {
     return this.#heap.subarray(this.#startIndex + offset, this.#endIndex)
   }
 
+  /**
+   * Returns the number of bytes in the stored data.
+   */
   size() {
     return this.#endIndex - this.#startIndex
   }
@@ -27,12 +32,15 @@ export class ExpandingBuffer {
     return this.size() === 0
   }
 
+  /**
+   * Returns the underlying Buffer's (heap) size.
+   */
   heapSize() {
     return this.#heap.byteLength
   }
 
   /**
-   * Set a single byte of the stored data
+   * Sets a single byte of the stored data
    *
    * If offset is negative, then the method calculates the index from the end backwards
    */
@@ -51,14 +59,16 @@ export class ExpandingBuffer {
     }
   }
 
+  /**
+   * Adds a single byte to the end of the stored data.
+   * This expands the internal buffer by 0x1000 bytes if the heap is full
+   */
   appendByte(value: number) {
     if (this.#endIndex + 1 < this.heapSize()) {
       this.#heap[this.#endIndex] = value
       this.#endIndex += 1
       return
     }
-
-    const blockSize = 0x1000
 
     const currentData = this.#getActualData()
 
@@ -69,14 +79,17 @@ export class ExpandingBuffer {
     this.#endIndex = currentData.byteLength + 1
   }
 
+  /**
+   * Concatenates a buffer to the end of the stored data.
+   * If the new data exceeds the size of the heap then the internal heap
+   * gets expanded by the integer multiples of 0x1000 bytes
+   */
   append(newData: Buffer) {
     if (this.#endIndex + newData.byteLength < this.heapSize()) {
       newData.copy(this.#heap, this.#endIndex)
       this.#endIndex += newData.byteLength
       return
     }
-
-    const blockSize = 0x1000
 
     const currentData = this.#getActualData()
 
@@ -91,7 +104,13 @@ export class ExpandingBuffer {
   }
 
   /**
+   * Returns a slice of data from the internal data.
+   * If no parameters are given then the whole amount of stored data is returned.
+   * Optionally an offset and a limit can be specified:
+   * offset determines the starting position, limit specifies the number of bytes read.
+   *
    * Watch out! The returned slice of Buffer points to the same Buffer in memory!
+   * This is intentional for performance reasons.
    */
   read(offset: number = 0, limit: number = this.size()) {
     if (offset < 0 || limit < 1) {
@@ -105,6 +124,9 @@ export class ExpandingBuffer {
     return this.#getActualData(offset)
   }
 
+  /**
+   * Reads a single byte from the stored data
+   */
   readByte(offset: number = 0) {
     return this.#heap[this.#startIndex + offset]
   }
