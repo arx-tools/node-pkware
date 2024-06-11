@@ -26,7 +26,7 @@
   },
   "homepage": "https://github.com/arx-tools/node-pkware#readme",
   "author": "Lajos Meszaros <m_lajos@hotmail.com>",
-  "license": "GPL-3.0-or-later",
+  "license": "MIT",
   "dependencies": {
     "minimist-lite": "^2.2.1"
   },
