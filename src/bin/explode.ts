@@ -2,10 +2,10 @@
 
 import process from 'node:process'
 import minimist from 'minimist-lite'
-import { transformEmpty, transformIdentity, transformSplitBy, splitAt, through } from '../stream.js'
-import { type Config } from '../types.js'
-import { explode } from '../index.js'
-import { getPackageVersion, parseNumberString, getInputStream, getOutputStream } from './helpers.js'
+import { transformEmpty, transformIdentity, transformSplitBy, splitAt, through } from '@src/stream.js'
+import { type Config } from '@src/types.js'
+import { explode } from '@src/index.js'
+import { getPackageVersion, parseNumberString, getInputStream, getOutputStream } from '@bin/helpers.js'
 
 type AppArgs = {
   _: string[]

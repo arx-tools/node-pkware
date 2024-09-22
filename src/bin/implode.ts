@@ -2,11 +2,11 @@
 
 import process from 'node:process'
 import minimist from 'minimist-lite'
-import { Compression, DictionarySize } from '../constants.js'
-import { transformEmpty, transformIdentity, transformSplitBy, splitAt, through } from '../stream.js'
-import { implode } from '../index.js'
-import { type Config } from '../types.js'
-import { getPackageVersion, parseNumberString, getInputStream, getOutputStream } from './helpers.js'
+import { Compression, DictionarySize } from '@src/constants.js'
+import { transformEmpty, transformIdentity, transformSplitBy, splitAt, through } from '@src/stream.js'
+import { implode } from '@src/index.js'
+import { type Config } from '@src/types.js'
+import { getPackageVersion, parseNumberString, getInputStream, getOutputStream } from '@bin/helpers.js'
 
 type AppArgs = {
   _: string[]

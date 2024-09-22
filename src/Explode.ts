@@ -13,11 +13,19 @@ import {
   LenBits,
   LenCode,
   LITERAL_END_STREAM,
-} from './constants.js'
-import { AbortedError, InvalidCompressionTypeError, InvalidDictionarySizeError } from './errors.js'
-import { ExpandingBuffer } from './ExpandingBuffer.js'
-import { evenAndRemainder, getLowestNBits, mergeSparseArrays, nBitsOfOnes, repeat, toHex, unfold } from './functions.js'
-import { type Config, type Stats } from './types.js'
+} from '@src/constants.js'
+import { AbortedError, InvalidCompressionTypeError, InvalidDictionarySizeError } from '@src/errors.js'
+import { ExpandingBuffer } from '@src/ExpandingBuffer.js'
+import {
+  evenAndRemainder,
+  getLowestNBits,
+  mergeSparseArrays,
+  nBitsOfOnes,
+  repeat,
+  toHex,
+  unfold,
+} from '@src/functions.js'
+import { type Config, type Stats } from '@src/types.js'
 
 /**
  * This function assumes there are at least 2 bytes of data in the buffer

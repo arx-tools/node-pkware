@@ -1,6 +1,6 @@
 import { Buffer } from 'node:buffer'
-import { EMPTY_BUFFER } from './constants.js'
-import { clamp } from './functions.js'
+import { EMPTY_BUFFER } from '@src/constants.js'
+import { clamp } from '@src/functions.js'
 
 const blockSize = 0x10_00
 

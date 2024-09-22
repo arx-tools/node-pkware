@@ -1,8 +1,8 @@
 import { Transform, Writable, type TransformCallback } from 'node:stream'
 import { promisify } from 'node:util'
-import { isFunction } from './functions.js'
-import { ExpandingBuffer } from './ExpandingBuffer.js'
-import { EMPTY_BUFFER } from './constants.js'
+import { isFunction } from '@src/functions.js'
+import { ExpandingBuffer } from '@src/ExpandingBuffer.js'
+import { EMPTY_BUFFER } from '@src/constants.js'
 
 export type StreamHandler = (
   this: Transform,
