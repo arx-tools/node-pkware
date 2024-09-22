@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import process from 'node:process'
 
 const isDecimalString = (input: string) => {
   return /^\d+$/.test(input)
@@ -46,7 +47,8 @@ const fileExists = async (filename: string) => {
 
 export const getInputStream = async (filename?: string): Promise<NodeJS.ReadableStream> => {
   if (typeof filename === 'undefined') {
-    return process.openStdin()
+    process.stdin.resume()
+    return process.stdin
   }
 
   if (await fileExists(filename)) {

@@ -1,7 +1,7 @@
-import { Compression, DictionarySize } from './constants'
-import { Explode } from './Explode'
-import { Implode } from './Implode'
-import { Config } from './types'
+import { Compression, DictionarySize } from './constants.js'
+import { Explode } from './Explode.js'
+import { Implode } from './Implode.js'
+import { Config } from './types.js'
 
 /**
  * Decompresses stream
@@ -24,7 +24,7 @@ export const implode = (compressionType: Compression, dictionarySize: Dictionary
 export { explode as decompress }
 export { implode as compress }
 
-export { Compression, DictionarySize } from './constants'
-export * as errors from './errors'
-export * as stream from './stream'
-export type { Config } from './types'
+export { Compression, DictionarySize } from './constants.js'
+export * as errors from './errors.js'
+export * as stream from './stream.js'
+export type { Config } from './types.js'

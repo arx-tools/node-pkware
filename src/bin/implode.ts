@@ -1,11 +1,11 @@
 #!/usr/bin/env -S node --enable-source-maps
 
 import minimist from 'minimist-lite'
-import { Compression, DictionarySize } from '../constants'
-import { getPackageVersion, parseNumberString, getInputStream, getOutputStream } from './helpers'
-import { transformEmpty, transformIdentity, transformSplitBy, splitAt, through } from '../stream'
-import { Config } from '../types'
-import { implode } from '../index'
+import { Compression, DictionarySize } from '../constants.js'
+import { getPackageVersion, parseNumberString, getInputStream, getOutputStream } from './helpers.js'
+import { transformEmpty, transformIdentity, transformSplitBy, splitAt, through } from '../stream.js'
+import { Config } from '../types.js'
+import { implode } from '../index.js'
 
 type AppArgs = {
   _: string[]

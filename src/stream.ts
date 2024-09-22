@@ -1,8 +1,8 @@
 import { Transform, Writable, TransformCallback } from 'node:stream'
 import { promisify } from 'node:util'
-import { isFunction } from './functions'
-import { ExpandingBuffer } from './ExpandingBuffer'
-import { EMPTY_BUFFER } from './constants'
+import { isFunction } from './functions.js'
+import { ExpandingBuffer } from './ExpandingBuffer.js'
+import { EMPTY_BUFFER } from './constants.js'
 
 class QuasiTransform {
   #handler: (this: Transform, chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback) => void

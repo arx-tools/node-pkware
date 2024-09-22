@@ -1,15 +1,15 @@
 {
   "compilerOptions": {
-    "target": "esnext",
-    "module": "commonjs",
+    "target": "ESNext",
+    "module": "NodeNext",
     "declaration": true,
     "outDir": "./dist",
     "strict": true,
     "noImplicitAny": false, // TODO: should be true later
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "moduleResolution": "nodenext",
-    "allowJs": true, // TODO: should be false later
+    "moduleResolution": "NodeNext",
+    "allowJs": false,
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "isolatedModules": true,

@@ -12,11 +12,11 @@ import {
   LenBits,
   LenCode,
   LONGEST_ALLOWED_REPETITION,
-} from './constants'
-import { InvalidCompressionTypeError, InvalidDictionarySizeError } from './errors'
-import { ExpandingBuffer } from './ExpandingBuffer'
-import { clamp, clone, evenAndRemainder, getLowestNBits, last, nBitsOfOnes, repeat, toHex } from './functions'
-import { Config, Stats } from './types'
+} from './constants.js'
+import { InvalidCompressionTypeError, InvalidDictionarySizeError } from './errors.js'
+import { ExpandingBuffer } from './ExpandingBuffer.js'
+import { clamp, clone, evenAndRemainder, getLowestNBits, last, nBitsOfOnes, repeat, toHex } from './functions.js'
+import { Config, Stats } from './types.js'
 
 export const getSizeOfMatching = (inputBytes: Buffer, a: number, b: number) => {
   const limit = clamp(2, LONGEST_ALLOWED_REPETITION, b - a)
