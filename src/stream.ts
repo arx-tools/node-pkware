@@ -1,21 +1,27 @@
-import { Transform, Writable, TransformCallback } from 'node:stream'
+import { Transform, Writable, type TransformCallback } from 'node:stream'
 import { promisify } from 'node:util'
 import { isFunction } from './functions.js'
 import { ExpandingBuffer } from './ExpandingBuffer.js'
 import { EMPTY_BUFFER } from './constants.js'
 
+export type StreamHandler = (
+  this: Transform,
+  chunk: Buffer,
+  encoding: BufferEncoding,
+  callback: TransformCallback,
+) => void | Promise<void>
+
 class QuasiTransform {
-  #handler: (this: Transform, chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback) => void
   _flush?: (callback: TransformCallback) => void
 
-  constructor(
-    handler: (this: Transform, chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback) => void,
-  ) {
-    this.#handler = handler
+  private readonly handler: StreamHandler
+
+  constructor(handler: StreamHandler) {
+    this.handler = handler
   }
 
-  handle(chunk: Buffer, encoding: BufferEncoding): Promise<Buffer> {
-    return promisify(this.#handler).call(this, chunk, encoding)
+  async handle(chunk: Buffer, encoding: BufferEncoding): Promise<Buffer> {
+    return promisify(this.handler).call(this, chunk, encoding) as Promise<Buffer>
   }
 }
 
@@ -30,10 +36,10 @@ class QuasiTransform {
  * 5. ... and so on
  * @param index - a positive integer at which to split the buffer
  */
-export const splitAt = (index: number) => {
+export function splitAt(index: number) {
   let cntr = 0
 
-  return (chunk: Buffer) => {
+  return function (chunk: Buffer): [Buffer, Buffer, boolean] {
     let left: Buffer
     let right: Buffer
     let isLeftDone: boolean
@@ -55,17 +61,17 @@ export const splitAt = (index: number) => {
       isLeftDone = true
     }
 
-    cntr += chunk.length
+    cntr = cntr + chunk.length
 
-    return [left, right, isLeftDone] as [Buffer, Buffer, boolean]
+    return [left, right, isLeftDone]
   }
 }
 
 /**
  * A `transform._transform` type function, which lets the input chunks through without any changes
  */
-export const transformIdentity = () => {
-  return function (this: Transform, chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback) {
+export function transformIdentity(): StreamHandler {
+  return function (this: Transform, chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback): void {
     callback(null, chunk)
   }
 }
@@ -73,8 +79,8 @@ export const transformIdentity = () => {
 /**
  * A `transform._transform` type function, which for every input chunk will output an empty buffer
  */
-export const transformEmpty = () => {
-  return function (this: Transform, chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback) {
+export function transformEmpty(): StreamHandler {
+  return function (this: Transform, chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback): void {
     callback(null, EMPTY_BUFFER)
   }
 }
@@ -84,9 +90,7 @@ export const transformEmpty = () => {
  * @param handler a `transform._transform` type function
  * @returns a Transform stream instance
  */
-export const through = (
-  handler: (this: Transform, chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback) => void,
-) => {
+export function through(handler: StreamHandler): Transform {
   return new Transform({
     transform: handler,
   })
@@ -97,33 +101,41 @@ export const through = (
  * This is used internally to handle offsets for `explode()`.
  * @returns a `transform._transform` type function
  */
-export const transformSplitBy = (
+export function transformSplitBy(
   predicate: (chunk: Buffer) => [Buffer, Buffer, boolean],
-  leftHandler: (this: Transform, chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback) => void,
-  rightHandler: (this: Transform, chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback) => void,
-) => {
+  leftHandler: StreamHandler,
+  rightHandler: StreamHandler,
+): StreamHandler {
   let isFirstChunk = true
   let wasLeftFlushCalled = false
-  const damChunkSize = 0x10000
+
   const dam = new ExpandingBuffer()
+  const damChunkSize = 0x1_00_00
 
   const leftTransform = new QuasiTransform(leftHandler)
   const rightTransform = new QuasiTransform(rightHandler)
 
-  return function (this: Transform, chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback) {
+  return async function (
+    this: Transform,
+    chunk: Buffer,
+    encoding: BufferEncoding,
+    callback: TransformCallback,
+  ): Promise<void> {
     const [left, right, isLeftDone] = predicate(chunk)
 
-    const _left = leftTransform.handle(left, encoding)
-    const _right = rightTransform.handle(right, encoding)
+    const transformedLeft = leftTransform.handle(left, encoding)
+    const transformedRight = rightTransform.handle(right, encoding)
+
+    const transformInstance = this
 
     if (isFirstChunk) {
       isFirstChunk = false
-      this._flush = (flushCallback) => {
+      transformInstance._flush = async function (flushCallback: TransformCallback): Promise<void> {
         if (!dam.isEmpty()) {
-          this.push(dam.read())
+          transformInstance.push(dam.read())
         }
 
-        const leftFiller = new Promise((resolve, reject) => {
+        const leftFiller = new Promise<Buffer>((resolve, reject) => {
           if (wasLeftFlushCalled || !isFunction(leftTransform._flush)) {
             resolve(EMPTY_BUFFER)
             return
@@ -138,7 +150,7 @@ export const transformSplitBy = (
           })
         })
 
-        const rightFiller = new Promise((resolve, reject) => {
+        const rightFiller = new Promise<Buffer>((resolve, reject) => {
           if (!isFunction(rightTransform._flush)) {
             resolve(EMPTY_BUFFER)
             return
@@ -153,18 +165,16 @@ export const transformSplitBy = (
           })
         })
 
-        Promise.all([leftFiller, rightFiller])
-          .then((buffers) => {
-            // TODO: TransformCallback assumes the returned data is any instead of Buffer
-            flushCallback(null, Buffer.concat(buffers as Buffer[]))
-          })
-          .catch((err) => {
-            flushCallback(err)
-          })
+        try {
+          const buffers = await Promise.all([leftFiller, rightFiller])
+          flushCallback(null, Buffer.concat(buffers))
+        } catch (error: unknown) {
+          flushCallback(error as Error)
+        }
       }
     }
 
-    const filler = new Promise((resolve, reject) => {
+    const filler = new Promise<Buffer>((resolve, reject) => {
       if (isLeftDone && !wasLeftFlushCalled && isFunction(leftTransform._flush)) {
         wasLeftFlushCalled = true
         leftTransform._flush((err, data) => {
@@ -179,25 +189,24 @@ export const transformSplitBy = (
       }
     })
 
-    Promise.all([_left, filler, _right])
-      .then((buffers) => {
-        // TODO: TransformCallback assumes the returned data is any instead of Buffer
-        dam.append(Buffer.concat(buffers as Buffer[]))
-        if (dam.size() > damChunkSize) {
-          const chunks = Math.floor(dam.size() / damChunkSize)
-          const data = Buffer.from(dam.read(0, chunks * damChunkSize))
-          dam.flushStart(chunks * damChunkSize)
-          for (let i = 0; i < chunks - 1; i++) {
-            this.push(data.subarray(i * damChunkSize, i * damChunkSize + damChunkSize))
-          }
-          callback(null, data.subarray((chunks - 1) * damChunkSize))
-        } else {
-          callback(null, EMPTY_BUFFER)
+    try {
+      const buffers = await Promise.all([transformedLeft, filler, transformedRight])
+      dam.append(Buffer.concat(buffers))
+      if (dam.size() > damChunkSize) {
+        const chunks = Math.floor(dam.size() / damChunkSize)
+        const data = Buffer.from(dam.read(0, chunks * damChunkSize))
+        dam.flushStart(chunks * damChunkSize)
+        for (let i = 0; i < chunks - 1; i++) {
+          transformInstance.push(data.subarray(i * damChunkSize, i * damChunkSize + damChunkSize))
         }
-      })
-      .catch((err) => {
-        callback(err)
-      })
+
+        callback(null, data.subarray((chunks - 1) * damChunkSize))
+      } else {
+        callback(null, EMPTY_BUFFER)
+      }
+    } catch (error: unknown) {
+      callback(error as Error)
+    }
   }
 }
 
@@ -205,14 +214,15 @@ export const transformSplitBy = (
  * Data can be piped to the returned function from a stream and it will concatenate all chunks into a single buffer.
  * @param done a callback function, which will receive the concatenated buffer as a parameter
  */
-export const toBuffer = (done: (buffer: Buffer) => void) => {
+export function toBuffer(done: (buffer: Buffer) => void): Writable {
   const buffer = new ExpandingBuffer()
+
   return new Writable({
-    write(chunk, encoding, callback) {
+    write(chunk, encoding, callback): void {
       buffer.append(chunk)
       callback()
     },
-    final(callback) {
+    final(callback): void {
       done(buffer.getHeap())
       callback()
     },

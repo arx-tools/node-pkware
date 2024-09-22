@@ -121,6 +121,9 @@
       {
         "avoidQuotes": true
       }
-    ]
+    ],
+    "@typescript-eslint/no-unsafe-enum-comparison": "off",
+    "unicorn/no-this-assignment": "off",
+    "@typescript-eslint/no-this-alias": "off"
   }
 }
