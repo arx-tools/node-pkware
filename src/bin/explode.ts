@@ -2,10 +2,10 @@
 
 import process from 'node:process'
 import minimist from 'minimist-lite'
+import { getPackageVersion, parseNumberString, getInputStream, getOutputStream } from '@bin/helpers.js'
 import { transformEmpty, transformIdentity, transformSplitBy, splitAt, through } from '@src/stream.js'
 import { type Config } from '@src/types.js'
 import { explode } from '@src/index.js'
-import { getPackageVersion, parseNumberString, getInputStream, getOutputStream } from '@bin/helpers.js'
 
 type AppArgs = {
   _: string[]
@@ -27,20 +27,14 @@ const args: AppArgs = minimist(process.argv.slice(2), {
   },
 })
 
-async function decompress(
+const decompress = (
   input: NodeJS.ReadableStream,
   output: NodeJS.WritableStream,
   offset: number,
   keepHeader: boolean,
   config: Config,
-): Promise<void> {
-  let leftHandler
-  if (keepHeader) {
-    leftHandler = transformIdentity()
-  } else {
-    leftHandler = transformEmpty()
-  }
-
+) => {
+  const leftHandler = keepHeader ? transformIdentity() : transformEmpty()
   const rightHandler = explode(config)
 
   const handler = transformSplitBy(splitAt(offset), leftHandler, rightHandler)
@@ -50,34 +44,38 @@ async function decompress(
   })
 }
 
-if (args.version) {
-  const version = await getPackageVersion()
-  console.log(`node-pkware - version ${version}`)
-  process.exit(0)
-}
+;(async () => {
+  if (args.version) {
+    const version = await getPackageVersion()
+    console.log(`node-pkware - version ${version}`)
+    process.exit(0)
+  }
 
-let input: NodeJS.ReadableStream
-let output: NodeJS.WritableStream
-try {
-  input = await getInputStream(args._[0])
-  output = await getOutputStream(args.output)
-} catch (error: unknown) {
-  console.error('error:', (error as Error).message)
-  process.exit(1)
-}
+  let input: NodeJS.ReadableStream
+  let output: NodeJS.WritableStream
+  try {
+    input = await getInputStream(args._[0])
+    output = await getOutputStream(args.output)
+  } catch (e: unknown) {
+    const error = e as Error
+    console.error('error:', error.message)
+    process.exit(1)
+  }
 
-const offset = parseNumberString(args.offset, 0)
-const keepHeader = !args['drop-before-offset']
-const config: Config = {
-  verbose: args.verbose,
-  inputBufferSize: parseNumberString(args['input-buffer-size'], 0x1_00_00),
-  outputBufferSize: parseNumberString(args['output-buffer-size'], 0x4_00_00),
-}
+  const offset = parseNumberString(args.offset, 0)
+  const keepHeader = !args['drop-before-offset']
+  const config: Config = {
+    verbose: args.verbose,
+    inputBufferSize: parseNumberString(args['input-buffer-size'], 0x10000),
+    outputBufferSize: parseNumberString(args['output-buffer-size'], 0x40000),
+  }
 
-try {
-  await decompress(input, output, offset, keepHeader, config)
-  process.exit(0)
-} catch (error: unknown) {
-  console.error('error:', (error as Error).message)
-  process.exit(1)
-}
+  decompress(input, output, offset, keepHeader, config)
+    .then(() => {
+      process.exit(0)
+    })
+    .catch((e) => {
+      console.error(`error: ${e.message}`)
+      process.exit(1)
+    })
+})()

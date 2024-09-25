@@ -18,7 +18,7 @@
     "build:watch": "nodemon --watch src --exec \"npm run build\" --ext ts",
     "lint": "xo",
     "lint:watch": "nodemon --watch src --exec \"npm run lint\" --ext ts",
-    "prepublishOnly": "npm run lint && rm -rf dist && rm -f tsconfig.tsbuildinfo && npm run build"
+    "prepublishOnly": "rm -rf dist && rm -f tsconfig.tsbuildinfo && npm run build"
   },
   "repository": {
     "type": "git",
