@@ -4,13 +4,20 @@ import { isFunction } from '@src/functions.js'
 import { ExpandingBuffer } from '@src/ExpandingBuffer.js'
 import { EMPTY_BUFFER } from '@src/constants.js'
 
+export type StreamHandler = (
+  this: Transform,
+  chunk: Buffer,
+  encoding: BufferEncoding,
+  callback: TransformCallback,
+) => void | Promise<void>
+
+type TransformPredicate = (chunk: Buffer) => [Buffer, Buffer, boolean]
+
 class QuasiTransform {
-  #handler: (this: Transform, chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback) => void
+  #handler: StreamHandler
   _flush?: (callback: TransformCallback) => void
 
-  constructor(
-    handler: (this: Transform, chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback) => void,
-  ) {
+  constructor(handler: StreamHandler) {
     this.#handler = handler
   }
 
@@ -84,9 +91,7 @@ export const transformEmpty = () => {
  * @param handler a `transform._transform` type function
  * @returns a Transform stream instance
  */
-export const through = (
-  handler: (this: Transform, chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback) => void,
-) => {
+export const through = (handler: StreamHandler) => {
   return new Transform({
     transform: handler,
   })
@@ -99,8 +104,8 @@ export const through = (
  */
 export const transformSplitBy = (
   predicate: (chunk: Buffer) => [Buffer, Buffer, boolean],
-  leftHandler: (this: Transform, chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback) => void,
-  rightHandler: (this: Transform, chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback) => void,
+  leftHandler: StreamHandler,
+  rightHandler: StreamHandler,
 ) => {
   let isFirstChunk = true
   let wasLeftFlushCalled = false

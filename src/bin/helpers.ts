@@ -2,50 +2,50 @@ import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 
-const isDecimalString = (input: string) => {
+function isDecimalString(input: string): boolean {
   return /^\d+$/.test(input)
 }
 
-const isFullHexString = (input: string) => {
-  return /^\s*0x[0-9a-f]+\s*$/.test(input)
+function isFullHexString(input: string): boolean {
+  return /^\s*0x[\da-f]+\s*$/.test(input)
 }
 
-export const parseNumberString = (n?: string, defaultValue: number = 0) => {
-  if (typeof n === 'undefined') {
+export function parseNumberString(n?: string, defaultValue: number = 0): number {
+  if (n === undefined) {
     return defaultValue
   }
 
   if (isDecimalString(n)) {
-    return parseInt(n)
+    return Number.parseInt(n, 10)
   }
 
   if (isFullHexString(n)) {
-    return parseInt(n.replace(/^0x/, ''), 16)
+    return Number.parseInt(n.replace(/^0x/, ''), 16)
   }
 
   return defaultValue
 }
 
-export const getPackageVersion = async () => {
+export async function getPackageVersion(): Promise<string> {
   try {
-    const rawIn = await fs.promises.readFile(path.resolve(__dirname, '../../package.json'), 'utf-8')
+    const rawIn = await fs.promises.readFile(path.resolve(__dirname, '../../package.json'), 'utf8')
     const { version } = JSON.parse(rawIn) as { version: string }
     return version
-  } catch (error: unknown) {
+  } catch {
     return 'unknown'
   }
 }
 
-const fileExists = async (filename: string) => {
+async function fileExists(filename: string): Promise<boolean> {
   try {
     await fs.promises.access(filename, fs.constants.R_OK)
     return true
-  } catch (error: unknown) {
+  } catch {
     return false
   }
 }
 
-export const getInputStream = async (filename?: string): Promise<NodeJS.ReadableStream> => {
+export async function getInputStream(filename?: string): Promise<NodeJS.ReadableStream> {
   if (filename === undefined) {
     process.stdin.resume()
     return process.stdin
@@ -58,7 +58,7 @@ export const getInputStream = async (filename?: string): Promise<NodeJS.Readable
   throw new Error('input file does not exist')
 }
 
-export const getOutputStream = async (filename?: string): Promise<NodeJS.WritableStream> => {
+export async function getOutputStream(filename?: string): Promise<NodeJS.WritableStream> {
   if (filename === undefined) {
     return process.stdout
   }
