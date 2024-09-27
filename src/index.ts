@@ -1,13 +1,14 @@
 import { type Compression, type DictionarySize } from '@src/constants.js'
 import { Explode } from '@src/Explode.js'
 import { Implode } from '@src/Implode.js'
+import { type StreamHandler } from '@src/stream.js'
 import { type Config } from '@src/types.js'
 
 /**
  * Decompresses stream
  * @returns a function that you can use as a `transform._transform` method.
  */
-export const explode = (config: Config = {}) => {
+export function explode(config: Config = {}): StreamHandler {
   const instance = new Explode(config)
   return instance.getHandler()
 }
@@ -16,7 +17,11 @@ export const explode = (config: Config = {}) => {
  * Compresses stream
  * @returns a function that you can use as a `transform._transform` method.
  */
-export const implode = (compressionType: Compression, dictionarySize: DictionarySize, config: Config = {}) => {
+export function implode(
+  compressionType: Compression,
+  dictionarySize: DictionarySize,
+  config: Config = {},
+): StreamHandler {
   const instance = new Implode(compressionType, dictionarySize, config)
   return instance.getHandler()
 }
