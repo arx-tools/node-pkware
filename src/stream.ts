@@ -120,20 +120,27 @@ export function transformSplitBy(
   const leftTransform = new QuasiTransform(leftHandler)
   const rightTransform = new QuasiTransform(rightHandler)
 
-  return function (this: Transform, chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback) {
+  return async function (
+    this: Transform,
+    chunk: Buffer,
+    encoding: BufferEncoding,
+    callback: TransformCallback,
+  ): Promise<void> {
     const [left, right, isLeftDone] = predicate(chunk)
 
-    const _left = leftTransform.handle(left, encoding)
-    const _right = rightTransform.handle(right, encoding)
+    const transformedLeft = leftTransform.handle(left, encoding)
+    const transformedRight = rightTransform.handle(right, encoding)
+
+    const transformInstance = this
 
     if (isFirstChunk) {
       isFirstChunk = false
-      this._flush = (flushCallback) => {
+      transformInstance._flush = async function (flushCallback: TransformCallback): Promise<void> {
         if (!dam.isEmpty()) {
-          this.push(dam.read())
+          transformInstance.push(dam.read())
         }
 
-        const leftFiller = new Promise((resolve, reject) => {
+        const leftFiller = new Promise<Buffer>((resolve, reject) => {
           if (wasLeftFlushCalled || !isFunction(leftTransform._flush)) {
             resolve(EMPTY_BUFFER)
             return
@@ -143,12 +150,12 @@ export function transformSplitBy(
             if (error) {
               reject(error)
             } else {
-              resolve(data)
+              resolve(data as Buffer)
             }
           })
         })
 
-        const rightFiller = new Promise((resolve, reject) => {
+        const rightFiller = new Promise<Buffer>((resolve, reject) => {
           if (!isFunction(rightTransform._flush)) {
             resolve(EMPTY_BUFFER)
             return
@@ -158,30 +165,28 @@ export function transformSplitBy(
             if (err) {
               reject(err)
             } else {
-              resolve(data)
+              resolve(data as Buffer)
             }
           })
         })
 
-        Promise.all([leftFiller, rightFiller])
-          .then((buffers) => {
-            // TODO: TransformCallback assumes the returned data is any instead of Buffer
-            flushCallback(null, Buffer.concat(buffers as Buffer[]))
-          })
-          .catch((error: unknown) => {
-            flushCallback(error as Error)
-          })
+        try {
+          const buffers = await Promise.all([leftFiller, rightFiller])
+          flushCallback(null, Buffer.concat(buffers))
+        } catch (error: unknown) {
+          flushCallback(error as Error)
+        }
       }
     }
 
-    const filler = new Promise((resolve, reject) => {
+    const filler = new Promise<Buffer>((resolve, reject) => {
       if (isLeftDone && !wasLeftFlushCalled && isFunction(leftTransform._flush)) {
         wasLeftFlushCalled = true
-        leftTransform._flush((err, data) => {
-          if (err) {
-            reject(err)
+        leftTransform._flush((error, data) => {
+          if (error) {
+            reject(error)
           } else {
-            resolve(data)
+            resolve(data as Buffer)
           }
         })
       } else {
@@ -189,26 +194,26 @@ export function transformSplitBy(
       }
     })
 
-    Promise.all([_left, filler, _right])
-      .then((buffers) => {
-        // TODO: TransformCallback assumes the returned data is any instead of Buffer
-        dam.append(Buffer.concat(buffers as Buffer[]))
-        if (dam.size() > damChunkSize) {
-          const chunks = Math.floor(dam.size() / damChunkSize)
-          const data = Buffer.from(dam.read(0, chunks * damChunkSize))
-          dam.flushStart(chunks * damChunkSize)
-          for (let i = 0; i < chunks - 1; i++) {
-            this.push(data.subarray(i * damChunkSize, i * damChunkSize + damChunkSize))
-          }
+    try {
+      const buffers = await Promise.all([transformedLeft, filler, transformedRight])
 
-          callback(null, data.subarray((chunks - 1) * damChunkSize))
-        } else {
-          callback(null, EMPTY_BUFFER)
+      dam.append(Buffer.concat(buffers))
+
+      if (dam.size() > damChunkSize) {
+        const chunks = Math.floor(dam.size() / damChunkSize)
+        const data = Buffer.from(dam.read(0, chunks * damChunkSize))
+        dam.flushStart(chunks * damChunkSize)
+        for (let i = 0; i < chunks - 1; i++) {
+          this.push(data.subarray(i * damChunkSize, i * damChunkSize + damChunkSize))
         }
-      })
-      .catch((error: unknown) => {
-        callback(error as Error)
-      })
+
+        callback(null, data.subarray((chunks - 1) * damChunkSize))
+      } else {
+        callback(null, EMPTY_BUFFER)
+      }
+    } catch (error: unknown) {
+      callback(error as Error)
+    }
   }
 }
 
