@@ -28,7 +28,7 @@ export function parseNumberString(n?: string, defaultValue: number = 0): number 
 
 export async function getPackageVersion(): Promise<string> {
   try {
-    const rawIn = await fs.promises.readFile(path.resolve(__dirname, '../../package.json'), 'utf8')
+    const rawIn = await fs.promises.readFile(path.resolve(__dirname, '../package.json'), 'utf8')
     const { version } = JSON.parse(rawIn) as { version: string }
     return version
   } catch {
