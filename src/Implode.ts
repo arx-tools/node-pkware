@@ -15,7 +15,7 @@ import {
 } from '@src/constants.js'
 import { InvalidCompressionTypeError, InvalidDictionarySizeError } from '@src/errors.js'
 import { ExpandingBuffer } from '@src/ExpandingBuffer.js'
-import { clamp, clone, evenAndRemainder, getLowestNBits, last, nBitsOfOnes, repeat, toHex } from '@src/functions.js'
+import { clamp, quotientAndRemainder, getLowestNBitsOf, last, nBitsOfOnes, repeat, toHex } from '@src/functions.js'
 import { type Config, type Stats } from '@src/types.js'
 
 export const getSizeOfMatching = (inputBytes: Buffer, a: number, b: number) => {
@@ -67,8 +67,8 @@ export class Implode {
   #dictionarySize: DictionarySize = DictionarySize.Unknown
   #dictionarySizeMask: number = -1
   #streamEnded: boolean = false
-  #distCodes: number[] = clone(DistCode)
-  #distBits: number[] = clone(DistBits)
+  #distCodes: number[] = structuredClone(DistCode)
+  #distBits: number[] = structuredClone(DistBits)
   #startIndex: number = 0
   #handledFirstTwoBytes: boolean = false
   #outBits: number = 0
@@ -117,7 +117,7 @@ export class Implode {
           return
         }
 
-        let [numberOfBlocks] = evenAndRemainder(blockSize, instance.#outputBuffer.size())
+        let [numberOfBlocks] = quotientAndRemainder(instance.#outputBuffer.size(), blockSize)
 
         // making sure to leave one block worth of data for lookback when processing chunk data
         numberOfBlocks--
@@ -314,7 +314,7 @@ export class Implode {
         for (let nCount = 0; nCount < 0x100; nCount++) {
           this.#nChBits[nCount] = 9
           this.#nChCodes[nCount] = nChCode
-          nChCode = getLowestNBits(16, nChCode) + 2
+          nChCode = getLowestNBitsOf(nChCode, 16) + 2
         }
         break
       case Compression.Ascii:
@@ -351,16 +351,16 @@ export class Implode {
     const outBits = this.#outBits
 
     const lastBytes = this.#outputBuffer.readByte(this.#outputBuffer.size() - 1)
-    this.#outputBuffer.setByte(-1, lastBytes | getLowestNBits(8, bitBuffer << outBits))
+    this.#outputBuffer.setByte(-1, lastBytes | getLowestNBitsOf(bitBuffer << outBits, 8))
 
     this.#outBits = this.#outBits + nBits
 
     if (this.#outBits > 8) {
-      this.#outBits = getLowestNBits(3, this.#outBits)
+      this.#outBits = getLowestNBitsOf(this.#outBits, 3)
       bitBuffer = bitBuffer >> (8 - outBits)
-      this.#outputBuffer.appendByte(getLowestNBits(8, bitBuffer))
+      this.#outputBuffer.appendByte(getLowestNBitsOf(bitBuffer, 8))
     } else {
-      this.#outBits = getLowestNBits(3, this.#outBits)
+      this.#outBits = getLowestNBitsOf(this.#outBits, 3)
       if (this.#outBits === 0) {
         this.#outputBuffer.appendByte(0)
       }

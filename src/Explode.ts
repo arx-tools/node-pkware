@@ -17,8 +17,8 @@ import {
 import { AbortedError, InvalidCompressionTypeError, InvalidDictionarySizeError } from '@src/errors.js'
 import { ExpandingBuffer } from '@src/ExpandingBuffer.js'
 import {
-  evenAndRemainder,
-  getLowestNBits,
+  quotientAndRemainder,
+  getLowestNBitsOf,
   mergeSparseArrays,
   nBitsOfOnes,
   repeat,
@@ -139,7 +139,7 @@ export class Explode {
           return
         }
 
-        let [numberOfBlocks] = evenAndRemainder(blockSize, instance.#outputBuffer.size())
+        let [numberOfBlocks] = quotientAndRemainder(instance.#outputBuffer.size(), blockSize)
 
         // making sure to leave one block worth of data for lookback when processing chunk data
         numberOfBlocks--
@@ -166,7 +166,7 @@ export class Explode {
         return value - 0
       }
 
-      const acc = getLowestNBits(8, ChCodeAsc[index])
+      const acc = getLowestNBitsOf(ChCodeAsc[index], 8)
       if (acc === 0) {
         this.#asciiTable2EB4 = mergeSparseArrays(
           populateAsciiTable(value, index, 8, 0x100),
@@ -177,7 +177,7 @@ export class Explode {
 
       this.#asciiTable2C34[acc] = 0xff
 
-      if (getLowestNBits(6, acc) === 0) {
+      if (getLowestNBitsOf(acc, 6) === 0) {
         this.#asciiTable2E34 = mergeSparseArrays(
           populateAsciiTable(value, index, 6, 0x80),
           this.#asciiTable2E34,
@@ -235,18 +235,18 @@ export class Explode {
    * @throws {@link AbortedError}
    */
   #decodeNextLiteral() {
-    const lastBit = getLowestNBits(1, this.#bitBuffer)
+    const lastBit = getLowestNBitsOf(this.#bitBuffer, 1)
 
     this.#wasteBits(1)
 
     if (lastBit) {
-      let lengthCode = this.#lengthCodes[getLowestNBits(8, this.#bitBuffer)]
+      let lengthCode = this.#lengthCodes[getLowestNBitsOf(this.#bitBuffer, 8)]
 
       this.#wasteBits(LenBits[lengthCode])
 
       const extraLenghtBits = ExLenBits[lengthCode]
       if (extraLenghtBits !== 0) {
-        const extraLength = getLowestNBits(extraLenghtBits, this.#bitBuffer)
+        const extraLength = getLowestNBitsOf(this.#bitBuffer, extraLenghtBits)
 
         try {
           this.#wasteBits(extraLenghtBits)
@@ -262,7 +262,7 @@ export class Explode {
       return lengthCode + 0x100
     }
 
-    const lastByte = getLowestNBits(8, this.#bitBuffer)
+    const lastByte = getLowestNBitsOf(this.#bitBuffer, 8)
 
     if (this.#compressionType === Compression.Binary) {
       this.#wasteBits(8)
@@ -275,20 +275,20 @@ export class Explode {
       value = this.#asciiTable2C34[lastByte]
 
       if (value === 0xff) {
-        if (getLowestNBits(6, this.#bitBuffer)) {
+        if (getLowestNBitsOf(this.#bitBuffer, 6)) {
           this.#wasteBits(4)
 
-          value = this.#asciiTable2D34[getLowestNBits(8, this.#bitBuffer)]
+          value = this.#asciiTable2D34[getLowestNBitsOf(this.#bitBuffer, 8)]
         } else {
           this.#wasteBits(6)
 
-          value = this.#asciiTable2E34[getLowestNBits(7, this.#bitBuffer)]
+          value = this.#asciiTable2E34[getLowestNBitsOf(this.#bitBuffer, 7)]
         }
       }
     } else {
       this.#wasteBits(8)
 
-      value = this.#asciiTable2EB4[getLowestNBits(8, this.#bitBuffer)]
+      value = this.#asciiTable2EB4[getLowestNBitsOf(this.#bitBuffer, 8)]
     }
 
     this.#wasteBits(this.#chBitsAsc[value])
@@ -300,7 +300,7 @@ export class Explode {
    * @throws {@link AbortedError}
    */
   #decodeDistance(repeatLength: number) {
-    const distPosCode = this.#distPosCodes[getLowestNBits(8, this.#bitBuffer)]
+    const distPosCode = this.#distPosCodes[getLowestNBitsOf(this.#bitBuffer, 8)]
     const distPosBits = DistBits[distPosCode]
 
     this.#wasteBits(distPosBits)
@@ -309,7 +309,7 @@ export class Explode {
     let bitsToWaste: number
 
     if (repeatLength === 2) {
-      distance = (distPosCode << 2) | getLowestNBits(2, this.#bitBuffer)
+      distance = (distPosCode << 2) | getLowestNBitsOf(this.#bitBuffer, 2)
       bitsToWaste = 2
     } else {
       distance = (distPosCode << this.#dictionarySize) | (this.#bitBuffer & this.#dictionarySizeMask)
