@@ -162,10 +162,6 @@ export function mergeSparseArrays<T>(a: T[], b: T[]): (T | undefined)[] {
   return result
 }
 
-export function last<T>(arr: T[]): T {
-  return arr[arr.length - 1]
-}
-
 /**
  * Builds a list from a seed value. Accepts an iterator function, which returns
  * either false to stop iteration or an array of length 2 containing the value

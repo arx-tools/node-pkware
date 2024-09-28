@@ -15,7 +15,7 @@ import {
 } from '@src/constants.js'
 import { InvalidCompressionTypeError, InvalidDictionarySizeError } from '@src/errors.js'
 import { ExpandingBuffer } from '@src/ExpandingBuffer.js'
-import { clamp, quotientAndRemainder, getLowestNBitsOf, last, nBitsOfOnes, repeat, toHex } from '@src/functions.js'
+import { clamp, quotientAndRemainder, getLowestNBitsOf, nBitsOfOnes, repeat, toHex } from '@src/functions.js'
 import { type Config, type Stats } from '@src/types.js'
 
 export const getSizeOfMatching = (inputBytes: Buffer, a: number, b: number) => {
@@ -255,7 +255,7 @@ export class Implode {
 
     if (this.#streamEnded) {
       // Write the termination literal
-      this.#outputBits(last(this.#nChBits), last(this.#nChCodes))
+      this.#outputBits(this.#nChBits.at(-1) as number, this.#nChCodes.at(-1) as number)
     }
   }
 
