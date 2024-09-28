@@ -1,6 +1,6 @@
 {
   "name": "node-pkware",
-  "version": "4.0.0-alpha.6",
+  "version": "4.0.0-alpha.7",
   "description": "nodejs implementation of StormLib's pkware compressor/de-compressor",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
