@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
+import { fileURLToPath } from 'node:url'
 
 function isDecimalString(input: string): boolean {
   return /^\d+$/.test(input)
@@ -26,9 +27,16 @@ export function parseNumberString(n?: string, defaultValue: number = 0): number 
   return defaultValue
 }
 
+function pathToPackageJson(): string {
+  const filename = fileURLToPath(import.meta.url)
+  const dirname = path.dirname(filename)
+
+  return path.resolve(dirname, '../../package.json')
+}
+
 export async function getPackageVersion(): Promise<string> {
   try {
-    const rawIn = await fs.promises.readFile(path.resolve(__dirname, '../package.json'), 'utf8')
+    const rawIn = await fs.promises.readFile(pathToPackageJson(), 'utf8')
     const { version } = JSON.parse(rawIn) as { version: string }
     return version
   } catch {
