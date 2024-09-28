@@ -111,7 +111,7 @@ export function transformSplitBy(
   predicate: TransformPredicate,
   leftHandler: StreamHandler,
   rightHandler: StreamHandler,
-) {
+): StreamHandler {
   let isFirstChunk = true
   let wasLeftFlushCalled = false
   const damChunkSize = 0x1_00_00
