@@ -383,12 +383,17 @@ export class Implode {
     const lastBytes = this.outputBuffer.readByte(this.outputBuffer.size() - 1)
     this.outputBuffer.setByte(-1, lastBytes | getLowestNBitsOf(bitBuffer << outBits, 8))
 
-    this.outBits = getLowestNBitsOf(this.outBits + nBits, 3)
+    this.outBits = this.outBits + nBits
+
     if (this.outBits > 8) {
+      this.outBits = getLowestNBitsOf(this.outBits, 3)
       bitBuffer = bitBuffer >> (8 - outBits)
       this.outputBuffer.appendByte(getLowestNBitsOf(bitBuffer, 8))
-    } else if (this.outBits === 0) {
-      this.outputBuffer.appendByte(0)
+    } else {
+      this.outBits = getLowestNBitsOf(this.outBits, 3)
+      if (this.outBits === 0) {
+        this.outputBuffer.appendByte(0)
+      }
     }
   }
 }
