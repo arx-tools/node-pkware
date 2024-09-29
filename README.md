@@ -69,9 +69,7 @@ Takes an optional config object, which has the following properties:
 
 ```js
 {
-  verbose: boolean, // whether the code should display extra debug messages on the console or not (default = false)
-  inputBufferSize: int, // the starting size of the input buffer, may expand later as needed. Not having to expand may have positive performance impact (default 0)
-  outputBufferSize: int // same as inputBufferSize, but for the outputBuffer (default 0)
+  verbose: boolean // whether the code should display extra debug messages on the console or not (default = false)
 }
 ```
 
@@ -83,9 +81,7 @@ Takes an optional config object, which has the following properties:
 
 ```js
 {
-  verbose: boolean, // whether the code should display extra debug messages on the console or not (default = false)
-  inputBufferSize: int, // the starting size of the input buffer, may expand later as needed. Not having to expand may have positive performance impact (default 0)
-  outputBufferSize: int // same as inputBufferSize, but for the outputBuffer (default 0)
+  verbose: boolean // whether the code should display extra debug messages on the console or not (default = false)
 }
 ```
 
@@ -121,8 +117,6 @@ The returned function has the `(chunk: Buffer, encoding: string, callback: funct
 `errors.InvalidDictionarySizeError` - thrown by implode when invalid dictionary size was specified or by explode when it encounters invalid data in the header section (the first 2 bytes of a compressed files)
 
 `errors.InvalidCompressionTypeError` - thrown by implode when invalid compression type was specified or by explode when it encounters invalid data in the header section (the first 2 bytes of a compressed files)
-
-`errors.InvalidDataError` - thrown by explode, when compressed data is less, than 5 bytes long. Pkware compressed files have 2 bytes header followed by at lest 2 bytes of data and an end literal.
 
 `errors.AbortedError` - thrown by explode when compressed data ends without reaching the end literal or in mid decompression
 

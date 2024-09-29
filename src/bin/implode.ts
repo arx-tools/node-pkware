@@ -19,8 +19,6 @@ type AppArgs = {
   _: string[]
   output?: string
   offset?: string
-  'input-buffer-size'?: string
-  'output-buffer-size'?: string
   version: boolean
   binary: boolean
   ascii: boolean
@@ -38,7 +36,7 @@ type AppArgs = {
 }
 
 const args: AppArgs = minimist(process.argv.slice(2), {
-  string: ['output', 'offset', 'input-buffer-size', 'output-buffer-size'],
+  string: ['output', 'offset'],
   boolean: ['version', 'ascii', 'binary', 'small', 'medium', 'large', 'drop-before-offset', 'verbose'],
   alias: {
     v: 'version',
@@ -140,8 +138,6 @@ const offset = parseNumberString(args.offset, 0)
 const keepHeader = !args['drop-before-offset']
 const config: Config = {
   verbose: args.verbose,
-  inputBufferSize: parseNumberString(args['input-buffer-size'], 0x1_00_00),
-  outputBufferSize: parseNumberString(args['output-buffer-size'], 0x1_20_00),
 }
 
 try {

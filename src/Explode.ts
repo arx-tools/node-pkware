@@ -116,8 +116,8 @@ export class Explode {
     this.backupData = { extraBits: -1, bitBuffer: -1 }
     this.lengthCodes = generateDecodeTables(LenCode, LenBits)
     this.distPosCodes = generateDecodeTables(DistCode, DistBits)
-    this.inputBuffer = new ExpandingBuffer(config?.inputBufferSize ?? 0)
-    this.outputBuffer = new ExpandingBuffer(config?.outputBufferSize ?? 0)
+    this.inputBuffer = new ExpandingBuffer(0x1_00_00)
+    this.outputBuffer = new ExpandingBuffer(0x4_00_00)
     this.stats = { chunkCounter: 0 }
     this.compressionType = Compression.Unknown
     this.dictionarySize = DictionarySize.Unknown

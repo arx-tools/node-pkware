@@ -94,8 +94,8 @@ export class Implode {
 
     this.verbose = config?.verbose ?? false
     this.isFirstChunk = true
-    this.inputBuffer = new ExpandingBuffer(config?.inputBufferSize ?? 0)
-    this.outputBuffer = new ExpandingBuffer(config?.outputBufferSize ?? 0)
+    this.inputBuffer = new ExpandingBuffer(0x1_00_00)
+    this.outputBuffer = new ExpandingBuffer(0x1_20_00)
     this.stats = { chunkCounter: 0 }
     this.compressionType = compressionType
     this.dictionarySize = dictionarySize
