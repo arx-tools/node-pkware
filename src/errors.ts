@@ -24,19 +24,6 @@ export class InvalidCompressionTypeError extends Error {
 
 /**
  * Thrown by
- * - `explode`, when compressed data is less, than `5` bytes long
- *
- * Pkware compressed files have 2 bytes header followed by at lest 2 bytes of data and an end literal.
- */
-export class InvalidDataError extends Error {
-  constructor() {
-    super('Invalid data')
-    this.name = 'InvalidDataError'
-  }
-}
-
-/**
- * Thrown by
  * - `explode` when compressed data ends without reaching the end literal or in mid decompression
  */
 export class AbortedError extends Error {
