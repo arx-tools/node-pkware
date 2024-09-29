@@ -123,7 +123,7 @@ export class Implode {
         }
 
         if (instance.verbose) {
-          instance.stats.chunkCounter++
+          instance.stats.chunkCounter = instance.stats.chunkCounter + 1
           console.log(`implode: reading ${toHex(chunk.length)} bytes from chunk #${instance.stats.chunkCounter}`)
         }
 
@@ -139,7 +139,7 @@ export class Implode {
         let [numberOfBlocks] = quotientAndRemainder(instance.outputBuffer.size(), blockSize)
 
         // making sure to leave one block worth of data for lookback when processing chunk data
-        numberOfBlocks--
+        numberOfBlocks = numberOfBlocks - 1
 
         const numberOfBytes = numberOfBlocks * blockSize
         // make sure to create a copy of the output buffer slice as it will get flushed in the next line
@@ -224,7 +224,8 @@ export class Implode {
             while (newSize <= currentSize && this.isRepetitionFlushable(newSize, newDistance)) {
               currentSize = newSize
               currentDistance = newDistance
-              const reps = findRepetitions(this.inputBuffer.read(endOfLastMatch), endOfLastMatch, ++cursor)
+              cursor = cursor + 1
+              const reps = findRepetitions(this.inputBuffer.read(endOfLastMatch), endOfLastMatch, cursor)
               newSize = reps.size
               newDistance = reps.distance
             }
@@ -360,7 +361,7 @@ export class Implode {
       for (let nCount2 = 0; nCount2 < 1 << ExLenBits[i]; nCount2++) {
         this.nChBits[nCount] = ExLenBits[i] + LenBits[i] + 1
         this.nChCodes[nCount] = (nCount2 << (LenBits[i] + 1)) | (LenCode[i] * 2) | 1
-        nCount++
+        nCount = nCount + 1
       }
     }
 

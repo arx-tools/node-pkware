@@ -126,7 +126,7 @@ export class Explode {
         }
 
         if (instance.#verbose) {
-          instance.#stats.chunkCounter++
+          instance.#stats.chunkCounter = instance.#stats.chunkCounter + 1
           console.log(`explode: reading ${toHex(chunk.length)} bytes from chunk #${instance.#stats.chunkCounter}`)
         }
 
