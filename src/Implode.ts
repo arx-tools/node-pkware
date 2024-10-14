@@ -316,24 +316,16 @@ export class Implode {
   }
 
   private setup(): void {
-    switch (this.dictionarySize) {
-      case DictionarySize.Large: {
-        this.dictionarySizeMask = nBitsOfOnes(6)
-        break
-      }
-
-      case DictionarySize.Medium: {
-        this.dictionarySizeMask = nBitsOfOnes(5)
-        break
-      }
-
-      case DictionarySize.Small: {
-        this.dictionarySizeMask = nBitsOfOnes(4)
-        break
-      }
-    }
-
     switch (this.compressionType) {
+      case Compression.Ascii: {
+        for (let nCount = 0; nCount < 0x1_00; nCount++) {
+          this.nChBits[nCount] = ChBitsAsc[nCount] + 1
+          this.nChCodes[nCount] = ChCodeAsc[nCount] * 2
+        }
+
+        break
+      }
+
       case Compression.Binary: {
         let nChCode = 0
         for (let nCount = 0; nCount < 0x1_00; nCount++) {
@@ -344,13 +336,21 @@ export class Implode {
 
         break
       }
+    }
 
-      case Compression.Ascii: {
-        for (let nCount = 0; nCount < 0x1_00; nCount++) {
-          this.nChBits[nCount] = ChBitsAsc[nCount] + 1
-          this.nChCodes[nCount] = ChCodeAsc[nCount] * 2
-        }
+    switch (this.dictionarySize) {
+      case DictionarySize.Small: {
+        this.dictionarySizeMask = nBitsOfOnes(4)
+        break
+      }
 
+      case DictionarySize.Medium: {
+        this.dictionarySizeMask = nBitsOfOnes(5)
+        break
+      }
+
+      case DictionarySize.Large: {
+        this.dictionarySizeMask = nBitsOfOnes(6)
         break
       }
     }
