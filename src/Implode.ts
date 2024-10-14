@@ -19,7 +19,7 @@ import { clamp, quotientAndRemainder, getLowestNBitsOf, nBitsOfOnes, repeat, toH
 import { type StreamHandler } from '@src/stream.js'
 import { type Config, type Stats } from '@src/types.js'
 
-export function getSizeOfMatching(inputBytes: Buffer, a: number, b: number): number {
+function getSizeOfMatching(inputBytes: Buffer, a: number, b: number): number {
   const limit = clamp(2, LONGEST_ALLOWED_REPETITION, b - a)
 
   for (let i = 2; i <= limit; i++) {
