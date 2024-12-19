@@ -4,7 +4,7 @@
 export enum Compression {
   Unknown = -1,
   Binary = 0,
-  Ascii,
+  Ascii = 1,
 }
 
 /**
@@ -18,8 +18,8 @@ export enum Compression {
 export enum DictionarySize {
   Unknown = -1,
   Small = 4,
-  Medium,
-  Large,
+  Medium = 5,
+  Large = 6,
 }
 
 export const EMPTY_BUFFER = Buffer.from([])
