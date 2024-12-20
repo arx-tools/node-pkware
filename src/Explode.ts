@@ -63,8 +63,8 @@ function generateDecodeTables(startIndexes: number[], lengthBits: number[]): num
 /**
  * PAT = populate ascii table
  */
-function createPATIterator(limit: number, stepper: number): (n: number) => [number, number] | false {
-  return function (n: number): [number, number] | false {
+function createPATIterator(limit: number, stepper: number): (n: number) => [result: number, nextSeed: number] | false {
+  return function (n: number): [result: number, nextSeed: number] | false {
     if (n >= limit) {
       return false
     }

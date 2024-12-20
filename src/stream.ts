@@ -12,7 +12,7 @@ export type StreamHandler = (
   callback: TransformCallback,
 ) => void | Promise<void>
 
-type TransformPredicate = (chunk: Buffer) => [Buffer, Buffer, boolean]
+type TransformPredicate = (chunk: Buffer) => [left: Buffer, right: Buffer, isLeftDone: boolean]
 
 class QuasiTransform {
   _flush?: (callback: TransformCallback) => void
@@ -46,7 +46,7 @@ class QuasiTransform {
 export function splitAt(index: number): TransformPredicate {
   let cntr = 0
 
-  return (chunk: Buffer): [Buffer, Buffer, boolean] => {
+  return (chunk: Buffer): ReturnType<TransformPredicate> => {
     let left: Buffer
     let right: Buffer
     let isLeftDone: boolean

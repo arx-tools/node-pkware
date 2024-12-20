@@ -186,7 +186,7 @@ export function mergeSparseArrays<T>(a: T[], b: T[]): (T | undefined)[] {
  *
  * @see https://github.com/ramda/ramda/blob/master/source/unfold.js
  */
-export function unfold<T, TResult>(fn: (seed: T) => [TResult, T] | false, seed: T): TResult[] {
+export function unfold<T, TResult>(fn: (seed: T) => [result: TResult, nextSeed: T] | false, seed: T): TResult[] {
   let pair = fn(seed)
   const result: TResult[] = []
 
@@ -204,6 +204,6 @@ export function unfold<T, TResult>(fn: (seed: T) => [TResult, T] | false, seed: 
  * quotientAndRemainder(20, 3) // -> [6, 2]
  * ```
  */
-export function quotientAndRemainder(dividend: number, divisor: number): [number, number] {
+export function quotientAndRemainder(dividend: number, divisor: number): [quotient: number, remainder: number] {
   return [Math.floor(dividend / divisor), dividend % divisor]
 }
