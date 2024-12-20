@@ -132,7 +132,12 @@ export class Explode {
   getHandler() {
     const instance = this
 
-    return function (this: Transform, chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback): void {
+    return function (
+      this: Transform,
+      chunk: Buffer,
+      encoding: NodeJS.BufferEncoding,
+      callback: TransformCallback,
+    ): void {
       instance.needMoreInput = true
 
       try {

@@ -8,7 +8,7 @@ import { EMPTY_BUFFER } from '@src/constants.js'
 export type StreamHandler = (
   this: Transform,
   chunk: Buffer,
-  encoding: BufferEncoding,
+  encoding: NodeJS.BufferEncoding,
   callback: TransformCallback,
 ) => void | Promise<void>
 
@@ -23,7 +23,7 @@ class QuasiTransform {
     this.#handler = handler
   }
 
-  async handle(chunk: Buffer, encoding: BufferEncoding): Promise<Buffer> {
+  async handle(chunk: Buffer, encoding: NodeJS.BufferEncoding): Promise<Buffer> {
     return promisify(this.#handler).call(this, chunk, encoding) as Promise<Buffer>
   }
 }
@@ -78,7 +78,7 @@ export function splitAt(index: number): TransformPredicate {
  * A `transform._transform` type function, which lets the input chunks through without any changes
  */
 export function transformIdentity(): StreamHandler {
-  return function (this: Transform, chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback): void {
+  return function (this: Transform, chunk: Buffer, encoding: NodeJS.BufferEncoding, callback: TransformCallback): void {
     callback(null, chunk)
   }
 }
@@ -87,7 +87,7 @@ export function transformIdentity(): StreamHandler {
  * A `transform._transform` type function, which for every input chunk will output an empty buffer
  */
 export function transformEmpty(): StreamHandler {
-  return function (this: Transform, chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback): void {
+  return function (this: Transform, chunk: Buffer, encoding: NodeJS.BufferEncoding, callback: TransformCallback): void {
     callback(null, EMPTY_BUFFER)
   }
 }
@@ -124,7 +124,7 @@ export function transformSplitBy(
   return async function (
     this: Transform,
     chunk: Buffer,
-    encoding: BufferEncoding,
+    encoding: NodeJS.BufferEncoding,
     callback: TransformCallback,
   ): Promise<void> {
     const [left, right, isLeftDone] = predicate(chunk)
