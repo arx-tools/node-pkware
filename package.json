@@ -34,12 +34,12 @@
     "minimist-lite": "^2.2.1"
   },
   "devDependencies": {
-    "@trivago/prettier-plugin-sort-imports": "^4.3.0",
-    "@types/node": "^22.7.0",
+    "@trivago/prettier-plugin-sort-imports": "^5.2.0",
+    "@types/node": "^22.10.2",
     "eslint-plugin-unused-imports": "^4.1.4",
     "tsc-alias": "^1.8.10",
-    "typescript": "^5.6.2",
-    "xo": "^0.59.3"
+    "typescript": "5.6.3",
+    "xo": "^0.60.0"
   },
   "keywords": [
     "arx-fatalis",
