@@ -13,6 +13,16 @@
     "explode": "dist/bin/explode.js",
     "implode": "dist/bin/implode.js"
   },
+  "exports": {
+    ".": {
+      "default": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./simple": {
+      "default": "./dist/simple/index.js",
+      "types": "./dist/simple/index.d.ts"
+    }
+  },
   "scripts": {
     "build": "tsc && tsc-alias",
     "build:watch": "nodemon --watch src --exec \"npm run build\" --ext ts",

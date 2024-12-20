@@ -33,5 +33,3 @@ export { Compression, DictionarySize } from '@src/constants.js'
 export * as errors from '@src/errors.js'
 export * as stream from '@src/stream.js'
 export type { Config } from '@src/types.js'
-
-export { simpleImplode } from '@src/simple/implode.js'

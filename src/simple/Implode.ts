@@ -1,4 +1,3 @@
-// import fs from 'node:fs/promises'
 import { Buffer } from 'node:buffer'
 import {
   ChBitsAsc,
@@ -59,7 +58,7 @@ function findRepetitions(
   return { size: 0, distance: 0 }
 }
 
-export class SimpleImplode {
+export class Implode {
   private readonly inputBuffer: ExpandingBuffer
   private readonly outputBuffer: ExpandingBuffer
   private readonly compressionType: 'ascii' | 'binary'
@@ -341,28 +340,3 @@ export class SimpleImplode {
     }
   }
 }
-
-export function simpleImplode(
-  input: Buffer,
-  compressionType: 'ascii' | 'binary',
-  dictionarySize: 'small' | 'medium' | 'large',
-): Buffer {
-  const instance = new SimpleImplode(compressionType, dictionarySize)
-  return instance.handleData(input)
-}
-
-// --------------------
-// test
-
-// const input = await fs.readFile(
-//   '/home/lali/projektek/_arx/arx-tools/pkware-test-files/arx-fatalis/level8/level8.llf.unpacked',
-// )
-//
-// const output = simpleImplode(input, 'binary', 'large')
-//
-// await fs.writeFile(
-//   '/home/lali/projektek/_arx/arx-tools/pkware-test-files/arx-fatalis/level8/level8.llf.repacked',
-//   output,
-// )
-//
-// console.log('done')
