@@ -1,3 +1,5 @@
+import { Buffer } from 'node:buffer'
+
 /**
  * Compression types for implode
  */
