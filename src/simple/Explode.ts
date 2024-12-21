@@ -135,13 +135,16 @@ export class Explode {
     this.needMoreInput = true
     this.extraBits = 0
     this.bitBuffer = 0
-    this.backupData = { extraBits: -1, bitBuffer: -1 }
+    this.backupData = {
+      extraBits: -1,
+      bitBuffer: -1,
+    }
     this.lengthCodes = generateDecodeTables(LenCode, LenBits)
     this.distPosCodes = generateDecodeTables(DistCode, DistBits)
     this.inputBuffer = new ExpandingBuffer(0x1_00_00)
     this.outputBuffer = new ExpandingBuffer(0x4_00_00)
-    this.compressionType = 'binary'
-    this.dictionarySize = 'large'
+    this.compressionType = 'unknown'
+    this.dictionarySize = 'unknown'
     this.dictionarySizeMask = 0
     this.chBitsAsc = repeat(0, 0x1_00)
     this.asciiTable2C34 = repeat(0, 0x1_00)
@@ -150,6 +153,11 @@ export class Explode {
     this.asciiTable2EB4 = repeat(0, 0x1_00)
   }
 
+  /**
+   * @throws {InvalidCompressionTypeError}
+   * @throws {InvalidDictionarySizeError}
+   * @throws {AbortedError}
+   */
   handleData(input: Buffer): Buffer {
     this.needMoreInput = true
 
