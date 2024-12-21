@@ -1,5 +1,4 @@
 import { Buffer } from 'node:buffer'
-import { EMPTY_BUFFER } from '@src/constants.js'
 import { clamp } from '@src/functions.js'
 
 const blockSize = 0x10_00
@@ -113,7 +112,7 @@ export class ExpandingBuffer {
    */
   read(offset: number = 0, limit: number = this.size()): Buffer {
     if (offset < 0 || limit < 1) {
-      return EMPTY_BUFFER
+      return Buffer.from([])
     }
 
     if (offset + limit < this.size()) {

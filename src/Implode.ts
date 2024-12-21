@@ -7,7 +7,6 @@ import {
   DictionarySize,
   DistBits,
   DistCode,
-  EMPTY_BUFFER,
   ExLenBits,
   LenBits,
   LenCode,
@@ -137,7 +136,7 @@ export class Implode {
         const blockSize = 0x8_00
 
         if (instance.outputBuffer.size() <= blockSize) {
-          callback(null, EMPTY_BUFFER)
+          callback(null, Buffer.from([]))
           return
         }
 

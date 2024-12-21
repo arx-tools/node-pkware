@@ -7,7 +7,6 @@ import {
   DictionarySize,
   DistBits,
   DistCode,
-  EMPTY_BUFFER,
   ExLenBits,
   LenBase,
   LenBits,
@@ -158,7 +157,7 @@ export class Explode {
         const blockSize = 0x10_00
 
         if (instance.outputBuffer.size() <= blockSize) {
-          callback(null, EMPTY_BUFFER)
+          callback(null, Buffer.from([]))
           return
         }
 

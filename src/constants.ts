@@ -1,5 +1,3 @@
-import { Buffer } from 'node:buffer'
-
 /**
  * Compression types for implode
  */
@@ -23,8 +21,6 @@ export enum DictionarySize {
   Medium = 5,
   Large = 6,
 }
-
-export const EMPTY_BUFFER = Buffer.from([])
 
 export const LONGEST_ALLOWED_REPETITION = 0x2_04
 

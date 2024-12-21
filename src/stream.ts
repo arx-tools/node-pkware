@@ -3,7 +3,6 @@ import { Transform, Writable, type TransformCallback } from 'node:stream'
 import { promisify } from 'node:util'
 import { isFunction } from '@src/functions.js'
 import { ExpandingBuffer } from '@src/ExpandingBuffer.js'
-import { EMPTY_BUFFER } from '@src/constants.js'
 
 export type StreamHandler = (
   this: Transform,
@@ -53,13 +52,13 @@ export function splitAt(index: number): TransformPredicate {
 
     if (index <= cntr) {
       // index ..... cntr ..... chunk.length
-      left = EMPTY_BUFFER
+      left = Buffer.from([])
       right = chunk
       isLeftDone = true
     } else if (index >= cntr + chunk.length) {
       // cntr ..... chunk.length ..... index
       left = chunk
-      right = EMPTY_BUFFER
+      right = Buffer.from([])
       isLeftDone = index === cntr + chunk.length
     } else {
       // cntr ..... index ..... chunk.length
@@ -88,7 +87,7 @@ export function transformIdentity(): StreamHandler {
  */
 export function transformEmpty(): StreamHandler {
   return function (this: Transform, chunk: Buffer, encoding: NodeJS.BufferEncoding, callback: TransformCallback): void {
-    callback(null, EMPTY_BUFFER)
+    callback(null, Buffer.from([]))
   }
 }
 
@@ -143,7 +142,7 @@ export function transformSplitBy(
 
         const leftFiller = new Promise<Buffer>((resolve, reject) => {
           if (wasLeftFlushCalled || !isFunction(leftTransform._flush)) {
-            resolve(EMPTY_BUFFER)
+            resolve(Buffer.from([]))
             return
           }
 
@@ -158,7 +157,7 @@ export function transformSplitBy(
 
         const rightFiller = new Promise<Buffer>((resolve, reject) => {
           if (!isFunction(rightTransform._flush)) {
-            resolve(EMPTY_BUFFER)
+            resolve(Buffer.from([]))
             return
           }
 
@@ -191,7 +190,7 @@ export function transformSplitBy(
           }
         })
       } else {
-        resolve(EMPTY_BUFFER)
+        resolve(Buffer.from([]))
       }
     })
 
@@ -210,7 +209,7 @@ export function transformSplitBy(
 
         callback(null, data.subarray((chunks - 1) * damChunkSize))
       } else {
-        callback(null, EMPTY_BUFFER)
+        callback(null, Buffer.from([]))
       }
     } catch (error: unknown) {
       callback(error as Error)
