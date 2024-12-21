@@ -1,13 +1,9 @@
 import { Buffer } from 'node:buffer'
-import { type Transform, type TransformCallback } from 'node:stream'
 import {
   ChBitsAsc,
   ChCodeAsc,
-  Compression,
-  DictionarySize,
   DistBits,
   DistCode,
-  EMPTY_BUFFER,
   ExLenBits,
   LenBase,
   LenBits,
@@ -22,29 +18,60 @@ import {
   mergeSparseArrays,
   nBitsOfOnes,
   repeat,
-  toHex,
   unfold,
 } from '@src/functions.js'
-import { type Config, type Stats } from '@src/types.js'
 
 /**
  * This function assumes there are at least 2 bytes of data in the buffer
  */
-function readHeader(buffer: Buffer): { compressionType: Compression; dictionarySize: DictionarySize } {
-  const compressionType = buffer.readUint8(0)
-  const dictionarySize = buffer.readUint8(1)
+function readHeader(buffer: Buffer): {
+  compressionType: 'ascii' | 'binary'
+  dictionarySize: 'small' | 'medium' | 'large'
+} {
+  let compressionType: 'ascii' | 'binary'
 
-  if (!(compressionType in Compression) || compressionType === Compression.Unknown) {
-    throw new InvalidCompressionTypeError()
+  switch (buffer.readUint8(0)) {
+    case 0: {
+      compressionType = 'binary'
+      break
+    }
+
+    case 1: {
+      compressionType = 'ascii'
+      break
+    }
+
+    default: {
+      throw new InvalidCompressionTypeError()
+    }
   }
 
-  if (!(dictionarySize in DictionarySize) || dictionarySize === DictionarySize.Unknown) {
-    throw new InvalidDictionarySizeError()
+  let dictionarySize: 'small' | 'medium' | 'large'
+
+  switch (buffer.readUint8(1)) {
+    case 4: {
+      dictionarySize = 'small'
+      break
+    }
+
+    case 5: {
+      dictionarySize = 'medium'
+      break
+    }
+
+    case 6: {
+      dictionarySize = 'large'
+      break
+    }
+
+    default: {
+      throw new InvalidDictionarySizeError()
+    }
   }
 
   return {
-    compressionType: compressionType as Compression,
-    dictionarySize: dictionarySize as DictionarySize,
+    compressionType,
+    dictionarySize,
   }
 }
 
@@ -87,9 +114,7 @@ function populateAsciiTable(value: number, index: number, bits: number, limit: n
 }
 
 export class Explode {
-  private readonly verbose: boolean
   private needMoreInput: boolean
-  private isFirstChunk: boolean
   private extraBits: number
   private bitBuffer: number
   private readonly backupData: { extraBits: number; bitBuffer: number }
@@ -97,9 +122,8 @@ export class Explode {
   private readonly distPosCodes: number[]
   private readonly inputBuffer: ExpandingBuffer
   private readonly outputBuffer: ExpandingBuffer
-  private readonly stats: Stats
-  private compressionType: Compression
-  private dictionarySize: DictionarySize
+  private compressionType: 'ascii' | 'binary' | 'unknown'
+  private dictionarySize: 'small' | 'medium' | 'large' | 'unknown'
   private dictionarySizeMask: number
   private chBitsAsc: number[]
   private asciiTable2C34: number[]
@@ -107,10 +131,8 @@ export class Explode {
   private asciiTable2E34: number[]
   private asciiTable2EB4: number[]
 
-  constructor(config: Config = {}) {
-    this.verbose = config?.verbose ?? false
+  constructor() {
     this.needMoreInput = true
-    this.isFirstChunk = true
     this.extraBits = 0
     this.bitBuffer = 0
     this.backupData = { extraBits: -1, bitBuffer: -1 }
@@ -118,9 +140,8 @@ export class Explode {
     this.distPosCodes = generateDecodeTables(DistCode, DistBits)
     this.inputBuffer = new ExpandingBuffer(0x1_00_00)
     this.outputBuffer = new ExpandingBuffer(0x4_00_00)
-    this.stats = { chunkCounter: 0 }
-    this.compressionType = Compression.Unknown
-    this.dictionarySize = DictionarySize.Unknown
+    this.compressionType = 'binary'
+    this.dictionarySize = 'large'
     this.dictionarySizeMask = 0
     this.chBitsAsc = repeat(0, 0x1_00)
     this.asciiTable2C34 = repeat(0, 0x1_00)
@@ -129,54 +150,39 @@ export class Explode {
     this.asciiTable2EB4 = repeat(0, 0x1_00)
   }
 
-  getHandler() {
-    const instance = this
+  handleData(input: Buffer): Buffer {
+    this.needMoreInput = true
 
-    return function (
-      this: Transform,
-      chunk: Buffer,
-      encoding: NodeJS.BufferEncoding,
-      callback: TransformCallback,
-    ): void {
-      instance.needMoreInput = true
+    this.inputBuffer.append(input)
 
-      try {
-        instance.inputBuffer.append(chunk)
+    this.processChunkData()
 
-        if (instance.isFirstChunk) {
-          instance.isFirstChunk = false
-          this._flush = instance.onInputFinished.bind(instance)
-        }
+    const blockSize = 0x10_00
 
-        if (instance.verbose) {
-          instance.stats.chunkCounter = instance.stats.chunkCounter + 1
-          console.log(`explode: reading ${toHex(chunk.length)} bytes from chunk #${instance.stats.chunkCounter}`)
-        }
+    let output: Buffer
 
-        instance.processChunkData()
+    if (this.outputBuffer.size() > blockSize) {
+      let [numberOfBlocks] = quotientAndRemainder(this.outputBuffer.size(), blockSize)
 
-        const blockSize = 0x10_00
+      // making sure to leave one block worth of data for lookback when processing chunk data
+      numberOfBlocks = numberOfBlocks - 1
 
-        if (instance.outputBuffer.size() <= blockSize) {
-          callback(null, EMPTY_BUFFER)
-          return
-        }
-
-        let [numberOfBlocks] = quotientAndRemainder(instance.outputBuffer.size(), blockSize)
-
-        // making sure to leave one block worth of data for lookback when processing chunk data
-        numberOfBlocks = numberOfBlocks - 1
-
-        const numberOfBytes = numberOfBlocks * blockSize
-        // make sure to create a copy of the output buffer slice as it will get flushed in the next line
-        const output = Buffer.from(instance.outputBuffer.read(0, numberOfBytes))
-        instance.outputBuffer.flushStart(numberOfBytes)
-
-        callback(null, output)
-      } catch (error: unknown) {
-        callback(error as Error)
-      }
+      const numberOfBytes = numberOfBlocks * blockSize
+      // make sure to create a copy of the output buffer slice as it will get flushed in the next line
+      output = Buffer.from(this.outputBuffer.read(0, numberOfBytes))
+      this.outputBuffer.flushStart(numberOfBytes)
+    } else {
+      output = Buffer.from([])
     }
+
+    // -----------------
+
+    if (this.needMoreInput) {
+      throw new AbortedError()
+    }
+
+    const remainingOutput = this.outputBuffer.read()
+    return Buffer.concat([output, remainingOutput])
   }
 
   private generateAsciiTables(): void {
@@ -218,22 +224,6 @@ export class Explode {
 
       return value - 4
     })
-  }
-
-  private onInputFinished(callback: TransformCallback): void {
-    if (this.verbose) {
-      console.log('---------------')
-      console.log('explode: total number of chunks read:', this.stats.chunkCounter)
-      console.log('explode: inputBuffer heap size', toHex(this.inputBuffer.heapSize()))
-      console.log('explode: outputBuffer heap size', toHex(this.outputBuffer.heapSize()))
-    }
-
-    if (this.needMoreInput) {
-      callback(new AbortedError())
-      return
-    }
-
-    callback(null, this.outputBuffer.read())
   }
 
   /**
@@ -290,7 +280,7 @@ export class Explode {
 
     const lastByte = getLowestNBitsOf(this.bitBuffer, 8)
 
-    if (this.compressionType === Compression.Binary) {
+    if (this.compressionType === 'binary') {
       this.wasteBits(8)
       return lastByte
     }
@@ -335,8 +325,25 @@ export class Explode {
       distance = (distPosCode << 2) | getLowestNBitsOf(this.bitBuffer, 2)
       bitsToWaste = 2
     } else {
-      distance = (distPosCode << this.dictionarySize) | (this.bitBuffer & this.dictionarySizeMask)
-      bitsToWaste = this.dictionarySize
+      switch (this.dictionarySize as 'small' | 'medium' | 'large') {
+        case 'small': {
+          distance = (distPosCode << 4) | (this.bitBuffer & this.dictionarySizeMask)
+          bitsToWaste = 4
+          break
+        }
+
+        case 'medium': {
+          distance = (distPosCode << 5) | (this.bitBuffer & this.dictionarySizeMask)
+          bitsToWaste = 5
+          break
+        }
+
+        case 'large': {
+          distance = (distPosCode << 6) | (this.bitBuffer & this.dictionarySizeMask)
+          bitsToWaste = 6
+          break
+        }
+      }
     }
 
     this.wasteBits(bitsToWaste)
@@ -349,7 +356,7 @@ export class Explode {
       return
     }
 
-    if (this.compressionType === Compression.Unknown) {
+    if (this.compressionType === 'unknown') {
       const headerParsedSuccessfully = this.parseInitialData()
       if (!headerParsedSuccessfully || this.inputBuffer.isEmpty()) {
         return
@@ -408,15 +415,26 @@ export class Explode {
     this.dictionarySize = dictionarySize
     this.bitBuffer = this.inputBuffer.readByte(2)
     this.inputBuffer.dropStart(3)
-    this.dictionarySizeMask = nBitsOfOnes(dictionarySize)
 
-    if (this.compressionType === Compression.Ascii) {
-      this.generateAsciiTables()
+    switch (dictionarySize) {
+      case 'small': {
+        this.dictionarySizeMask = nBitsOfOnes(4)
+        break
+      }
+
+      case 'medium': {
+        this.dictionarySizeMask = nBitsOfOnes(5)
+        break
+      }
+
+      case 'large': {
+        this.dictionarySizeMask = nBitsOfOnes(6)
+        break
+      }
     }
 
-    if (this.verbose) {
-      console.log(`explode: compression type: ${Compression[this.compressionType]}`)
-      console.log(`explode: compression level: ${DictionarySize[this.dictionarySize]}`)
+    if (this.compressionType === 'ascii') {
+      this.generateAsciiTables()
     }
 
     return true
