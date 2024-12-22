@@ -384,8 +384,8 @@ export class Implode {
 
     const { outBits } = this
 
-    const lastBytes = this.outputBuffer.readByte(this.outputBuffer.size() - 1)
-    this.outputBuffer.setByte(-1, lastBytes | getLowestNBitsOf(bitBuffer << outBits, 8))
+    const lastByte = this.outputBuffer.readByte(this.outputBuffer.size() - 1)
+    this.outputBuffer.setByte(-1, lastByte | getLowestNBitsOf(bitBuffer << outBits, 8))
 
     this.outBits = this.outBits + nBits
 

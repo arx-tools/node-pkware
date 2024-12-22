@@ -1,4 +1,3 @@
-import { Buffer } from 'node:buffer'
 import {
   ChBitsAsc,
   ChCodeAsc,
@@ -9,19 +8,52 @@ import {
   LenCode,
   LONGEST_ALLOWED_REPETITION,
 } from '@src/constants.js'
-import { ExpandingBuffer } from '@src/ExpandingBuffer.js'
-import { clamp, quotientAndRemainder, getLowestNBitsOf, repeat, nBitsOfOnes } from '@src/functions.js'
+import {
+  clamp,
+  quotientAndRemainder,
+  getLowestNBitsOf,
+  repeat,
+  nBitsOfOnes,
+  concatArrayBuffers,
+} from '@src/functions.js'
 
-function getSizeOfMatching(inputBytes: Buffer, a: number, b: number): number {
+function getSizeOfMatching(inputBytes: ArrayBuffer, a: number, b: number): number {
   const limit = clamp(2, LONGEST_ALLOWED_REPETITION, b - a)
 
+  const view = new Uint8Array(inputBytes)
+
   for (let i = 2; i <= limit; i++) {
-    if (inputBytes[a + i] !== inputBytes[b + i]) {
+    if (view[a + i] !== view[b + i]) {
       return i
     }
   }
 
   return limit
+}
+
+function matchesAt(needle: ArrayBuffer, haystack: ArrayBuffer): number {
+  if (needle.byteLength === 0 || haystack.byteLength === 0) {
+    return -1
+  }
+
+  const needleView = new Uint8Array(needle)
+  const haystackView = new Uint8Array(haystack)
+
+  for (let i = 0; i < haystack.byteLength - needle.byteLength; i++) {
+    let matches = true
+    for (let j = 0; j < needle.byteLength; j++) {
+      if (haystackView[i + j] !== needleView[j]) {
+        matches = false
+        break
+      }
+    }
+
+    if (matches) {
+      return i
+    }
+  }
+
+  return -1
 }
 
 /**
@@ -30,20 +62,20 @@ function getSizeOfMatching(inputBytes: Buffer, a: number, b: number): number {
  * currently the code goes from the furthest point
  */
 function findRepetitions(
-  inputBytes: Buffer,
+  inputBytes: ArrayBuffer,
   endOfLastMatch: number,
   cursor: number,
 ): { size: number; distance: number } {
-  const notEnoughBytes = inputBytes.length - cursor < 2
+  const notEnoughBytes = inputBytes.byteLength - cursor < 2
   const tooClose = cursor === endOfLastMatch || cursor - endOfLastMatch < 2
   if (notEnoughBytes || tooClose) {
     return { size: 0, distance: 0 }
   }
 
-  const haystack = inputBytes.subarray(endOfLastMatch, cursor)
-  const needle = inputBytes.subarray(cursor, cursor + 2)
+  const haystack = inputBytes.slice(endOfLastMatch, cursor)
+  const needle = inputBytes.slice(cursor, cursor + 2)
 
-  const matchIndex = haystack.indexOf(needle)
+  const matchIndex = matchesAt(needle, haystack)
   if (matchIndex !== -1) {
     const distance = cursor - endOfLastMatch - matchIndex
 
@@ -59,8 +91,8 @@ function findRepetitions(
 }
 
 export class Implode {
-  private readonly inputBuffer: ExpandingBuffer
-  private readonly outputBuffer: ExpandingBuffer
+  private inputBuffer: ArrayBuffer
+  private outputBuffer: ArrayBuffer
   private readonly compressionType: 'ascii' | 'binary'
   private readonly dictionarySize: 'small' | 'medium' | 'large'
   private dictionarySizeMask: number
@@ -74,8 +106,8 @@ export class Implode {
   private nChCodes: number[]
 
   constructor(compressionType: 'ascii' | 'binary', dictionarySize: 'small' | 'medium' | 'large') {
-    this.inputBuffer = new ExpandingBuffer(0x1_00_00)
-    this.outputBuffer = new ExpandingBuffer(0x1_20_00)
+    this.inputBuffer = new ArrayBuffer(0)
+    this.outputBuffer = new ArrayBuffer(0)
     this.compressionType = compressionType
     this.dictionarySize = dictionarySize
     this.dictionarySizeMask = 0
@@ -91,48 +123,48 @@ export class Implode {
     this.setup()
   }
 
-  handleData(input: Buffer): Buffer {
-    this.inputBuffer.append(input)
+  handleData(input: ArrayBuffer): ArrayBuffer {
+    this.inputBuffer = input
 
     this.processChunkData()
 
     const blockSize = 0x8_00
 
-    let output: Buffer
+    let output: ArrayBuffer
 
-    if (this.outputBuffer.size() > blockSize) {
-      let [numberOfBlocks] = quotientAndRemainder(this.outputBuffer.size(), blockSize)
+    if (this.outputBuffer.byteLength > blockSize) {
+      let [numberOfBlocks] = quotientAndRemainder(this.outputBuffer.byteLength, blockSize)
 
       // making sure to leave one block worth of data for lookback when processing chunk data
       numberOfBlocks = numberOfBlocks - 1
 
       const numberOfBytes = numberOfBlocks * blockSize
       // make sure to create a copy of the output buffer slice as it will get flushed in the next line
-      output = Buffer.from(this.outputBuffer.read(0, numberOfBytes))
-      this.outputBuffer.flushStart(numberOfBytes)
+      output = this.outputBuffer.slice(0, numberOfBytes)
+      this.outputBuffer = this.outputBuffer.slice(numberOfBytes)
 
       if (this.outBits === 0) {
-        this.outputBuffer.setByte(-1, 0)
+        const view = new Uint8Array(this.outputBuffer)
+        view[view.byteLength - 1] = 0
       }
     } else {
-      output = Buffer.from([])
+      output = new ArrayBuffer(0)
     }
 
     // ---------------
 
     this.streamEnded = true
     this.processChunkData()
-    const remainingOutput = this.outputBuffer.read()
 
-    return Buffer.concat([output, remainingOutput])
+    return concatArrayBuffers([output, this.outputBuffer])
   }
 
   private processChunkData(): void {
-    if (!this.inputBuffer.isEmpty()) {
+    if (this.inputBuffer.byteLength !== 0) {
       this.startIndex = 0
 
       if (!this.handledFirstTwoBytes) {
-        if (this.inputBuffer.size() < 3) {
+        if (this.inputBuffer.byteLength < 3) {
           return
         }
 
@@ -146,9 +178,9 @@ export class Implode {
 
       const endOfLastMatch = 0 // used when searching for longer repetitions later
 
-      while (this.startIndex < this.inputBuffer.size()) {
+      while (this.startIndex < this.inputBuffer.byteLength) {
         const { size, distance } = findRepetitions(
-          this.inputBuffer.read(endOfLastMatch),
+          this.inputBuffer.slice(endOfLastMatch),
           endOfLastMatch,
           this.startIndex,
         )
@@ -156,7 +188,8 @@ export class Implode {
         const isFlushable = this.isRepetitionFlushable(size, distance)
 
         if (isFlushable === false) {
-          const byte = this.inputBuffer.readByte(this.startIndex)
+          const view = new Uint8Array(this.inputBuffer)
+          const byte = view[this.startIndex]
           this.outputBits(this.nChBits[byte], this.nChCodes[byte])
           this.startIndex = this.startIndex + 1
         } else {
@@ -195,20 +228,20 @@ export class Implode {
         }
 
         if (this.dictionarySize === 'small' && this.startIndex >= 0x4_00) {
-          this.inputBuffer.dropStart(0x4_00)
+          this.inputBuffer = this.inputBuffer.slice(0x4_00)
           this.startIndex = this.startIndex - 0x4_00
         } else if (this.dictionarySize === 'medium' && this.startIndex >= 0x8_00) {
-          this.inputBuffer.dropStart(0x8_00)
+          this.inputBuffer = this.inputBuffer.slice(0x8_00)
           this.startIndex = this.startIndex - 0x8_00
         } else if (this.dictionarySize === 'large' && this.startIndex >= 0x10_00) {
-          this.inputBuffer.dropStart(0x10_00)
+          this.inputBuffer = this.inputBuffer.slice(0x10_00)
           this.startIndex = this.startIndex - 0x10_00
         }
       }
 
       // -------------------------------
 
-      this.inputBuffer.clear()
+      this.inputBuffer = new ArrayBuffer(0)
     }
 
     if (this.streamEnded) {
@@ -234,7 +267,7 @@ export class Implode {
       return false
     }
 
-    if (size >= 8 || this.startIndex + 1 >= this.inputBuffer.size()) {
+    if (size >= 8 || this.startIndex + 1 >= this.inputBuffer.byteLength) {
       return true
     }
 
@@ -246,14 +279,16 @@ export class Implode {
    * so the initial 2 bytes can be moved to the output as is
    */
   private handleFirstTwoBytes(): void {
-    const byte1 = this.inputBuffer.readByte(0)
-    const byte2 = this.inputBuffer.readByte(1)
+    const [byte1, byte2] = new Uint8Array(this.inputBuffer)
     this.outputBits(this.nChBits[byte1], this.nChCodes[byte1])
     this.outputBits(this.nChBits[byte2], this.nChCodes[byte2])
     this.startIndex = this.startIndex + 2
   }
 
   private setup(): void {
+    const addition = new ArrayBuffer(1)
+    const additionView = new Uint8Array(addition)
+
     switch (this.compressionType) {
       case 'ascii': {
         for (let nCount = 0; nCount < 0x1_00; nCount++) {
@@ -261,7 +296,7 @@ export class Implode {
           this.nChCodes[nCount] = ChCodeAsc[nCount] * 2
         }
 
-        this.outputBuffer.appendByte(1)
+        additionView[0] = 1
 
         break
       }
@@ -274,31 +309,35 @@ export class Implode {
           nChCode = getLowestNBitsOf(nChCode, 16) + 2
         }
 
-        this.outputBuffer.appendByte(0)
+        additionView[0] = 0
 
         break
       }
     }
 
+    this.outputBuffer = concatArrayBuffers([this.outputBuffer, addition])
+
     switch (this.dictionarySize) {
       case 'small': {
         this.dictionarySizeMask = nBitsOfOnes(4)
-        this.outputBuffer.appendByte(4)
+        additionView[0] = 4
         break
       }
 
       case 'medium': {
         this.dictionarySizeMask = nBitsOfOnes(5)
-        this.outputBuffer.appendByte(5)
+        additionView[0] = 5
         break
       }
 
       case 'large': {
         this.dictionarySizeMask = nBitsOfOnes(6)
-        this.outputBuffer.appendByte(6)
+        additionView[0] = 6
         break
       }
     }
+
+    this.outputBuffer = concatArrayBuffers([this.outputBuffer, addition])
 
     let nCount = 0x1_00
 
@@ -310,7 +349,9 @@ export class Implode {
       }
     }
 
-    this.outputBuffer.appendByte(0)
+    additionView[0] = 0
+    this.outputBuffer = concatArrayBuffers([this.outputBuffer, addition])
+
     this.outBits = 0
   }
 
@@ -323,19 +364,25 @@ export class Implode {
 
     const { outBits } = this
 
-    const lastBytes = this.outputBuffer.readByte(this.outputBuffer.size() - 1)
-    this.outputBuffer.setByte(-1, lastBytes | getLowestNBitsOf(bitBuffer << outBits, 8))
+    const view = new Uint8Array(this.outputBuffer)
+    view[view.byteLength - 1] = view[view.byteLength - 1] | getLowestNBitsOf(bitBuffer << outBits, 8)
 
     this.outBits = this.outBits + nBits
 
     if (this.outBits > 8) {
       this.outBits = getLowestNBitsOf(this.outBits, 3)
       bitBuffer = bitBuffer >> (8 - outBits)
-      this.outputBuffer.appendByte(getLowestNBitsOf(bitBuffer, 8))
+      const addition = new ArrayBuffer(1)
+      const additionView = new Uint8Array(addition)
+      additionView[0] = getLowestNBitsOf(bitBuffer, 8)
+      this.outputBuffer = concatArrayBuffers([this.outputBuffer, addition])
     } else {
       this.outBits = getLowestNBitsOf(this.outBits, 3)
       if (this.outBits === 0) {
-        this.outputBuffer.appendByte(0)
+        const addition = new ArrayBuffer(1)
+        const additionView = new Uint8Array(addition)
+        additionView[0] = 0
+        this.outputBuffer = concatArrayBuffers([this.outputBuffer, addition])
       }
     }
   }

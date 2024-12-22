@@ -1,4 +1,3 @@
-import { Buffer } from 'node:buffer'
 import {
   ChBitsAsc,
   ChCodeAsc,
@@ -11,7 +10,6 @@ import {
   LITERAL_END_STREAM,
 } from '@src/constants.js'
 import { AbortedError, InvalidCompressionTypeError, InvalidDictionarySizeError } from '@src/errors.js'
-import { ExpandingBuffer } from '@src/ExpandingBuffer.js'
 import {
   quotientAndRemainder,
   getLowestNBitsOf,
@@ -19,18 +17,21 @@ import {
   nBitsOfOnes,
   repeat,
   unfold,
+  concatArrayBuffers,
 } from '@src/functions.js'
 
 /**
  * This function assumes there are at least 2 bytes of data in the buffer
  */
-function readHeader(buffer: Buffer): {
+function readHeader(buffer: ArrayBuffer): {
   compressionType: 'ascii' | 'binary'
   dictionarySize: 'small' | 'medium' | 'large'
 } {
   let compressionType: 'ascii' | 'binary'
 
-  switch (buffer.readUint8(0)) {
+  const view = new Uint8Array(buffer)
+
+  switch (view[0]) {
     case 0: {
       compressionType = 'binary'
       break
@@ -48,7 +49,7 @@ function readHeader(buffer: Buffer): {
 
   let dictionarySize: 'small' | 'medium' | 'large'
 
-  switch (buffer.readUint8(1)) {
+  switch (view[1]) {
     case 4: {
       dictionarySize = 'small'
       break
@@ -117,11 +118,11 @@ export class Explode {
   private needMoreInput: boolean
   private extraBits: number
   private bitBuffer: number
-  private readonly backupData: { extraBits: number; bitBuffer: number }
+  private readonly backupData: { extraBits: number; bitBuffer: number; inputBuffer: ArrayBuffer }
   private readonly lengthCodes: number[]
   private readonly distPosCodes: number[]
-  private readonly inputBuffer: ExpandingBuffer
-  private readonly outputBuffer: ExpandingBuffer
+  private inputBuffer: ArrayBuffer
+  private outputBuffer: ArrayBuffer
   private compressionType: 'ascii' | 'binary' | 'unknown'
   private dictionarySize: 'small' | 'medium' | 'large' | 'unknown'
   private dictionarySizeMask: number
@@ -138,11 +139,12 @@ export class Explode {
     this.backupData = {
       extraBits: -1,
       bitBuffer: -1,
+      inputBuffer: new ArrayBuffer(0),
     }
     this.lengthCodes = generateDecodeTables(LenCode, LenBits)
     this.distPosCodes = generateDecodeTables(DistCode, DistBits)
-    this.inputBuffer = new ExpandingBuffer(0x1_00_00)
-    this.outputBuffer = new ExpandingBuffer(0x4_00_00)
+    this.inputBuffer = new ArrayBuffer(0)
+    this.outputBuffer = new ArrayBuffer(0)
     this.compressionType = 'unknown'
     this.dictionarySize = 'unknown'
     this.dictionarySizeMask = 0
@@ -158,29 +160,29 @@ export class Explode {
    * @throws {InvalidDictionarySizeError}
    * @throws {AbortedError}
    */
-  handleData(input: Buffer): Buffer {
+  handleData(input: ArrayBuffer): ArrayBuffer {
     this.needMoreInput = true
 
-    this.inputBuffer.append(input)
+    this.inputBuffer = input
 
     this.processChunkData()
 
     const blockSize = 0x10_00
 
-    let output: Buffer
+    let output: ArrayBuffer
 
-    if (this.outputBuffer.size() > blockSize) {
-      let [numberOfBlocks] = quotientAndRemainder(this.outputBuffer.size(), blockSize)
+    if (this.outputBuffer.byteLength > blockSize) {
+      let [numberOfBlocks] = quotientAndRemainder(this.outputBuffer.byteLength, blockSize)
 
       // making sure to leave one block worth of data for lookback when processing chunk data
       numberOfBlocks = numberOfBlocks - 1
 
       const numberOfBytes = numberOfBlocks * blockSize
-      // make sure to create a copy of the output buffer slice as it will get flushed in the next line
-      output = Buffer.from(this.outputBuffer.read(0, numberOfBytes))
-      this.outputBuffer.flushStart(numberOfBytes)
+      // TODO: do we need this slicing here...
+      output = this.outputBuffer.slice(0, numberOfBytes)
+      this.outputBuffer = this.outputBuffer.slice(numberOfBytes)
     } else {
-      output = Buffer.from([])
+      output = new ArrayBuffer(0)
     }
 
     // -----------------
@@ -189,8 +191,7 @@ export class Explode {
       throw new AbortedError()
     }
 
-    const remainingOutput = this.outputBuffer.read()
-    return Buffer.concat([output, remainingOutput])
+    return concatArrayBuffers([output, this.outputBuffer])
   }
 
   private generateAsciiTables(): void {
@@ -238,7 +239,7 @@ export class Explode {
    * @throws {@link AbortedError} when there isn't enough data to be wasted
    */
   private wasteBits(numberOfBits: number): void {
-    if (numberOfBits > this.extraBits && this.inputBuffer.isEmpty()) {
+    if (numberOfBits > this.extraBits && this.inputBuffer.byteLength === 0) {
       throw new AbortedError()
     }
 
@@ -248,8 +249,8 @@ export class Explode {
       return
     }
 
-    const nextByte = this.inputBuffer.readByte(0)
-    this.inputBuffer.dropStart(1)
+    const nextByte = new Uint8Array(this.inputBuffer)[0]
+    this.inputBuffer = this.inputBuffer.slice(1)
 
     this.bitBuffer = ((this.bitBuffer >> this.extraBits) | (nextByte << 8)) >> (numberOfBits - this.extraBits)
     this.extraBits = this.extraBits + 8 - numberOfBits
@@ -360,13 +361,13 @@ export class Explode {
   }
 
   private processChunkData(): void {
-    if (this.inputBuffer.isEmpty()) {
+    if (this.inputBuffer.byteLength === 0) {
       return
     }
 
     if (this.compressionType === 'unknown') {
       const headerParsedSuccessfully = this.parseInitialData()
-      if (!headerParsedSuccessfully || this.inputBuffer.isEmpty()) {
+      if (!headerParsedSuccessfully || this.inputBuffer.byteLength === 0) {
         return
       }
     }
@@ -379,25 +380,27 @@ export class Explode {
       let nextLiteral = this.decodeNextLiteral()
 
       while (nextLiteral !== LITERAL_END_STREAM) {
+        let addition: ArrayBuffer
+
         if (nextLiteral >= 0x1_00) {
           const repeatLength = nextLiteral - 0xfe
 
           const minusDistance = this.decodeDistance(repeatLength)
-          const availableData = this.outputBuffer.read(this.outputBuffer.size() - minusDistance, repeatLength)
-
-          let addition: Buffer
+          const availableData = this.outputBuffer.slice(this.outputBuffer.byteLength - minusDistance, repeatLength)
 
           if (repeatLength > minusDistance) {
-            const multipliedData = repeat(availableData, Math.ceil(repeatLength / availableData.length))
-            addition = Buffer.concat(multipliedData).subarray(0, repeatLength)
+            const multipliedData = repeat(availableData, Math.ceil(repeatLength / availableData.byteLength))
+            addition = concatArrayBuffers(multipliedData).slice(0, repeatLength)
           } else {
             addition = availableData
           }
-
-          this.outputBuffer.append(addition)
         } else {
-          this.outputBuffer.appendByte(nextLiteral)
+          addition = new ArrayBuffer(1)
+          const additionView = new Uint8Array(addition)
+          additionView[0] = nextLiteral
         }
+
+        this.outputBuffer = concatArrayBuffers([this.outputBuffer, addition])
 
         this.backup()
 
@@ -413,16 +416,16 @@ export class Explode {
   }
 
   private parseInitialData(): boolean {
-    if (this.inputBuffer.size() < 4) {
+    if (this.inputBuffer.byteLength < 4) {
       return false
     }
 
-    const { compressionType, dictionarySize } = readHeader(this.inputBuffer.read(0, 2))
+    const { compressionType, dictionarySize } = readHeader(this.inputBuffer.slice(0, 2))
 
     this.compressionType = compressionType
     this.dictionarySize = dictionarySize
-    this.bitBuffer = this.inputBuffer.readByte(2)
-    this.inputBuffer.dropStart(3)
+    this.bitBuffer = new Uint8Array(this.inputBuffer)[2]
+    this.inputBuffer = this.inputBuffer.slice(3)
 
     switch (dictionarySize) {
       case 'small': {
@@ -451,12 +454,12 @@ export class Explode {
   private backup(): void {
     this.backupData.extraBits = this.extraBits
     this.backupData.bitBuffer = this.bitBuffer
-    this.inputBuffer.saveIndices()
+    this.backupData.inputBuffer = this.inputBuffer
   }
 
   private restore(): void {
     this.extraBits = this.backupData.extraBits
     this.bitBuffer = this.backupData.bitBuffer
-    this.inputBuffer.restoreIndices()
+    this.inputBuffer = this.backupData.inputBuffer
   }
 }

@@ -207,3 +207,26 @@ export function unfold<T, TResult>(fn: (seed: T) => [result: TResult, nextSeed: 
 export function quotientAndRemainder(dividend: number, divisor: number): [quotient: number, remainder: number] {
   return [Math.floor(dividend / divisor), dividend % divisor]
 }
+
+/**
+ * @see https://stackoverflow.com/a/49129872/1806628
+ */
+export function concatArrayBuffers(buffers: ArrayBuffer[]): ArrayBuffer {
+  if (buffers.length === 0) {
+    return new ArrayBuffer(0)
+  }
+
+  const totalLength = buffers.reduce((sum, buffer) => {
+    return sum + buffer.byteLength
+  }, 0)
+
+  const combinedBuffer = new Uint8Array(totalLength)
+
+  let offset = 0
+  buffers.forEach((buffer) => {
+    combinedBuffer.set(new Uint8Array(buffer), offset)
+    offset = offset + buffer.byteLength
+  })
+
+  return combinedBuffer.buffer
+}
