@@ -118,7 +118,6 @@ export class Explode {
   private needMoreInput: boolean
   private extraBits: number
   private bitBuffer: number
-  private readonly backupData: { extraBits: number; bitBuffer: number; inputBuffer: ArrayBuffer }
   private readonly lengthCodes: number[]
   private readonly distPosCodes: number[]
   private inputBuffer: ArrayBuffer
@@ -136,11 +135,6 @@ export class Explode {
     this.needMoreInput = true
     this.extraBits = 0
     this.bitBuffer = 0
-    this.backupData = {
-      extraBits: -1,
-      bitBuffer: -1,
-      inputBuffer: new ArrayBuffer(0),
-    }
     this.lengthCodes = generateDecodeTables(LenCode, LenBits)
     this.distPosCodes = generateDecodeTables(DistCode, DistBits)
     this.inputBuffer = new ArrayBuffer(0)
@@ -374,8 +368,6 @@ export class Explode {
 
     this.needMoreInput = false
 
-    this.backup()
-
     try {
       let nextLiteral = this.decodeNextLiteral()
 
@@ -405,16 +397,10 @@ export class Explode {
 
         this.outputBuffer = concatArrayBuffers([this.outputBuffer, addition])
 
-        this.backup()
-
         nextLiteral = this.decodeNextLiteral()
       }
     } catch {
       this.needMoreInput = true
-    }
-
-    if (this.needMoreInput) {
-      this.restore()
     }
   }
 
@@ -452,17 +438,5 @@ export class Explode {
     }
 
     return true
-  }
-
-  private backup(): void {
-    this.backupData.extraBits = this.extraBits
-    this.backupData.bitBuffer = this.bitBuffer
-    this.backupData.inputBuffer = this.inputBuffer
-  }
-
-  private restore(): void {
-    this.extraBits = this.backupData.extraBits
-    this.bitBuffer = this.backupData.bitBuffer
-    this.inputBuffer = this.backupData.inputBuffer
   }
 }
