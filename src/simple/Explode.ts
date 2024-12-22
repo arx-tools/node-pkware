@@ -121,6 +121,7 @@ export class Explode {
   private readonly lengthCodes: number[]
   private readonly distPosCodes: number[]
   private inputBuffer: ArrayBuffer
+  private inputBufferStartIndex: number
   private outputBuffer: ArrayBuffer
   private compressionType: 'ascii' | 'binary' | 'unknown'
   private dictionarySize: 'small' | 'medium' | 'large' | 'unknown'
@@ -138,6 +139,7 @@ export class Explode {
     this.lengthCodes = generateDecodeTables(LenCode, LenBits)
     this.distPosCodes = generateDecodeTables(DistCode, DistBits)
     this.inputBuffer = new ArrayBuffer(0)
+    this.inputBufferStartIndex = 0
     this.outputBuffer = new ArrayBuffer(0)
     this.compressionType = 'unknown'
     this.dictionarySize = 'unknown'
@@ -158,6 +160,7 @@ export class Explode {
     this.needMoreInput = true
 
     this.inputBuffer = input
+    this.inputBufferStartIndex = 0
 
     this.processChunkData()
 
@@ -233,7 +236,7 @@ export class Explode {
    * @throws {@link AbortedError} when there isn't enough data to be wasted
    */
   private wasteBits(numberOfBits: number): void {
-    if (numberOfBits > this.extraBits && this.inputBuffer.byteLength === 0) {
+    if (numberOfBits > this.extraBits && this.inputBuffer.byteLength - this.inputBufferStartIndex === 0) {
       throw new AbortedError()
     }
 
@@ -243,8 +246,8 @@ export class Explode {
       return
     }
 
-    const nextByte = new Uint8Array(this.inputBuffer)[0]
-    this.inputBuffer = this.inputBuffer.slice(1)
+    const nextByte = new Uint8Array(this.inputBuffer)[this.inputBufferStartIndex]
+    this.inputBufferStartIndex = this.inputBufferStartIndex + 1
 
     this.bitBuffer = ((this.bitBuffer >> this.extraBits) | (nextByte << 8)) >> (numberOfBits - this.extraBits)
     this.extraBits = this.extraBits + 8 - numberOfBits
@@ -355,13 +358,13 @@ export class Explode {
   }
 
   private processChunkData(): void {
-    if (this.inputBuffer.byteLength === 0) {
+    if (this.inputBuffer.byteLength - this.inputBufferStartIndex === 0) {
       return
     }
 
     if (this.compressionType === 'unknown') {
       const headerParsedSuccessfully = this.parseInitialData()
-      if (!headerParsedSuccessfully || this.inputBuffer.byteLength === 0) {
+      if (!headerParsedSuccessfully || this.inputBuffer.byteLength - this.inputBufferStartIndex === 0) {
         return
       }
     }
@@ -405,16 +408,18 @@ export class Explode {
   }
 
   private parseInitialData(): boolean {
-    if (this.inputBuffer.byteLength < 4) {
+    if (this.inputBuffer.byteLength - this.inputBufferStartIndex < 4) {
       return false
     }
 
-    const { compressionType, dictionarySize } = readHeader(this.inputBuffer.slice(0, 2))
+    const { compressionType, dictionarySize } = readHeader(
+      this.inputBuffer.slice(this.inputBufferStartIndex, this.inputBufferStartIndex + 2),
+    )
 
     this.compressionType = compressionType
     this.dictionarySize = dictionarySize
-    this.bitBuffer = new Uint8Array(this.inputBuffer)[2]
-    this.inputBuffer = this.inputBuffer.slice(3)
+    this.bitBuffer = new Uint8Array(this.inputBuffer)[this.inputBufferStartIndex + 2]
+    this.inputBufferStartIndex = this.inputBufferStartIndex + 3
 
     switch (dictionarySize) {
       case 'small': {
