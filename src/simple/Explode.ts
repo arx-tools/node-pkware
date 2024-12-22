@@ -386,7 +386,10 @@ export class Explode {
           const repeatLength = nextLiteral - 0xfe
 
           const minusDistance = this.decodeDistance(repeatLength)
-          const availableData = this.outputBuffer.slice(this.outputBuffer.byteLength - minusDistance, repeatLength)
+          const availableData = this.outputBuffer.slice(
+            this.outputBuffer.byteLength - minusDistance,
+            this.outputBuffer.byteLength - minusDistance + repeatLength,
+          )
 
           if (repeatLength > minusDistance) {
             const multipliedData = repeat(availableData, Math.ceil(repeatLength / availableData.byteLength))
