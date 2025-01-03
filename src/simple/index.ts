@@ -17,3 +17,8 @@ export function implode(
 
 export { explode as decompress }
 export { implode as compress }
+
+// ---------------
+// utils
+
+export { concatArrayBuffers, sliceArrayBufferAt } from '@src/functions.js'

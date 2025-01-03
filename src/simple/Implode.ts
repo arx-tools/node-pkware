@@ -137,7 +137,7 @@ export class Implode {
 
     const blockSize = 0x8_00
 
-    let output: ArrayBufferLike
+    let output: ArrayBufferLike = EMPTY_BUFFER
 
     if (this.outputBuffer.byteLength > blockSize) {
       let [numberOfBlocks] = quotientAndRemainder(this.outputBuffer.byteLength, blockSize)
@@ -154,8 +154,6 @@ export class Implode {
         const view = new Uint8Array(this.outputBuffer)
         view[view.byteLength - 1] = 0
       }
-    } else {
-      output = EMPTY_BUFFER
     }
 
     // ---------------
