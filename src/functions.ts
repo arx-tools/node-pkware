@@ -211,7 +211,7 @@ export function quotientAndRemainder(dividend: number, divisor: number): [quotie
 /**
  * @see https://stackoverflow.com/a/49129872/1806628
  */
-export function concatArrayBuffers(buffers: ArrayBuffer[]): ArrayBuffer {
+export function concatArrayBuffers(buffers: ArrayBufferLike[]): ArrayBufferLike {
   if (buffers.length === 0) {
     return new ArrayBuffer(0)
   }

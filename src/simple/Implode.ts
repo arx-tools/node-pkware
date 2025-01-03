@@ -17,7 +17,7 @@ import {
   concatArrayBuffers,
 } from '@src/functions.js'
 
-function getSizeOfMatching(inputBytes: ArrayBuffer, a: number, b: number): number {
+function getSizeOfMatching(inputBytes: ArrayBufferLike, a: number, b: number): number {
   const limit = clamp(2, LONGEST_ALLOWED_REPETITION, b - a)
 
   const view = new Uint8Array(inputBytes)
@@ -31,7 +31,7 @@ function getSizeOfMatching(inputBytes: ArrayBuffer, a: number, b: number): numbe
   return limit
 }
 
-function matchesAt(needle: ArrayBuffer, haystack: ArrayBuffer): number {
+function matchesAt(needle: ArrayBufferLike, haystack: ArrayBufferLike): number {
   if (needle.byteLength === 0 || haystack.byteLength === 0) {
     return -1
   }
@@ -62,7 +62,7 @@ function matchesAt(needle: ArrayBuffer, haystack: ArrayBuffer): number {
  * currently the code goes from the furthest point
  */
 function findRepetitions(
-  inputBytes: ArrayBuffer,
+  inputBytes: ArrayBufferLike,
   endOfLastMatch: number,
   cursor: number,
 ): { size: number; distance: number } {
@@ -91,8 +91,8 @@ function findRepetitions(
 }
 
 export class Implode {
-  private inputBuffer: ArrayBuffer
-  private outputBuffer: ArrayBuffer
+  private inputBuffer: ArrayBufferLike
+  private outputBuffer: ArrayBufferLike
   private readonly compressionType: 'ascii' | 'binary'
   private readonly dictionarySize: 'small' | 'medium' | 'large'
   private dictionarySizeMask: number
@@ -123,14 +123,14 @@ export class Implode {
     this.setup()
   }
 
-  handleData(input: ArrayBuffer): ArrayBuffer {
+  handleData(input: ArrayBufferLike): ArrayBufferLike {
     this.inputBuffer = input
 
     this.processChunkData()
 
     const blockSize = 0x8_00
 
-    let output: ArrayBuffer
+    let output: ArrayBufferLike
 
     if (this.outputBuffer.byteLength > blockSize) {
       let [numberOfBlocks] = quotientAndRemainder(this.outputBuffer.byteLength, blockSize)

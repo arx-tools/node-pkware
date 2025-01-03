@@ -23,7 +23,7 @@ import {
 /**
  * This function assumes there are at least 2 bytes of data in the buffer
  */
-function readHeader(buffer: ArrayBuffer): {
+function readHeader(buffer: ArrayBufferLike): {
   compressionType: 'ascii' | 'binary'
   dictionarySize: 'small' | 'medium' | 'large'
 } {
@@ -120,9 +120,9 @@ export class Explode {
   private bitBuffer: number
   private readonly lengthCodes: number[]
   private readonly distPosCodes: number[]
-  private inputBuffer: ArrayBuffer
+  private inputBuffer: ArrayBufferLike
   private inputBufferStartIndex: number
-  private outputBuffer: ArrayBuffer
+  private outputBuffer: ArrayBufferLike
   private compressionType: 'ascii' | 'binary' | 'unknown'
   private dictionarySize: 'small' | 'medium' | 'large' | 'unknown'
   private dictionarySizeMask: number
@@ -156,7 +156,7 @@ export class Explode {
    * @throws {InvalidDictionarySizeError}
    * @throws {AbortedError}
    */
-  handleData(input: ArrayBuffer): ArrayBuffer {
+  handleData(input: ArrayBufferLike): ArrayBufferLike {
     this.needMoreInput = true
 
     this.inputBuffer = input
@@ -166,7 +166,7 @@ export class Explode {
 
     const blockSize = 0x10_00
 
-    let output: ArrayBuffer
+    let output: ArrayBufferLike
 
     if (this.outputBuffer.byteLength > blockSize) {
       let [numberOfBlocks] = quotientAndRemainder(this.outputBuffer.byteLength, blockSize)
@@ -375,7 +375,7 @@ export class Explode {
       let nextLiteral = this.decodeNextLiteral()
 
       while (nextLiteral !== LITERAL_END_STREAM) {
-        let addition: ArrayBuffer
+        let addition: ArrayBufferLike
 
         if (nextLiteral >= 0x1_00) {
           const repeatLength = nextLiteral - 0xfe
