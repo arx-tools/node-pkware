@@ -167,7 +167,7 @@ export class Explode {
 
     const blockSize = 0x10_00
 
-    let output: ArrayBufferLike
+    let output: ArrayBufferLike = EMPTY_BUFFER
 
     if (this.outputBuffer.byteLength > blockSize) {
       let [numberOfBlocks] = quotientAndRemainder(this.outputBuffer.byteLength, blockSize)
@@ -179,8 +179,6 @@ export class Explode {
       // TODO: do we need this slicing here...
       output = this.outputBuffer.slice(0, numberOfBytes)
       this.outputBuffer = this.outputBuffer.slice(numberOfBytes)
-    } else {
-      output = EMPTY_BUFFER
     }
 
     // -----------------

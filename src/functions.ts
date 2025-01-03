@@ -223,7 +223,7 @@ export function concatArrayBuffers(buffers: ArrayBufferLike[]): ArrayBufferLike 
   }
 
   if (nonEmptyBuffers.length === 1) {
-    return nonEmptyBuffers[1]
+    return nonEmptyBuffers[0]
   }
 
   const totalLength = nonEmptyBuffers.reduce((sum, buffer) => {
