@@ -11,8 +11,8 @@ export function implode(
   compressionType: 'ascii' | 'binary',
   dictionarySize: 'small' | 'medium' | 'large',
 ): ArrayBufferLike {
-  const instance = new Implode(compressionType, dictionarySize)
-  return instance.handleData(input)
+  const instance = new Implode(input, compressionType, dictionarySize)
+  return instance.outputBuffer
 }
 
 export { explode as decompress }

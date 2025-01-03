@@ -92,9 +92,10 @@ function findRepetitions(
 }
 
 export class Implode {
+  public outputBuffer: ArrayBufferLike
+
   private inputBuffer: ArrayBufferLike
   private inputBufferView: Uint8Array
-  private outputBuffer: ArrayBufferLike
   private outputBufferView: Uint8Array
   private readonly additionalByte: ArrayBuffer
   private readonly additionalByteView: Uint8Array
@@ -103,27 +104,25 @@ export class Implode {
 
   private readonly compressionType: 'ascii' | 'binary'
   private readonly dictionarySize: 'small' | 'medium' | 'large'
-  private dictionarySizeMask: number
-  private streamEnded: boolean
+  private readonly dictionarySizeMask: number
+  private readonly streamEnded: boolean
   private readonly distCodes: number[]
   private readonly distBits: number[]
   private handledFirstTwoBytes: boolean
   private outBits: number
-  private nChBits: number[]
-  private nChCodes: number[]
+  private readonly nChBits: number[]
+  private readonly nChCodes: number[]
 
-  constructor(compressionType: 'ascii' | 'binary', dictionarySize: 'small' | 'medium' | 'large') {
-    this.inputBuffer = EMPTY_BUFFER
-    this.inputBufferView = new Uint8Array(this.inputBuffer)
-    this.outputBuffer = EMPTY_BUFFER
-    this.outputBufferView = new Uint8Array(this.outputBuffer)
-
+  constructor(
+    input: ArrayBufferLike,
+    compressionType: 'ascii' | 'binary',
+    dictionarySize: 'small' | 'medium' | 'large',
+  ) {
     this.additionalByte = new ArrayBuffer(1)
     this.additionalByteView = new Uint8Array(this.additionalByte)
 
     this.compressionType = compressionType
     this.dictionarySize = dictionarySize
-    this.dictionarySizeMask = 0
     this.streamEnded = false
     this.distCodes = structuredClone(DistCode)
     this.distBits = structuredClone(DistBits)
@@ -132,13 +131,78 @@ export class Implode {
     this.outBits = 0
     this.nChBits = repeat(0, 0x3_06)
     this.nChCodes = repeat(0, 0x3_06)
-  }
 
-  handleData(input: ArrayBufferLike): ArrayBufferLike {
     this.inputBuffer = input
     this.inputBufferView = new Uint8Array(this.inputBuffer)
 
-    this.setup()
+    // -------------------
+    // setup
+
+    this.outputBuffer = new ArrayBuffer(3)
+    this.outputBufferView = new Uint8Array(this.outputBuffer)
+
+    switch (this.compressionType) {
+      case 'ascii': {
+        for (let nCount = 0; nCount < 0x1_00; nCount++) {
+          this.nChBits[nCount] = ChBitsAsc[nCount] + 1
+          this.nChCodes[nCount] = ChCodeAsc[nCount] * 2
+        }
+
+        this.outputBufferView[0] = 1
+
+        break
+      }
+
+      case 'binary': {
+        let nChCode = 0
+        for (let nCount = 0; nCount < 0x1_00; nCount++) {
+          this.nChBits[nCount] = 9
+          this.nChCodes[nCount] = nChCode
+          nChCode = getLowestNBitsOf(nChCode, 16) + 2
+        }
+
+        this.outputBufferView[0] = 0
+
+        break
+      }
+    }
+
+    switch (this.dictionarySize) {
+      case 'small': {
+        this.dictionarySizeMask = nBitsOfOnes(4)
+        this.outputBufferView[1] = 4
+        break
+      }
+
+      case 'medium': {
+        this.dictionarySizeMask = nBitsOfOnes(5)
+        this.outputBufferView[1] = 5
+        break
+      }
+
+      case 'large': {
+        this.dictionarySizeMask = nBitsOfOnes(6)
+        this.outputBufferView[1] = 6
+        break
+      }
+    }
+
+    let nCount = 0x1_00
+
+    for (let i = 0; i < 0x10; i++) {
+      for (let nCount2 = 0; nCount2 < 1 << ExLenBits[i]; nCount2++) {
+        this.nChBits[nCount] = ExLenBits[i] + LenBits[i] + 1
+        this.nChCodes[nCount] = (nCount2 << (LenBits[i] + 1)) | (LenCode[i] * 2) | 1
+        nCount = nCount + 1
+      }
+    }
+
+    this.outputBufferView[2] = 0
+    this.outBits = 0
+
+    // -------------------
+    // handleData
+
     this.processChunkData()
 
     const blockSize = 0x8_00
@@ -158,21 +222,18 @@ export class Implode {
       this.outputBufferView = new Uint8Array(this.outputBuffer)
 
       if (this.outBits === 0) {
-        const view = new Uint8Array(this.outputBuffer)
-        view[view.byteLength - 1] = 0
+        this.outputBufferView[this.outputBuffer.byteLength - 1] = 0
       }
     }
-
-    // ---------------
 
     this.streamEnded = true
     this.processChunkData()
 
-    return concatArrayBuffers([output, this.outputBuffer])
+    this.outputBuffer = concatArrayBuffers([output, this.outputBuffer])
   }
 
   private processChunkData(): void {
-    if (this.inputBuffer.byteLength !== 0) {
+    if (this.inputBuffer.byteLength > 0) {
       this.inputBufferStartIndex = 0
 
       if (!this.handledFirstTwoBytes) {
@@ -298,70 +359,6 @@ export class Implode {
     this.outputBits(this.nChBits[byte1], this.nChCodes[byte1])
     this.outputBits(this.nChBits[byte2], this.nChCodes[byte2])
     this.inputBufferStartIndex = this.inputBufferStartIndex + 2
-  }
-
-  private setup(): void {
-    this.outputBuffer = new ArrayBuffer(3)
-    this.outputBufferView = new Uint8Array(this.outputBuffer)
-
-    switch (this.compressionType) {
-      case 'ascii': {
-        for (let nCount = 0; nCount < 0x1_00; nCount++) {
-          this.nChBits[nCount] = ChBitsAsc[nCount] + 1
-          this.nChCodes[nCount] = ChCodeAsc[nCount] * 2
-        }
-
-        this.outputBufferView[0] = 1
-
-        break
-      }
-
-      case 'binary': {
-        let nChCode = 0
-        for (let nCount = 0; nCount < 0x1_00; nCount++) {
-          this.nChBits[nCount] = 9
-          this.nChCodes[nCount] = nChCode
-          nChCode = getLowestNBitsOf(nChCode, 16) + 2
-        }
-
-        this.outputBufferView[0] = 0
-
-        break
-      }
-    }
-
-    switch (this.dictionarySize) {
-      case 'small': {
-        this.dictionarySizeMask = nBitsOfOnes(4)
-        this.outputBufferView[1] = 4
-        break
-      }
-
-      case 'medium': {
-        this.dictionarySizeMask = nBitsOfOnes(5)
-        this.outputBufferView[1] = 5
-        break
-      }
-
-      case 'large': {
-        this.dictionarySizeMask = nBitsOfOnes(6)
-        this.outputBufferView[1] = 6
-        break
-      }
-    }
-
-    let nCount = 0x1_00
-
-    for (let i = 0; i < 0x10; i++) {
-      for (let nCount2 = 0; nCount2 < 1 << ExLenBits[i]; nCount2++) {
-        this.nChBits[nCount] = ExLenBits[i] + LenBits[i] + 1
-        this.nChCodes[nCount] = (nCount2 << (LenBits[i] + 1)) | (LenCode[i] * 2) | 1
-        nCount = nCount + 1
-      }
-    }
-
-    this.outputBufferView[2] = 0
-    this.outBits = 0
   }
 
   private outputBits(nBits: number, bitBuffer: number): void {
