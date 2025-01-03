@@ -10,7 +10,7 @@ export function implode(
   input: ArrayBufferLike,
   compressionType: 'ascii' | 'binary',
   dictionarySize: 'small' | 'medium' | 'large',
-): ArrayBufferLike {
+): ArrayBuffer {
   const instance = new Implode(input, compressionType, dictionarySize)
   return instance.outputBuffer
 }

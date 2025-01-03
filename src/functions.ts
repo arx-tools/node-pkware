@@ -213,17 +213,13 @@ export function quotientAndRemainder(dividend: number, divisor: number): [quotie
 /**
  * @see https://stackoverflow.com/a/49129872/1806628
  */
-export function concatArrayBuffers(buffers: ArrayBufferLike[]): ArrayBufferLike {
+export function concatArrayBuffers(buffers: ArrayBufferLike[]): ArrayBuffer {
   const nonEmptyBuffers = buffers.filter((buffer) => {
     return buffer.byteLength > 0
   })
 
   if (nonEmptyBuffers.length === 0) {
     return EMPTY_BUFFER
-  }
-
-  if (nonEmptyBuffers.length === 1) {
-    return nonEmptyBuffers[0]
   }
 
   const totalLength = nonEmptyBuffers.reduce((sum, buffer) => {
@@ -241,7 +237,7 @@ export function concatArrayBuffers(buffers: ArrayBufferLike[]): ArrayBufferLike 
   return combinedBuffer.buffer
 }
 
-export function sliceArrayBufferAt(buffer: ArrayBufferLike, at: number): [ArrayBufferLike, ArrayBufferLike] {
+export function sliceArrayBufferAt(buffer: ArrayBufferLike, at: number): [ArrayBuffer, ArrayBuffer] {
   const view = new Uint8Array(buffer)
   const left = view.slice(0, at).buffer
   const right = view.slice(at).buffer

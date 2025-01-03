@@ -92,7 +92,7 @@ function findRepetitions(
 }
 
 export class Implode {
-  public outputBuffer: ArrayBufferLike
+  public outputBuffer: ArrayBuffer
 
   private inputBuffer: ArrayBufferLike
   private inputBufferView: Uint8Array
