@@ -93,45 +93,50 @@ function findRepetitions(
 
 export class Implode {
   private inputBuffer: ArrayBufferLike
+  private inputBufferView: Uint8Array
   private outputBuffer: ArrayBufferLike
+  private readonly additionalByte: ArrayBuffer
+  private readonly additionalByteView: Uint8Array
+
+  private inputBufferStartIndex: number
+
   private readonly compressionType: 'ascii' | 'binary'
   private readonly dictionarySize: 'small' | 'medium' | 'large'
   private dictionarySizeMask: number
   private streamEnded: boolean
   private readonly distCodes: number[]
   private readonly distBits: number[]
-  private startIndex: number
   private handledFirstTwoBytes: boolean
   private outBits: number
   private nChBits: number[]
   private nChCodes: number[]
 
-  private readonly additionalByte: ArrayBuffer
-  private readonly additionalByteView: Uint8Array
-
   constructor(compressionType: 'ascii' | 'binary', dictionarySize: 'small' | 'medium' | 'large') {
     this.inputBuffer = EMPTY_BUFFER
+    this.inputBufferView = new Uint8Array(this.inputBuffer)
     this.outputBuffer = EMPTY_BUFFER
+
+    this.additionalByte = new ArrayBuffer(1)
+    this.additionalByteView = new Uint8Array(this.additionalByte)
+
     this.compressionType = compressionType
     this.dictionarySize = dictionarySize
     this.dictionarySizeMask = 0
     this.streamEnded = false
     this.distCodes = structuredClone(DistCode)
     this.distBits = structuredClone(DistBits)
-    this.startIndex = 0
+    this.inputBufferStartIndex = 0
     this.handledFirstTwoBytes = false
     this.outBits = 0
     this.nChBits = repeat(0, 0x3_06)
     this.nChCodes = repeat(0, 0x3_06)
 
     this.setup()
-
-    this.additionalByte = new ArrayBuffer(1)
-    this.additionalByteView = new Uint8Array(this.additionalByte)
   }
 
   handleData(input: ArrayBufferLike): ArrayBufferLike {
     this.inputBuffer = input
+    this.inputBufferView = new Uint8Array(this.inputBuffer)
 
     this.processChunkData()
 
@@ -166,7 +171,7 @@ export class Implode {
 
   private processChunkData(): void {
     if (this.inputBuffer.byteLength !== 0) {
-      this.startIndex = 0
+      this.inputBufferStartIndex = 0
 
       if (!this.handledFirstTwoBytes) {
         if (this.inputBuffer.byteLength < 3) {
@@ -183,20 +188,19 @@ export class Implode {
 
       const endOfLastMatch = 0 // used when searching for longer repetitions later
 
-      while (this.startIndex < this.inputBuffer.byteLength) {
+      while (this.inputBufferStartIndex < this.inputBuffer.byteLength) {
         const { size, distance } = findRepetitions(
           this.inputBuffer.slice(endOfLastMatch),
           endOfLastMatch,
-          this.startIndex,
+          this.inputBufferStartIndex,
         )
 
         const isFlushable = this.isRepetitionFlushable(size, distance)
 
         if (isFlushable === false) {
-          const view = new Uint8Array(this.inputBuffer)
-          const byte = view[this.startIndex]
+          const byte = this.inputBufferView[this.inputBufferStartIndex]
           this.outputBits(this.nChBits[byte], this.nChCodes[byte])
-          this.startIndex = this.startIndex + 1
+          this.inputBufferStartIndex = this.inputBufferStartIndex + 1
         } else {
           const byte = size + 0xfe
           this.outputBits(this.nChBits[byte], this.nChCodes[byte])
@@ -229,18 +233,18 @@ export class Implode {
             }
           }
 
-          this.startIndex = this.startIndex + size
+          this.inputBufferStartIndex = this.inputBufferStartIndex + size
         }
 
-        if (this.dictionarySize === 'small' && this.startIndex >= 0x4_00) {
+        if (this.dictionarySize === 'small' && this.inputBufferStartIndex >= 0x4_00) {
           this.inputBuffer = this.inputBuffer.slice(0x4_00)
-          this.startIndex = this.startIndex - 0x4_00
-        } else if (this.dictionarySize === 'medium' && this.startIndex >= 0x8_00) {
+          this.inputBufferStartIndex = this.inputBufferStartIndex - 0x4_00
+        } else if (this.dictionarySize === 'medium' && this.inputBufferStartIndex >= 0x8_00) {
           this.inputBuffer = this.inputBuffer.slice(0x8_00)
-          this.startIndex = this.startIndex - 0x8_00
-        } else if (this.dictionarySize === 'large' && this.startIndex >= 0x10_00) {
+          this.inputBufferStartIndex = this.inputBufferStartIndex - 0x8_00
+        } else if (this.dictionarySize === 'large' && this.inputBufferStartIndex >= 0x10_00) {
           this.inputBuffer = this.inputBuffer.slice(0x10_00)
-          this.startIndex = this.startIndex - 0x10_00
+          this.inputBufferStartIndex = this.inputBufferStartIndex - 0x10_00
         }
       }
 
@@ -272,7 +276,7 @@ export class Implode {
       return false
     }
 
-    if (size >= 8 || this.startIndex + 1 >= this.inputBuffer.byteLength) {
+    if (size >= 8 || this.inputBufferStartIndex + 1 >= this.inputBuffer.byteLength) {
       return true
     }
 
@@ -284,10 +288,10 @@ export class Implode {
    * so the initial 2 bytes can be moved to the output as is
    */
   private handleFirstTwoBytes(): void {
-    const [byte1, byte2] = new Uint8Array(this.inputBuffer)
+    const [byte1, byte2] = this.inputBufferView
     this.outputBits(this.nChBits[byte1], this.nChCodes[byte1])
     this.outputBits(this.nChBits[byte2], this.nChCodes[byte2])
-    this.startIndex = this.startIndex + 2
+    this.inputBufferStartIndex = this.inputBufferStartIndex + 2
   }
 
   private setup(): void {
