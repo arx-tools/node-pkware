@@ -3,6 +3,7 @@ import {
   ChCodeAsc,
   DistBits,
   DistCode,
+  EMPTY_BUFFER,
   ExLenBits,
   LenBase,
   LenBits,
@@ -138,9 +139,9 @@ export class Explode {
     this.bitBuffer = 0
     this.lengthCodes = generateDecodeTables(LenCode, LenBits)
     this.distPosCodes = generateDecodeTables(DistCode, DistBits)
-    this.inputBuffer = new ArrayBuffer(0)
+    this.inputBuffer = EMPTY_BUFFER
     this.inputBufferStartIndex = 0
-    this.outputBuffer = new ArrayBuffer(0)
+    this.outputBuffer = EMPTY_BUFFER
     this.compressionType = 'unknown'
     this.dictionarySize = 'unknown'
     this.dictionarySizeMask = 0
@@ -179,7 +180,7 @@ export class Explode {
       output = this.outputBuffer.slice(0, numberOfBytes)
       this.outputBuffer = this.outputBuffer.slice(numberOfBytes)
     } else {
-      output = new ArrayBuffer(0)
+      output = EMPTY_BUFFER
     }
 
     // -----------------

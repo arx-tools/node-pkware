@@ -3,6 +3,7 @@ import {
   ChCodeAsc,
   DistBits,
   DistCode,
+  EMPTY_BUFFER,
   ExLenBits,
   LenBits,
   LenCode,
@@ -105,9 +106,12 @@ export class Implode {
   private nChBits: number[]
   private nChCodes: number[]
 
+  private readonly additionalByte: ArrayBuffer
+  private readonly additionalByteView: Uint8Array
+
   constructor(compressionType: 'ascii' | 'binary', dictionarySize: 'small' | 'medium' | 'large') {
-    this.inputBuffer = new ArrayBuffer(0)
-    this.outputBuffer = new ArrayBuffer(0)
+    this.inputBuffer = EMPTY_BUFFER
+    this.outputBuffer = EMPTY_BUFFER
     this.compressionType = compressionType
     this.dictionarySize = dictionarySize
     this.dictionarySizeMask = 0
@@ -121,6 +125,9 @@ export class Implode {
     this.nChCodes = repeat(0, 0x3_06)
 
     this.setup()
+
+    this.additionalByte = new ArrayBuffer(1)
+    this.additionalByteView = new Uint8Array(this.additionalByte)
   }
 
   handleData(input: ArrayBufferLike): ArrayBufferLike {
@@ -148,7 +155,7 @@ export class Implode {
         view[view.byteLength - 1] = 0
       }
     } else {
-      output = new ArrayBuffer(0)
+      output = EMPTY_BUFFER
     }
 
     // ---------------
@@ -241,7 +248,7 @@ export class Implode {
 
       // -------------------------------
 
-      this.inputBuffer = new ArrayBuffer(0)
+      this.inputBuffer = EMPTY_BUFFER
     }
 
     if (this.streamEnded) {
@@ -286,7 +293,7 @@ export class Implode {
   }
 
   private setup(): void {
-    const addition = new ArrayBuffer(1)
+    const addition = new ArrayBuffer(3)
     const additionView = new Uint8Array(addition)
 
     switch (this.compressionType) {
@@ -315,29 +322,25 @@ export class Implode {
       }
     }
 
-    this.outputBuffer = concatArrayBuffers([this.outputBuffer, addition])
-
     switch (this.dictionarySize) {
       case 'small': {
         this.dictionarySizeMask = nBitsOfOnes(4)
-        additionView[0] = 4
+        additionView[1] = 4
         break
       }
 
       case 'medium': {
         this.dictionarySizeMask = nBitsOfOnes(5)
-        additionView[0] = 5
+        additionView[1] = 5
         break
       }
 
       case 'large': {
         this.dictionarySizeMask = nBitsOfOnes(6)
-        additionView[0] = 6
+        additionView[1] = 6
         break
       }
     }
-
-    this.outputBuffer = concatArrayBuffers([this.outputBuffer, addition])
 
     let nCount = 0x1_00
 
@@ -349,9 +352,9 @@ export class Implode {
       }
     }
 
-    additionView[0] = 0
-    this.outputBuffer = concatArrayBuffers([this.outputBuffer, addition])
+    additionView[2] = 0
 
+    this.outputBuffer = concatArrayBuffers([this.outputBuffer, addition])
     this.outBits = 0
   }
 
@@ -372,17 +375,14 @@ export class Implode {
     if (this.outBits > 8) {
       this.outBits = getLowestNBitsOf(this.outBits, 3)
       bitBuffer = bitBuffer >> (8 - outBits)
-      const addition = new ArrayBuffer(1)
-      const additionView = new Uint8Array(addition)
-      additionView[0] = getLowestNBitsOf(bitBuffer, 8)
-      this.outputBuffer = concatArrayBuffers([this.outputBuffer, addition])
+
+      this.additionalByteView[0] = getLowestNBitsOf(bitBuffer, 8)
+      this.outputBuffer = concatArrayBuffers([this.outputBuffer, this.additionalByte])
     } else {
       this.outBits = getLowestNBitsOf(this.outBits, 3)
       if (this.outBits === 0) {
-        const addition = new ArrayBuffer(1)
-        const additionView = new Uint8Array(addition)
-        additionView[0] = 0
-        this.outputBuffer = concatArrayBuffers([this.outputBuffer, addition])
+        this.additionalByteView[0] = 0
+        this.outputBuffer = concatArrayBuffers([this.outputBuffer, this.additionalByte])
       }
     }
   }
