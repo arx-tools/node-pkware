@@ -95,6 +95,7 @@ export class Implode {
   private inputBuffer: ArrayBufferLike
   private inputBufferView: Uint8Array
   private outputBuffer: ArrayBufferLike
+  private outputBufferView: Uint8Array
   private readonly additionalByte: ArrayBuffer
   private readonly additionalByteView: Uint8Array
 
@@ -115,6 +116,7 @@ export class Implode {
     this.inputBuffer = EMPTY_BUFFER
     this.inputBufferView = new Uint8Array(this.inputBuffer)
     this.outputBuffer = EMPTY_BUFFER
+    this.outputBufferView = new Uint8Array(this.outputBuffer)
 
     this.additionalByte = new ArrayBuffer(1)
     this.additionalByteView = new Uint8Array(this.additionalByte)
@@ -130,14 +132,13 @@ export class Implode {
     this.outBits = 0
     this.nChBits = repeat(0, 0x3_06)
     this.nChCodes = repeat(0, 0x3_06)
-
-    this.setup()
   }
 
   handleData(input: ArrayBufferLike): ArrayBufferLike {
     this.inputBuffer = input
     this.inputBufferView = new Uint8Array(this.inputBuffer)
 
+    this.setup()
     this.processChunkData()
 
     const blockSize = 0x8_00
@@ -154,6 +155,7 @@ export class Implode {
       // make sure to create a copy of the output buffer slice as it will get flushed in the next line
       output = this.outputBuffer.slice(0, numberOfBytes)
       this.outputBuffer = this.outputBuffer.slice(numberOfBytes)
+      this.outputBufferView = new Uint8Array(this.outputBuffer)
 
       if (this.outBits === 0) {
         const view = new Uint8Array(this.outputBuffer)
@@ -238,12 +240,15 @@ export class Implode {
 
         if (this.dictionarySize === 'small' && this.inputBufferStartIndex >= 0x4_00) {
           this.inputBuffer = this.inputBuffer.slice(0x4_00)
+          this.inputBufferView = new Uint8Array(this.inputBuffer)
           this.inputBufferStartIndex = this.inputBufferStartIndex - 0x4_00
         } else if (this.dictionarySize === 'medium' && this.inputBufferStartIndex >= 0x8_00) {
           this.inputBuffer = this.inputBuffer.slice(0x8_00)
+          this.inputBufferView = new Uint8Array(this.inputBuffer)
           this.inputBufferStartIndex = this.inputBufferStartIndex - 0x8_00
         } else if (this.dictionarySize === 'large' && this.inputBufferStartIndex >= 0x10_00) {
           this.inputBuffer = this.inputBuffer.slice(0x10_00)
+          this.inputBufferView = new Uint8Array(this.inputBuffer)
           this.inputBufferStartIndex = this.inputBufferStartIndex - 0x10_00
         }
       }
@@ -251,6 +256,7 @@ export class Implode {
       // -------------------------------
 
       this.inputBuffer = EMPTY_BUFFER
+      this.inputBufferView = new Uint8Array(this.inputBuffer)
     }
 
     if (this.streamEnded) {
@@ -295,8 +301,8 @@ export class Implode {
   }
 
   private setup(): void {
-    const addition = new ArrayBuffer(3)
-    const additionView = new Uint8Array(addition)
+    this.outputBuffer = new ArrayBuffer(3)
+    this.outputBufferView = new Uint8Array(this.outputBuffer)
 
     switch (this.compressionType) {
       case 'ascii': {
@@ -305,7 +311,7 @@ export class Implode {
           this.nChCodes[nCount] = ChCodeAsc[nCount] * 2
         }
 
-        additionView[0] = 1
+        this.outputBufferView[0] = 1
 
         break
       }
@@ -318,7 +324,7 @@ export class Implode {
           nChCode = getLowestNBitsOf(nChCode, 16) + 2
         }
 
-        additionView[0] = 0
+        this.outputBufferView[0] = 0
 
         break
       }
@@ -327,19 +333,19 @@ export class Implode {
     switch (this.dictionarySize) {
       case 'small': {
         this.dictionarySizeMask = nBitsOfOnes(4)
-        additionView[1] = 4
+        this.outputBufferView[1] = 4
         break
       }
 
       case 'medium': {
         this.dictionarySizeMask = nBitsOfOnes(5)
-        additionView[1] = 5
+        this.outputBufferView[1] = 5
         break
       }
 
       case 'large': {
         this.dictionarySizeMask = nBitsOfOnes(6)
-        additionView[1] = 6
+        this.outputBufferView[1] = 6
         break
       }
     }
@@ -354,9 +360,7 @@ export class Implode {
       }
     }
 
-    additionView[2] = 0
-
-    this.outputBuffer = concatArrayBuffers([this.outputBuffer, addition])
+    this.outputBufferView[2] = 0
     this.outBits = 0
   }
 
@@ -380,11 +384,13 @@ export class Implode {
 
       this.additionalByteView[0] = getLowestNBitsOf(bitBuffer, 8)
       this.outputBuffer = concatArrayBuffers([this.outputBuffer, this.additionalByte])
+      this.outputBufferView = new Uint8Array(this.outputBuffer)
     } else {
       this.outBits = getLowestNBitsOf(this.outBits, 3)
       if (this.outBits === 0) {
         this.additionalByteView[0] = 0
         this.outputBuffer = concatArrayBuffers([this.outputBuffer, this.additionalByte])
+        this.outputBufferView = new Uint8Array(this.outputBuffer)
       }
     }
   }
