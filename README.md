@@ -178,6 +178,25 @@ fs.createReadStream(`path-to-compressed-file`)
   .pipe(fs.createWriteStream(`path-to-write-decompressed-data`))
 ```
 
+#### Non-stream compression (also works in browser)
+
+```js
+import fs from 'node:fs/promises'
+import { implode } from 'node-pkware/simple'
+
+const inputString = 'hello pkware!'
+
+// create an ArrayBuffer from inputString
+const encoder = new TextEncoder()
+const input = encoder.encode(inputString).buffer
+
+// compress it and get the result in another ArrayBuffer
+const output = implode(input, 'ascii', 'large')
+
+// write the output to a file
+await fs.writeFile('/tmp/compressedHello', new Uint8Array(output))
+```
+
 ### Catching errors
 
 ```js

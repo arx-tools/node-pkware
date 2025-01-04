@@ -19,7 +19,8 @@ export function implode(
 export { explode as decompress }
 export { implode as compress }
 
-// ---------------
-// utils
+// -----------------
+// utils and types
 
 export { concatArrayBuffers, sliceArrayBufferAt } from '@src/functions.js'
+export { type CompressionType, type DictionarySize } from '@src/simple/types.js'
