@@ -1,5 +1,6 @@
 import { Explode } from '@src/simple/Explode.js'
 import { Implode } from '@src/simple/Implode.js'
+import { type CompressionType, type DictionarySize } from '@src/simple/types.js'
 
 export function explode(input: ArrayBufferLike): ArrayBufferLike {
   const instance = new Explode()
@@ -8,8 +9,8 @@ export function explode(input: ArrayBufferLike): ArrayBufferLike {
 
 export function implode(
   input: ArrayBufferLike,
-  compressionType: 'ascii' | 'binary',
-  dictionarySize: 'small' | 'medium' | 'large',
+  compressionType: CompressionType,
+  dictionarySize: DictionarySize,
 ): ArrayBuffer {
   const instance = new Implode(input, compressionType, dictionarySize)
   return instance.outputBuffer
