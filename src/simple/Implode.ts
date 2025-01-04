@@ -328,11 +328,11 @@ export class Implode {
     this.inputBufferStartIndex = this.inputBufferStartIndex + 2
   }
 
-  private outputBits(nBits: number, bitBuffer: number): void {
-    if (nBits > 8) {
+  private outputBits(numberOfBits: number, bitBuffer: number): void {
+    if (numberOfBits > 8) {
       this.outputBits(8, bitBuffer)
       bitBuffer = bitBuffer >> 8
-      nBits = nBits - 8
+      numberOfBits = numberOfBits - 8
     }
 
     const oldOutBits = this.outBits
@@ -340,7 +340,7 @@ export class Implode {
     const view = new Uint8Array(this.outputBuffer)
     view[view.byteLength - 1] = view[view.byteLength - 1] | getLowestNBitsOf(bitBuffer << oldOutBits, 8)
 
-    this.outBits = this.outBits + nBits
+    this.outBits = this.outBits + numberOfBits
 
     if (this.outBits > 8) {
       this.outBits = getLowestNBitsOf(this.outBits, 3)
