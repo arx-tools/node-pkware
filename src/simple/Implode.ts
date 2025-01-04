@@ -228,7 +228,8 @@ export class Implode {
       return
     }
 
-    if (this.inputBuffer.byteLength < 3) {
+    if (this.inputBuffer.byteLength <= 2) {
+      this.skipFirstTwoBytes()
       return
     }
 
