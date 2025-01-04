@@ -76,7 +76,13 @@ function findRepetitions(
     return { size: 0, distance: 0 }
   }
 
-  const haystack = inputBytes.slice(endOfLastMatch, cursor)
+  let haystack: ArrayBufferLike
+  if (endOfLastMatch > 0) {
+    haystack = inputBytes.slice(endOfLastMatch, cursor)
+  } else {
+    haystack = inputBytes
+  }
+
   const needle = inputBytes.slice(cursor, cursor + 2)
 
   const matchIndex = matchesAt(needle, haystack)
@@ -241,12 +247,14 @@ export class Implode {
     const endOfLastMatch = 0 // used when searching for longer repetitions later
 
     while (this.inputBuffer.byteLength - this.inputBufferStartIndex > 0) {
-      const { size, distance } = findRepetitions(
-        this.inputBuffer.slice(endOfLastMatch),
-        endOfLastMatch,
-        this.inputBufferStartIndex,
-      )
+      let data: { size: number; distance: number }
+      if (endOfLastMatch > 0) {
+        data = findRepetitions(this.inputBuffer.slice(endOfLastMatch), endOfLastMatch, this.inputBufferStartIndex)
+      } else {
+        data = findRepetitions(this.inputBuffer, endOfLastMatch, this.inputBufferStartIndex)
+      }
 
+      const { size, distance } = data
       const isFlushable = this.isRepetitionFlushable(size, distance)
 
       if (isFlushable === false) {
@@ -288,18 +296,28 @@ export class Implode {
         this.inputBufferStartIndex = this.inputBufferStartIndex + size
       }
 
-      if (dictionarySize === 'small' && this.inputBufferStartIndex >= 0x4_00) {
-        this.inputBuffer = this.inputBuffer.slice(0x4_00)
+      let blockSize: number
+      switch (dictionarySize) {
+        case 'small': {
+          blockSize = 0x4_00
+          break
+        }
+
+        case 'medium': {
+          blockSize = 0x8_00
+          break
+        }
+
+        case 'large': {
+          blockSize = 0x10_00
+          break
+        }
+      }
+
+      if (this.inputBufferStartIndex >= blockSize) {
+        this.inputBuffer = this.inputBuffer.slice(blockSize)
         this.inputBufferView = new Uint8Array(this.inputBuffer)
-        this.inputBufferStartIndex = this.inputBufferStartIndex - 0x4_00
-      } else if (dictionarySize === 'medium' && this.inputBufferStartIndex >= 0x8_00) {
-        this.inputBuffer = this.inputBuffer.slice(0x8_00)
-        this.inputBufferView = new Uint8Array(this.inputBuffer)
-        this.inputBufferStartIndex = this.inputBufferStartIndex - 0x8_00
-      } else if (dictionarySize === 'large' && this.inputBufferStartIndex >= 0x10_00) {
-        this.inputBuffer = this.inputBuffer.slice(0x10_00)
-        this.inputBufferView = new Uint8Array(this.inputBuffer)
-        this.inputBufferStartIndex = this.inputBufferStartIndex - 0x10_00
+        this.inputBufferStartIndex = this.inputBufferStartIndex - blockSize
       }
     }
   }
