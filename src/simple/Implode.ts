@@ -76,13 +76,7 @@ function findRepetitions(
     return { size: 0, distance: 0 }
   }
 
-  let haystack: ArrayBufferLike
-  if (endOfLastMatch > 0) {
-    haystack = inputBytes.slice(endOfLastMatch, cursor)
-  } else {
-    haystack = inputBytes
-  }
-
+  const haystack = inputBytes.slice(endOfLastMatch, cursor)
   const needle = inputBytes.slice(cursor, cursor + 2)
 
   const matchIndex = matchesAt(needle, haystack)
