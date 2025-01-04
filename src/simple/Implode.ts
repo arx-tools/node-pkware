@@ -240,7 +240,7 @@ export class Implode {
 
     const endOfLastMatch = 0 // used when searching for longer repetitions later
 
-    while (this.inputBufferStartIndex < this.inputBuffer.byteLength) {
+    while (this.inputBuffer.byteLength - this.inputBufferStartIndex > 0) {
       const { size, distance } = findRepetitions(
         this.inputBuffer.slice(endOfLastMatch),
         endOfLastMatch,
@@ -325,7 +325,7 @@ export class Implode {
       return false
     }
 
-    if (size >= 8 || this.inputBufferStartIndex + 1 >= this.inputBuffer.byteLength) {
+    if (size >= 8 || this.inputBuffer.byteLength - this.inputBufferStartIndex < 2) {
       return true
     }
 
