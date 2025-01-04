@@ -13,7 +13,7 @@ export function implode(
   dictionarySize: DictionarySize,
 ): ArrayBuffer {
   const instance = new Implode(input, compressionType, dictionarySize)
-  return instance.outputBuffer
+  return instance.getResult()
 }
 
 export { explode as decompress }

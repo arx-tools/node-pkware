@@ -8,8 +8,18 @@ import {
   LenCode,
   LONGEST_ALLOWED_REPETITION,
 } from '@src/constants.js'
-import { clamp, getLowestNBitsOf, repeat, nBitsOfOnes, concatArrayBuffers } from '@src/functions.js'
+import { clamp, getLowestNBitsOf, repeat, nBitsOfOnes } from '@src/functions.js'
 import { type CompressionType, type DictionarySize } from '@src/simple/types.js'
+
+/**
+ * in bytes
+ */
+const SIZE_OF_HEADER = 3
+
+/**
+ * in bytes
+ */
+const MAX_SIZE_OF_TERMINATION_LITERAL = 2
 
 function getSizeOfMatching(inputBytes: ArrayBufferLike, a: number, b: number): number {
   const limit = clamp(2, LONGEST_ALLOWED_REPETITION, b - a)
@@ -85,15 +95,13 @@ function findRepetitions(
 }
 
 export class Implode {
-  public outputBuffer: ArrayBuffer
-
   private inputBuffer: ArrayBufferLike
   private inputBufferView: Uint8Array
-  private outputBufferView: Uint8Array
-  private readonly additionalByte: ArrayBuffer
-  private readonly additionalByteView: Uint8Array
-
   private inputBufferStartIndex: number
+
+  private readonly outputBuffer: ArrayBuffer
+  private outputBufferView: Uint8Array
+  private outputBufferSize: number
 
   private dictionarySizeMask: number
   private readonly distCodes: number[]
@@ -103,13 +111,9 @@ export class Implode {
   private readonly nChCodes: number[]
 
   constructor(input: ArrayBufferLike, compressionType: CompressionType, dictionarySize: DictionarySize) {
-    this.additionalByte = new ArrayBuffer(1)
-    this.additionalByteView = new Uint8Array(this.additionalByte)
-
     this.dictionarySizeMask = 0
     this.distCodes = structuredClone(DistCode)
     this.distBits = structuredClone(DistBits)
-    this.inputBufferStartIndex = 0
     this.outBits = 0
     this.nChBits = repeat(0, 0x3_06)
     this.nChCodes = repeat(0, 0x3_06)
@@ -118,15 +122,20 @@ export class Implode {
 
     this.inputBuffer = input
     this.inputBufferView = new Uint8Array(this.inputBuffer)
+    this.inputBufferStartIndex = 0
 
-    this.outputBuffer = new ArrayBuffer(3)
+    this.outputBuffer = new ArrayBuffer(input.byteLength + SIZE_OF_HEADER + MAX_SIZE_OF_TERMINATION_LITERAL)
     this.outputBufferView = new Uint8Array(this.outputBuffer)
+    this.outputBufferSize = 0
 
     this.outputHeader(compressionType, dictionarySize)
     this.processInput(dictionarySize)
 
-    // write the termination literal
-    this.outputBits(this.nChBits.at(-1) as number, this.nChCodes.at(-1) as number)
+    this.writeTerminationLiteral()
+  }
+
+  public getResult(): ArrayBuffer {
+    return this.outputBuffer.slice(0, this.outputBufferSize)
   }
 
   private setupTables(compressionType: CompressionType, dictionarySize: DictionarySize): void {
@@ -211,6 +220,7 @@ export class Implode {
     }
 
     this.outputBufferView[2] = 0
+    this.outputBufferSize = 3
   }
 
   private processInput(dictionarySize: DictionarySize): void {
@@ -293,6 +303,10 @@ export class Implode {
     }
   }
 
+  private writeTerminationLiteral(): void {
+    this.outputBits(this.nChBits.at(-1) as number, this.nChCodes.at(-1) as number)
+  }
+
   /**
    * @returns false - non flushable
    * @returns true - flushable
@@ -337,8 +351,8 @@ export class Implode {
 
     const oldOutBits = this.outBits
 
-    this.outputBufferView[this.outputBuffer.byteLength - 1] =
-      this.outputBufferView[this.outputBuffer.byteLength - 1] | getLowestNBitsOf(bitBuffer << oldOutBits, 8)
+    this.outputBufferView[this.outputBufferSize - 1] =
+      this.outputBufferView[this.outputBufferSize - 1] | getLowestNBitsOf(bitBuffer << oldOutBits, 8)
 
     this.outBits = this.outBits + numberOfBits
 
@@ -346,15 +360,13 @@ export class Implode {
       this.outBits = getLowestNBitsOf(this.outBits, 3)
       bitBuffer = bitBuffer >> (8 - oldOutBits)
 
-      this.additionalByteView[0] = getLowestNBitsOf(bitBuffer, 8)
-      this.outputBuffer = concatArrayBuffers([this.outputBuffer, this.additionalByte])
-      this.outputBufferView = new Uint8Array(this.outputBuffer)
+      this.outputBufferView[this.outputBufferSize] = getLowestNBitsOf(bitBuffer, 8)
+      this.outputBufferSize = this.outputBufferSize + 1
     } else {
       this.outBits = getLowestNBitsOf(this.outBits, 3)
       if (this.outBits === 0) {
-        this.additionalByteView[0] = 0
-        this.outputBuffer = concatArrayBuffers([this.outputBuffer, this.additionalByte])
-        this.outputBufferView = new Uint8Array(this.outputBuffer)
+        this.outputBufferView[this.outputBufferSize] = 0
+        this.outputBufferSize = this.outputBufferSize + 1
       }
     }
   }
