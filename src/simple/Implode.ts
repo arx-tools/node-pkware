@@ -335,16 +335,16 @@ export class Implode {
       nBits = nBits - 8
     }
 
-    const { outBits } = this
+    const oldOutBits = this.outBits
 
     const view = new Uint8Array(this.outputBuffer)
-    view[view.byteLength - 1] = view[view.byteLength - 1] | getLowestNBitsOf(bitBuffer << outBits, 8)
+    view[view.byteLength - 1] = view[view.byteLength - 1] | getLowestNBitsOf(bitBuffer << oldOutBits, 8)
 
     this.outBits = this.outBits + nBits
 
     if (this.outBits > 8) {
       this.outBits = getLowestNBitsOf(this.outBits, 3)
-      bitBuffer = bitBuffer >> (8 - outBits)
+      bitBuffer = bitBuffer >> (8 - oldOutBits)
 
       this.additionalByteView[0] = getLowestNBitsOf(bitBuffer, 8)
       this.outputBuffer = concatArrayBuffers([this.outputBuffer, this.additionalByte])
