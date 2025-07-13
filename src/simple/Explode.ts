@@ -390,7 +390,7 @@ export class Explode {
             this.outputBuffer = concatArrayBuffers([this.outputBuffer, ...additions])
             additions.length = 0
 
-            if (this.outputBuffer.byteLength > blockSize) {
+            if (this.outputBuffer.byteLength > blockSize * 2) {
               const [a, b] = sliceArrayBufferAt(this.outputBuffer, blockSize)
               finalizedChunks.push(a)
               this.outputBuffer = b
