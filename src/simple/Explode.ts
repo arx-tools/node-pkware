@@ -19,6 +19,7 @@ import {
   repeat,
   unfold,
   concatArrayBuffers,
+  sliceArrayBufferAt,
 } from '@src/functions.js'
 
 /**
@@ -370,6 +371,10 @@ export class Explode {
 
     this.needMoreInput = false
 
+    const additions: ArrayBufferLike[] = []
+    const finalizedChunks: ArrayBufferLike[] = []
+    const blockSize = 0x10_00
+
     try {
       let nextLiteral = this.decodeNextLiteral()
 
@@ -380,10 +385,20 @@ export class Explode {
           const repeatLength = nextLiteral - 0xfe
 
           const minusDistance = this.decodeDistance(repeatLength)
-          const availableData = this.outputBuffer.slice(
-            this.outputBuffer.byteLength - minusDistance,
-            this.outputBuffer.byteLength - minusDistance + repeatLength,
-          )
+
+          if (additions.length > 0) {
+            this.outputBuffer = concatArrayBuffers([this.outputBuffer, ...additions])
+            additions.length = 0
+
+            if (this.outputBuffer.byteLength > blockSize) {
+              const [a, b] = sliceArrayBufferAt(this.outputBuffer, blockSize)
+              finalizedChunks.push(a)
+              this.outputBuffer = b
+            }
+          }
+
+          const start = this.outputBuffer.byteLength - minusDistance
+          const availableData = this.outputBuffer.slice(start, start + repeatLength)
 
           if (repeatLength > minusDistance) {
             const multipliedData = repeat(availableData, Math.ceil(repeatLength / availableData.byteLength))
@@ -397,13 +412,15 @@ export class Explode {
           additionView[0] = nextLiteral
         }
 
-        this.outputBuffer = concatArrayBuffers([this.outputBuffer, addition])
+        additions.push(addition)
 
         nextLiteral = this.decodeNextLiteral()
       }
     } catch {
       this.needMoreInput = true
     }
+
+    this.outputBuffer = concatArrayBuffers([...finalizedChunks, this.outputBuffer, ...additions])
   }
 
   private parseInitialData(): boolean {
