@@ -32,6 +32,7 @@ const args: AppArgs = minimist(process.argv.slice(2), {
   },
 })
 
+// eslint-disable-next-line max-params -- can't really compress the params further without ruining readability
 async function decompress(
   input: NodeJS.ReadableStream,
   output: NodeJS.WritableStream,

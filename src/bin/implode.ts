@@ -48,6 +48,7 @@ const args: AppArgs = minimist(process.argv.slice(2), {
   },
 })
 
+// eslint-disable-next-line max-params -- I know this has hideously many params, but it's only used here within the bin folder
 async function compress(
   input: NodeJS.ReadableStream,
   output: NodeJS.WritableStream,
