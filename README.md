@@ -9,7 +9,8 @@ It was the de-facto compression for games from around Y2K, like [Arx Fatalis](ht
 
 `npm i -g node-pkware`
 
-minimum required node version: 18.0.0
+- minimum required node version: 18.0.0
+- recommended node version (to be able to run the tests): 20.6.0
 
 ## command line interface (CLI)
 
