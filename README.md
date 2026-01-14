@@ -182,7 +182,7 @@ fs.createReadStream(`path-to-compressed-file`)
 #### Non-stream compression (also works in browser)
 
 ```js
-import fs from 'node:fs/promises'
+import * as fs from 'node:fs/promises'
 import { implode } from 'node-pkware/simple'
 
 const inputString = 'hello pkware!'

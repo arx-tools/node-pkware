@@ -1,6 +1,6 @@
 #!/usr/bin/env -S node --enable-source-maps
 
-import process from 'node:process'
+import * as process from 'node:process'
 import minimist from 'minimist-lite'
 import { Compression, DictionarySize } from '@src/constants.js'
 import { getPackageVersion, parseNumberString, getInputStream, getOutputStream } from '@bin/helpers.js'
