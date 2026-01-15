@@ -380,37 +380,39 @@ export class Explode {
       let nextLiteral = this.decodeNextLiteral()
 
       while (nextLiteral !== LITERAL_END_STREAM) {
-        let addition: ArrayBufferLike
-
-        if (nextLiteral >= 0x1_00) {
-          const repeatLength = nextLiteral - 0xfe
-
-          const minusDistance = this.decodeDistance(repeatLength)
-
-          if (additions.length > 0) {
-            this.outputBuffer = concatArrayBuffers([this.outputBuffer, ...additions])
-            additions.length = 0
-
-            if (this.outputBuffer.byteLength > blockSize * 2) {
-              const [a, b] = sliceArrayBufferAt(this.outputBuffer, blockSize)
-              finalizedChunks.push(a)
-              this.outputBuffer = b
-            }
-          }
-
-          const start = this.outputBuffer.byteLength - minusDistance
-          const availableData = this.outputBuffer.slice(start, start + repeatLength)
-
-          if (repeatLength > minusDistance) {
-            const multipliedData = repeat(availableData, Math.ceil(repeatLength / availableData.byteLength))
-            addition = concatArrayBuffers(multipliedData).slice(0, repeatLength)
-          } else {
-            addition = availableData
-          }
-        } else {
-          addition = new ArrayBuffer(1)
+        if (nextLiteral < 0x1_00) {
+          const addition = new ArrayBuffer(1)
           const additionView = new Uint8Array(addition)
           additionView[0] = nextLiteral
+          additions.push(addition)
+
+          nextLiteral = this.decodeNextLiteral()
+          continue
+        }
+
+        const repeatLength = nextLiteral - 0xfe
+        const minusDistance = this.decodeDistance(repeatLength)
+
+        if (additions.length > 0) {
+          this.outputBuffer = concatArrayBuffers([this.outputBuffer, ...additions])
+          additions.length = 0
+
+          if (this.outputBuffer.byteLength > blockSize * 2) {
+            const [a, b] = sliceArrayBufferAt(this.outputBuffer, blockSize)
+            finalizedChunks.push(a)
+            this.outputBuffer = b
+          }
+        }
+
+        const start = this.outputBuffer.byteLength - minusDistance
+        const availableData = this.outputBuffer.slice(start, start + repeatLength)
+
+        let addition: ArrayBufferLike
+        if (repeatLength > minusDistance) {
+          const multipliedData = repeat(availableData, Math.ceil(repeatLength / availableData.byteLength))
+          addition = concatArrayBuffers(multipliedData).slice(0, repeatLength)
+        } else {
+          addition = availableData
         }
 
         additions.push(addition)
