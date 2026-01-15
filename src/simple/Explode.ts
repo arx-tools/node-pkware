@@ -130,9 +130,21 @@ export class Explode {
   private dictionarySize: DictionarySize | 'unknown'
   private dictionarySizeMask: number
   private chBitsAsc: number[]
+  /**
+   * the naming comes from stormlib, the 2C34 refers to the table's position in memory
+   */
   private asciiTable2C34: number[]
+  /**
+   * the naming comes from stormlib, the 2D34 refers to the table's position in memory
+   */
   private asciiTable2D34: number[]
+  /**
+   * the naming comes from stormlib, the 2E34 refers to the table's position in memory
+   */
   private asciiTable2E34: number[]
+  /**
+   * the naming comes from stormlib, the 2EB4 refers to the table's position in memory
+   */
   private asciiTable2EB4: number[]
 
   constructor() {
@@ -381,6 +393,7 @@ export class Explode {
       let nextLiteral = this.decodeNextLiteral()
 
       while (nextLiteral !== LITERAL_END_STREAM) {
+        // we have a character literal here
         if (nextLiteral < 0x1_00) {
           const addition = new ArrayBuffer(1)
           const additionView = new Uint8Array(addition)
@@ -392,9 +405,14 @@ export class Explode {
           continue
         }
 
+        // we have some bytes to copy from earlier bytes, which is referred to as the "repetition":
+        // nextLiteral holds information on both how far back the start of the repetition is
+        // and the info on how long the repetition is
+
         const repeatLength = nextLiteral - 0xfe
         const minusDistance = this.decodeDistance(repeatLength)
 
+        // dump the beginning of the output buffer if outputBuffer and the additions exceed 2 blocks
         if (this.outputBuffer.byteLength + additionsByteSum > blockSize * 2) {
           if (additions.length > 0) {
             this.outputBuffer = concatArrayBuffers([this.outputBuffer, ...additions])
@@ -409,6 +427,7 @@ export class Explode {
 
         const start = this.outputBuffer.byteLength + additionsByteSum - minusDistance
 
+        // only add the additions if the repetition is partially or fully within the bytes in the additions
         if (this.outputBuffer.byteLength < start + repeatLength) {
           this.outputBuffer = concatArrayBuffers([this.outputBuffer, ...additions])
           additions.length = 0
