@@ -12,7 +12,6 @@ import {
 } from '@src/constants.js'
 import { AbortedError, InvalidCompressionTypeError, InvalidDictionarySizeError } from '@src/errors.js'
 import {
-  quotientAndRemainder,
   getLowestNBitsOf,
   mergeSparseArrays,
   nBitsOfOnes,
@@ -173,35 +172,16 @@ export class Explode {
    */
   handleData(input: ArrayBufferLike): ArrayBufferLike {
     this.needMoreInput = true
-
     this.inputBuffer = input
     this.inputBufferStartIndex = 0
 
     this.processChunkData()
 
-    const blockSize = 0x10_00
-
-    let output: ArrayBufferLike = EMPTY_BUFFER
-
-    if (this.outputBuffer.byteLength > blockSize) {
-      let [numberOfBlocks] = quotientAndRemainder(this.outputBuffer.byteLength, blockSize)
-
-      // making sure to leave one block worth of data for lookback when processing chunk data
-      numberOfBlocks = numberOfBlocks - 1
-
-      const numberOfBytes = numberOfBlocks * blockSize
-      // TODO: do we need this slicing here...
-      output = this.outputBuffer.slice(0, numberOfBytes)
-      this.outputBuffer = this.outputBuffer.slice(numberOfBytes)
-    }
-
-    // -----------------
-
     if (this.needMoreInput) {
       throw new AbortedError()
     }
 
-    return concatArrayBuffers([output, this.outputBuffer])
+    return this.outputBuffer
   }
 
   private generateAsciiTables(): void {
