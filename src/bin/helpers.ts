@@ -27,11 +27,15 @@ export function parseNumberString(n?: string, defaultValue: number = 0): number 
   return defaultValue
 }
 
-function pathToPackageJson(): string {
+export function pathToRepoRoot(): string {
   const filename = fileURLToPath(import.meta.url)
   const dirname = path.dirname(filename)
 
-  return path.resolve(dirname, '../../package.json')
+  return path.resolve(dirname, '../../')
+}
+
+function pathToPackageJson(): string {
+  return path.resolve(pathToRepoRoot(), './package.json')
 }
 
 export async function getPackageVersion(): Promise<string> {
