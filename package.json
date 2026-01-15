@@ -28,9 +28,9 @@
     "build:watch": "nodemon --watch src --exec \"npm run build\" --ext ts",
     "lint": "xo",
     "lint:watch": "nodemon --watch src --exec \"npm run lint\" --ext ts",
-    "prepublishOnly": "npm run lint && rm -rf dist && rm -f tsconfig.tsbuildinfo && npm run build",
-    "test": "ts-mocha --import=@hyperse/ts-node/register test/**/*.spec.ts",
-    "test:watch": "nodemon --watch src --watch test --exec \"npm run test\" --ext ts"
+    "prepublishOnly": "npm run lint && rm -rf dist && rm -f tsconfig.tsbuildinfo && npm run build && find dist -type f -name '*.spec.*' -delete",
+    "test": "ts-mocha --import=@hyperse/ts-node/register src/**/*.spec.ts",
+    "test:watch": "nodemon --watch src --exec \"npm run test\" --ext ts"
   },
   "repository": {
     "type": "git",
