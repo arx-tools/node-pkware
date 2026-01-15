@@ -373,6 +373,7 @@ export class Explode {
     this.needMoreInput = false
 
     const additions: ArrayBufferLike[] = []
+    let additionsByteSum = 0
     const finalizedChunks: ArrayBufferLike[] = []
     const blockSize = 0x10_00
 
@@ -385,6 +386,7 @@ export class Explode {
           const additionView = new Uint8Array(addition)
           additionView[0] = nextLiteral
           additions.push(addition)
+          additionsByteSum = additionsByteSum + 1
 
           nextLiteral = this.decodeNextLiteral()
           continue
@@ -393,18 +395,26 @@ export class Explode {
         const repeatLength = nextLiteral - 0xfe
         const minusDistance = this.decodeDistance(repeatLength)
 
-        if (additions.length > 0) {
-          this.outputBuffer = concatArrayBuffers([this.outputBuffer, ...additions])
-          additions.length = 0
-
-          if (this.outputBuffer.byteLength > blockSize * 2) {
-            const [a, b] = sliceArrayBufferAt(this.outputBuffer, blockSize)
-            finalizedChunks.push(a)
-            this.outputBuffer = b
+        if (this.outputBuffer.byteLength + additionsByteSum > blockSize * 2) {
+          if (additions.length > 0) {
+            this.outputBuffer = concatArrayBuffers([this.outputBuffer, ...additions])
+            additions.length = 0
+            additionsByteSum = 0
           }
+
+          const [a, b] = sliceArrayBufferAt(this.outputBuffer, blockSize)
+          finalizedChunks.push(a)
+          this.outputBuffer = b
         }
 
-        const start = this.outputBuffer.byteLength - minusDistance
+        const start = this.outputBuffer.byteLength + additionsByteSum - minusDistance
+
+        if (this.outputBuffer.byteLength < start + repeatLength) {
+          this.outputBuffer = concatArrayBuffers([this.outputBuffer, ...additions])
+          additions.length = 0
+          additionsByteSum = 0
+        }
+
         const availableData = this.outputBuffer.slice(start, start + repeatLength)
 
         let addition: ArrayBufferLike
@@ -416,6 +426,7 @@ export class Explode {
         }
 
         additions.push(addition)
+        additionsByteSum = additionsByteSum + addition.byteLength
 
         nextLiteral = this.decodeNextLiteral()
       }
