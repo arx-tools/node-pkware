@@ -21,15 +21,16 @@ import {
   concatArrayBuffers,
   sliceArrayBufferAt,
 } from '@src/functions.js'
+import type { CompressionType, DictionarySize } from './types.js'
 
 /**
  * This function assumes there are at least 2 bytes of data in the buffer
  */
 function readHeader(buffer: ArrayBufferLike): {
-  compressionType: 'ascii' | 'binary'
-  dictionarySize: 'small' | 'medium' | 'large'
+  compressionType: CompressionType
+  dictionarySize: DictionarySize
 } {
-  let compressionType: 'ascii' | 'binary'
+  let compressionType: CompressionType
 
   const view = new Uint8Array(buffer)
 
@@ -49,7 +50,7 @@ function readHeader(buffer: ArrayBufferLike): {
     }
   }
 
-  let dictionarySize: 'small' | 'medium' | 'large'
+  let dictionarySize: DictionarySize
 
   switch (view[1]) {
     case 4: {
@@ -125,8 +126,8 @@ export class Explode {
   private inputBuffer: ArrayBufferLike
   private inputBufferStartIndex: number
   private outputBuffer: ArrayBufferLike
-  private compressionType: 'ascii' | 'binary' | 'unknown'
-  private dictionarySize: 'small' | 'medium' | 'large' | 'unknown'
+  private compressionType: CompressionType | 'unknown'
+  private dictionarySize: DictionarySize | 'unknown'
   private dictionarySizeMask: number
   private chBitsAsc: number[]
   private asciiTable2C34: number[]
@@ -331,7 +332,7 @@ export class Explode {
       distance = (distPosCode << 2) | getLowestNBitsOf(this.bitBuffer, 2)
       bitsToWaste = 2
     } else {
-      switch (this.dictionarySize as 'small' | 'medium' | 'large') {
+      switch (this.dictionarySize as DictionarySize) {
         case 'small': {
           distance = (distPosCode << 4) | (this.bitBuffer & this.dictionarySizeMask)
           bitsToWaste = 4
