@@ -23,9 +23,9 @@ describe('simple/Implode', () => {
     expect(Implode).toBeDefined()
   })
 
-  it('can compress binary files', async () => {
-    const level1 = path.resolve(pkwareTestFilesFolder, './arx-fatalis/level1/')
+  // it('can compress binary files', async () => {
+  //   const level1 = path.resolve(pkwareTestFilesFolder, './arx-fatalis/level1/')
 
-    // TODO
-  })
+  //   // TODO
+  // })
 })

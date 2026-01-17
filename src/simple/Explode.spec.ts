@@ -39,7 +39,7 @@ describe('simple/Explode', () => {
     expect(equals).toBe(true)
   })
 
-  it('can unpack partially compressed binary files', async () => {
-    // TODO
-  })
+  // it('can unpack partially compressed binary files', async () => {
+  //   // TODO
+  // })
 })
