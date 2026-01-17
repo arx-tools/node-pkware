@@ -239,7 +239,8 @@ export class Explode {
       return
     }
 
-    const nextByte = new Uint8Array(this.inputBuffer)[this.inputBufferStartIndex]
+    const inputBufferView = new Uint8Array(this.inputBuffer)
+    const nextByte = inputBufferView[this.inputBufferStartIndex]
     this.inputBufferStartIndex = this.inputBufferStartIndex + 1
 
     this.bitBuffer = ((this.bitBuffer >> this.extraBits) | (nextByte << 8)) >> (numberOfBits - this.extraBits)
@@ -445,7 +446,8 @@ export class Explode {
 
     this.compressionType = compressionType
     this.dictionarySize = dictionarySize
-    this.bitBuffer = new Uint8Array(this.inputBuffer)[this.inputBufferStartIndex + 2]
+    const inputBufferView = new Uint8Array(this.inputBuffer)
+    this.bitBuffer = inputBufferView[this.inputBufferStartIndex + 2]
     this.inputBufferStartIndex = this.inputBufferStartIndex + 3
 
     switch (dictionarySize) {

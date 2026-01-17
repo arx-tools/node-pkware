@@ -225,7 +225,8 @@ export function concatArrayBuffers(buffers: ArrayBufferLike[]): ArrayBuffer {
 
   let offset = 0
   for (const buffer of buffers) {
-    combinedBuffer.set(new Uint8Array(buffer), offset)
+    const view = new Uint8Array(buffer)
+    combinedBuffer.set(view, offset)
     offset = offset + buffer.byteLength
   }
 
