@@ -3,6 +3,7 @@ import * as path from 'node:path'
 import { expect } from 'expect'
 import { Implode } from '@src/simple/Implode.js'
 import { fileExists, pathToRepoRoot } from '@bin/helpers.js'
+import { Explode } from '@src/simple/Explode.js'
 
 /**
  * Expecting the {@link https://github.com/arx-tools/pkware-test-files|pkware-test-files}
@@ -23,9 +24,23 @@ describe('simple/Implode', () => {
     expect(Implode).toBeDefined()
   })
 
-  // it('can compress binary files', async () => {
-  //   const level1 = path.resolve(pkwareTestFilesFolder, './arx-fatalis/level1/')
+  it('can compress binary files', async () => {
+    expect.assertions(1)
 
-  //   // TODO
-  // })
+    const unpackedFile = await fs.readFile(
+      path.resolve(pkwareTestFilesFolder, './arx-fatalis/level1/level1.llf.unpacked'),
+    )
+
+    console.log(unpackedFile)
+
+    const instance = new Implode(unpackedFile.buffer, 'binary', 'large')
+    const packed = instance.getResult()
+
+    const explode = new Explode()
+    const unpacked = explode.handleData(packed)
+
+    const equals = unpackedFile.equals(new Uint8Array(unpacked))
+
+    expect(equals).toBe(true)
+  }).timeout(10_000) // TODO: this test takes 5763ms to run, implode needs to be improved
 })
