@@ -394,11 +394,9 @@ export class Explode {
 
         // dump the beginning of the output buffer if outputBuffer and the additions exceed 2 blocks
         if (this.outputBuffer.byteLength + additionsByteSum > blockSize * 2) {
-          if (additions.length > 0) {
-            this.outputBuffer = concatArrayBuffers([this.outputBuffer, ...additions])
-            additions.length = 0
-            additionsByteSum = 0
-          }
+          this.outputBuffer = concatArrayBuffers([this.outputBuffer, ...additions])
+          additions.length = 0
+          additionsByteSum = 0
 
           const [a, b] = sliceArrayBufferAt(this.outputBuffer, blockSize)
           finalizedChunks.push(a)
@@ -407,7 +405,7 @@ export class Explode {
 
         const start = this.outputBuffer.byteLength + additionsByteSum - minusDistance
 
-        // only add the additions if the repetition is partially or fully within the bytes in the additions
+        // only add the additions if the "repetition" bleeds into the bytes of "additions"
         if (this.outputBuffer.byteLength < start + repeatLength) {
           this.outputBuffer = concatArrayBuffers([this.outputBuffer, ...additions])
           additions.length = 0

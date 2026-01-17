@@ -1,5 +1,3 @@
-import { EMPTY_BUFFER } from '@src/constants.js'
-
 /**
  * Creates a copy of `value` `repetitions` times into an array:
  *
@@ -214,25 +212,22 @@ export function quotientAndRemainder(dividend: number, divisor: number): [quotie
  * @see https://stackoverflow.com/a/49129872/1806628
  */
 export function concatArrayBuffers(buffers: ArrayBufferLike[]): ArrayBuffer {
-  const nonEmptyBuffers = buffers.filter((buffer) => {
-    return buffer.byteLength > 0
-  })
-
-  if (nonEmptyBuffers.length === 0) {
-    return EMPTY_BUFFER
+  if (buffers.length === 1) {
+    return buffers[0] as ArrayBuffer
   }
 
-  const totalLength = nonEmptyBuffers.reduce((sum, buffer) => {
-    return sum + buffer.byteLength
-  }, 0)
+  let totalLength = 0
+  for (const buffer of buffers) {
+    totalLength = totalLength + buffer.byteLength
+  }
 
   const combinedBuffer = new Uint8Array(totalLength)
 
   let offset = 0
-  nonEmptyBuffers.forEach((buffer) => {
+  for (const buffer of buffers) {
     combinedBuffer.set(new Uint8Array(buffer), offset)
     offset = offset + buffer.byteLength
-  })
+  }
 
   return combinedBuffer.buffer
 }

@@ -48,7 +48,7 @@ export async function getPackageVersion(): Promise<string> {
   }
 }
 
-async function fileExists(filename: string): Promise<boolean> {
+export async function fileExists(filename: string): Promise<boolean> {
   try {
     await fs.promises.access(filename, fs.constants.R_OK)
     return true
