@@ -20,10 +20,6 @@ before(async () => {
 })
 
 describe('simple/Implode', () => {
-  it('is defined', () => {
-    expect(Implode).toBeDefined()
-  })
-
   it('can compress binary files', async () => {
     expect.assertions(1)
 
@@ -31,10 +27,10 @@ describe('simple/Implode', () => {
       path.resolve(pkwareTestFilesFolder, './arx-fatalis/level1/level1.llf.unpacked'),
     )
 
-    console.log(unpackedFile)
-
+    console.time('    ⏱ Implode compressed level1.llf.unpacked')
     const instance = new Implode(unpackedFile.buffer, 'binary', 'large')
     const packed = instance.getResult()
+    console.timeEnd('    ⏱ Implode compressed level1.llf.unpacked')
 
     const explode = new Explode()
     const unpacked = explode.handleData(packed)
@@ -42,5 +38,18 @@ describe('simple/Implode', () => {
     const equals = unpackedFile.equals(new Uint8Array(unpacked))
 
     expect(equals).toBe(true)
-  }).timeout(10_000) // TODO: this test takes 5763ms to run, implode needs to be improved
+  }).timeout(10_000) // TODO: Implode takes 5+ seconds to compress level1.llf, it needs to be improved
+
+  it('makes the file smaller and actually compress the data, not just encode it', async () => {
+    expect.assertions(1)
+
+    const unpackedFile = await fs.readFile(
+      path.resolve(pkwareTestFilesFolder, './arx-fatalis/level1/level1.llf.unpacked'),
+    )
+
+    const instance = new Implode(unpackedFile.buffer, 'binary', 'large')
+    const packed = instance.getResult()
+
+    expect(packed.byteLength).toBeLessThan(unpackedFile.byteLength)
+  }).timeout(10_000) // TODO: Implode takes 5+ seconds to compress level1.llf, it needs to be improved
 })
