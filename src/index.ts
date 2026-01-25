@@ -1,8 +1,8 @@
-import { type Compression, type DictionarySize } from '@src/constants.js'
+import type { Compression, DictionarySize } from '@src/constants.js'
 import { Explode } from '@src/Explode.js'
 import { Implode } from '@src/Implode.js'
-import { type StreamHandler } from '@src/stream.js'
-import { type Config } from '@src/types.js'
+import type { StreamHandler } from '@src/stream.js'
+import type { Config } from '@src/types.js'
 
 /**
  * Decompresses stream

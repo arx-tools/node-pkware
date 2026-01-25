@@ -23,7 +23,7 @@ class QuasiTransform {
   }
 
   async handle(chunk: Buffer, encoding: NodeJS.BufferEncoding): Promise<Buffer> {
-    return promisify(this.#handler).call(this, chunk, encoding) as Promise<Buffer>
+    return await (promisify(this.#handler).call(this, chunk, encoding) as Promise<Buffer>)
   }
 }
 

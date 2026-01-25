@@ -9,7 +9,7 @@ import {
   LONGEST_ALLOWED_REPETITION,
 } from '@src/constants.js'
 import { clamp, getLowestNBitsOf, repeat, nBitsOfOnes } from '@src/functions.js'
-import { type CompressionType, type DictionarySize } from '@src/simple/types.js'
+import type { CompressionType, DictionarySize } from '@src/simple/types.js'
 
 /**
  * in bytes

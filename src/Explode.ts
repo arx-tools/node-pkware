@@ -1,5 +1,5 @@
 import { Buffer } from 'node:buffer'
-import { type Transform, type TransformCallback } from 'node:stream'
+import type { Transform, TransformCallback } from 'node:stream'
 import {
   ChBitsAsc,
   ChCodeAsc,
@@ -24,7 +24,7 @@ import {
   toHex,
   unfold,
 } from '@src/functions.js'
-import { type Config, type Stats } from '@src/types.js'
+import type { Config, Stats } from '@src/types.js'
 
 /**
  * This function assumes there are at least 2 bytes of data in the buffer

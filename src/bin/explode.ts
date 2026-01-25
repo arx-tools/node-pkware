@@ -11,7 +11,7 @@ import {
   through,
   type StreamHandler,
 } from '@src/stream.js'
-import { type Config } from '@src/types.js'
+import type { Config } from '@src/types.js'
 import { explode } from '@src/index.js'
 
 type AppArgs = {
@@ -51,6 +51,7 @@ async function decompress(
 
   const handler = transformSplitBy(splitAt(offset), leftHandler, rightHandler)
 
+  // eslint-disable-next-line @typescript-eslint/return-await -- I'm not gonna rewrite this classic promise nonsense to async/await as I don't know where are the return points exactly
   return new Promise<void>((resolve, reject) => {
     input.pipe(through(handler).on('error', reject)).pipe(output).on('finish', resolve).on('error', reject)
   })

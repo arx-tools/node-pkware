@@ -1,5 +1,5 @@
 import { Buffer } from 'node:buffer'
-import { type Transform, type TransformCallback } from 'node:stream'
+import type { Transform, TransformCallback } from 'node:stream'
 import {
   ChBitsAsc,
   ChCodeAsc,
@@ -15,8 +15,8 @@ import {
 import { InvalidCompressionTypeError, InvalidDictionarySizeError } from '@src/errors.js'
 import { ExpandingBuffer } from '@src/ExpandingBuffer.js'
 import { clamp, quotientAndRemainder, getLowestNBitsOf, nBitsOfOnes, repeat, toHex } from '@src/functions.js'
-import { type StreamHandler } from '@src/stream.js'
-import { type Config, type Stats } from '@src/types.js'
+import type { StreamHandler } from '@src/stream.js'
+import type { Config, Stats } from '@src/types.js'
 
 function getSizeOfMatching(inputBytes: Buffer, a: number, b: number): number {
   const limit = clamp(2, LONGEST_ALLOWED_REPETITION, b - a)

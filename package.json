@@ -51,14 +51,14 @@
     "@types/expect": "^1.20.4",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.10.2",
-    "eslint-plugin-unused-imports": "^4.1.4",
+    "eslint-plugin-unused-imports": "^4.3.0",
     "expect": "^30.2.0",
     "mocha": "^11.7.5",
     "nodemon": "^3.1.11",
     "ts-mocha": "^11.1.0",
     "tsc-alias": "^1.8.10",
     "typescript": "5.6.3",
-    "xo": "^0.60.0"
+    "xo": "^1.2.3"
   },
   "keywords": [
     "arx-fatalis",
