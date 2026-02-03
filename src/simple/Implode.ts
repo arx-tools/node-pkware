@@ -36,24 +36,29 @@ function getSizeOfMatching(inputBytes: ArrayBufferLike, a: number, b: number): n
 }
 
 /**
- * Returns the index of first occurance where needle matches haystack.
- * If that never happens or either needle or haystack is empty, then -1 is returned.
+ * Returns the index of first occurance where needle matches haystack within the same buffer.
+ * If a match never happens or either needle or haystack is empty, then -1 is returned.
  */
-function matchesAt(needle: ArrayBufferLike, haystack: ArrayBufferLike): number {
-  const needleSize = needle.byteLength
-  const haystackSize = haystack.byteLength
+function findMatchAtWithinBuffer(
+  buffer: ArrayBufferLike,
+  needleFrom: number,
+  needleTo: number,
+  haystackFrom: number,
+  haystackTo: number,
+): number {
+  const needleSize = needleTo - needleFrom
+  const haystackSize = haystackTo - haystackFrom
 
   if (needleSize === 0 || haystackSize === 0) {
     return -1
   }
 
-  const needleView = new Uint8Array(needle)
-  const haystackView = new Uint8Array(haystack)
+  const bufferView = new Uint8Array(buffer)
 
   for (let i = 0; i < haystackSize - needleSize; i++) {
     let matches = true
     for (let j = 0; j < needleSize; j++) {
-      if (haystackView[i + j] !== needleView[j]) {
+      if (bufferView[haystackFrom + i + j] !== bufferView[needleFrom + j]) {
         matches = false
         break
       }
@@ -83,10 +88,7 @@ function findRepetitions(
     return { size: 0, distance: 0 }
   }
 
-  const haystack = inputBytes.slice(endOfLastMatch, cursor)
-  const needle = inputBytes.slice(cursor, cursor + 2)
-
-  const matchIndex = matchesAt(needle, haystack)
+  const matchIndex = findMatchAtWithinBuffer(inputBytes, cursor, cursor + 2, endOfLastMatch, cursor)
   if (matchIndex !== -1) {
     const distance = cursor - endOfLastMatch - matchIndex
 
