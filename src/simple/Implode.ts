@@ -35,6 +35,10 @@ function getSizeOfMatching(inputBytes: ArrayBufferLike, a: number, b: number): n
   return limit
 }
 
+/**
+ * Returns the index of first occurance where needle matches haystack.
+ * If that never happens or either needle or haystack is empty, then -1 is returned.
+ */
 function matchesAt(needle: ArrayBufferLike, haystack: ArrayBufferLike): number {
   if (needle.byteLength === 0 || haystack.byteLength === 0) {
     return -1
