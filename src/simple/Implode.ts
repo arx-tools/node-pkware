@@ -40,16 +40,19 @@ function getSizeOfMatching(inputBytes: ArrayBufferLike, a: number, b: number): n
  * If that never happens or either needle or haystack is empty, then -1 is returned.
  */
 function matchesAt(needle: ArrayBufferLike, haystack: ArrayBufferLike): number {
-  if (needle.byteLength === 0 || haystack.byteLength === 0) {
+  const needleSize = needle.byteLength
+  const haystackSize = haystack.byteLength
+
+  if (needleSize === 0 || haystackSize === 0) {
     return -1
   }
 
   const needleView = new Uint8Array(needle)
   const haystackView = new Uint8Array(haystack)
 
-  for (let i = 0; i < haystack.byteLength - needle.byteLength; i++) {
+  for (let i = 0; i < haystackSize - needleSize; i++) {
     let matches = true
-    for (let j = 0; j < needle.byteLength; j++) {
+    for (let j = 0; j < needleSize; j++) {
       if (haystackView[i + j] !== needleView[j]) {
         matches = false
         break
