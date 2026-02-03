@@ -137,7 +137,7 @@ export class ExpandingBuffer {
    * startIndex goes back to 0 afterwards
    */
   flushStart(numberOfBytes: number): void {
-    numberOfBytes = clamp(0, this.heapSize(), numberOfBytes)
+    numberOfBytes = clamp(numberOfBytes, 0, this.heapSize())
     if (numberOfBytes > 0) {
       if (numberOfBytes < this.heapSize()) {
         this.heap.copy(this.heap, 0, this.startIndex + numberOfBytes)
@@ -155,7 +155,7 @@ export class ExpandingBuffer {
    * by moving the endIndex back
    */
   flushEnd(numberOfBytes: number): void {
-    const clampedNumberOfBytes = clamp(0, this.heapSize(), numberOfBytes)
+    const clampedNumberOfBytes = clamp(numberOfBytes, 0, this.heapSize())
     if (clampedNumberOfBytes > 0) {
       this.endIndex = this.endIndex - clampedNumberOfBytes
     }

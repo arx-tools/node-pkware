@@ -19,7 +19,7 @@ import type { StreamHandler } from '@src/stream.js'
 import type { Config, Stats } from '@src/types.js'
 
 function getSizeOfMatching(inputBytes: Buffer, a: number, b: number): number {
-  const limit = clamp(2, LONGEST_ALLOWED_REPETITION, b - a)
+  const limit = clamp(b - a, 2, LONGEST_ALLOWED_REPETITION)
 
   for (let i = 2; i <= limit; i++) {
     if (inputBytes[a + i] !== inputBytes[b + i]) {

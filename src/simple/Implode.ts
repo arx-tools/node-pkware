@@ -22,7 +22,7 @@ const SIZE_OF_HEADER = 3
 const MAX_SIZE_OF_TERMINATION_LITERAL = 2
 
 function getSizeOfMatching(inputBytes: ArrayBufferLike, a: number, b: number): number {
-  const limit = clamp(2, LONGEST_ALLOWED_REPETITION, b - a)
+  const limit = clamp(b - a, 2, LONGEST_ALLOWED_REPETITION)
 
   const view = new Uint8Array(inputBytes)
 

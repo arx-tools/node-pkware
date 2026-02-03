@@ -18,6 +18,7 @@
  */
 export function repeat<T>(value: T, repetitions: number): T[] {
   const values: T[] = []
+
   for (let i = 0; i < repetitions; i++) {
     values.push(value)
   }
@@ -26,16 +27,22 @@ export function repeat<T>(value: T, repetitions: number): T[] {
 }
 
 /**
- * Makes sure `n` is no smaller than `min` and no greater than `max`:
+ * Makes sure `n` is between `min` and `max`:
+ *
  *
  * @example
  * ```js
- * clamp(3, 7, 8) === 7
- * clamp(3, 7, 2) === 3
- * clamp(3, 7, 5) === 5
+ * clamp(8, 3, 7) === 7
+ * clamp(2, 3, 7) === 3
+ * clamp(5, 3, 7) === 5
  * ```
+ *
+ * This function expects `min` to be smaller than `max`.
+ *
+ * There's a proposal for native Math.clamp()
+ * https://github.com/tc39/proposal-math-clamp
  */
-export function clamp(min: number, max: number, n: number): number {
+export function clamp(n: number, min: number, max: number): number {
   if (n < min) {
     return min
   }
@@ -191,7 +198,7 @@ export function unfold<T, TResult>(fn: (seed: T) => [result: TResult, nextSeed: 
   let pair = fn(seed)
   const result: TResult[] = []
 
-  while (pair && pair.length > 0) {
+  while (pair !== false && pair.length > 0) {
     result[result.length] = pair[0]
     pair = fn(pair[1])
   }
