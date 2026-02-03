@@ -20,6 +20,17 @@ before(async () => {
 })
 
 describe('simple/Implode', () => {
+  before(async () => {
+    const unpackedFile = await fs.readFile(
+      path.resolve(pkwareTestFilesFolder, './arx-fatalis/level1/level1.llf.unpacked'),
+    )
+
+    console.time('    ⏱ Implode compressed level1.llf.unpacked')
+    const instance = new Implode(unpackedFile.buffer, 'binary', 'large')
+    instance.getResult()
+    console.timeEnd('    ⏱ Implode compressed level1.llf.unpacked')
+  })
+
   it('can compress binary files', async () => {
     expect.assertions(1)
 
@@ -27,10 +38,8 @@ describe('simple/Implode', () => {
       path.resolve(pkwareTestFilesFolder, './arx-fatalis/level1/level1.llf.unpacked'),
     )
 
-    console.time('    ⏱ Implode compressed level1.llf.unpacked')
     const instance = new Implode(unpackedFile.buffer, 'binary', 'large')
     const packed = instance.getResult()
-    console.timeEnd('    ⏱ Implode compressed level1.llf.unpacked')
 
     const explode = new Explode()
     const unpacked = explode.handleData(packed)

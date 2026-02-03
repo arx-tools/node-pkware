@@ -19,6 +19,15 @@ before(async () => {
 })
 
 describe('simple/Explode', () => {
+  before(async () => {
+    const packedFile = await fs.readFile(path.resolve(pkwareTestFilesFolder, './arx-fatalis/level1/level1.llf'))
+
+    console.time('    ⏱ Explode decompressed level1.llf')
+    const explode = new Explode()
+    explode.handleData(packedFile.buffer)
+    console.timeEnd('    ⏱ Explode decompressed level1.llf')
+  })
+
   it('can unpack fully compressed binary files', async () => {
     expect.assertions(1)
 
@@ -27,10 +36,8 @@ describe('simple/Explode', () => {
       path.resolve(pkwareTestFilesFolder, './arx-fatalis/level1/level1.llf.unpacked'),
     )
 
-    console.time('    ⏱ Explode decompressed level1.llf')
     const explode = new Explode()
     const unpacked = explode.handleData(packedFile.buffer)
-    console.timeEnd('    ⏱ Explode decompressed level1.llf')
 
     const equals = unpackedReference.equals(new Uint8Array(unpacked))
 
