@@ -21,6 +21,8 @@ const SIZE_OF_HEADER = 3
  */
 const MAX_SIZE_OF_TERMINATION_LITERAL = 2
 
+type Range = [from: number, to: number]
+
 function getSizeOfMatching(inputBytes: ArrayBufferLike, a: number, b: number): number {
   const limit = clamp(b - a, 2, LONGEST_ALLOWED_REPETITION)
 
@@ -36,15 +38,13 @@ function getSizeOfMatching(inputBytes: ArrayBufferLike, a: number, b: number): n
 }
 
 /**
- * Returns the index of first occurance where needle matches haystack within the same buffer.
+ * Returns the index of first occurance where needle first matches haystack within the same buffer.
  * If a match never happens or either needle or haystack is empty, then -1 is returned.
  */
 function findMatchAtWithinBuffer(
   buffer: ArrayBufferLike,
-  needleFrom: number,
-  needleTo: number,
-  haystackFrom: number,
-  haystackTo: number,
+  [needleFrom, needleTo]: Range,
+  [haystackFrom, haystackTo]: Range,
 ): number {
   const needleSize = needleTo - needleFrom
   const haystackSize = haystackTo - haystackFrom
@@ -83,24 +83,26 @@ function findRepetitions(
   cursor: number,
 ): { size: number; distance: number } {
   const notEnoughBytes = inputBytes.byteLength - cursor < 2
-  const tooClose = cursor === endOfLastMatch || cursor - endOfLastMatch < 2
+  const tooClose = cursor - endOfLastMatch < 2
   if (notEnoughBytes || tooClose) {
     return { size: 0, distance: 0 }
   }
 
-  const matchIndex = findMatchAtWithinBuffer(inputBytes, cursor, cursor + 2, endOfLastMatch, cursor)
-  if (matchIndex !== -1) {
-    const distance = cursor - endOfLastMatch - matchIndex
-
-    let size = 2
-    if (distance > 2) {
-      size = getSizeOfMatching(inputBytes, endOfLastMatch + matchIndex, cursor)
-    }
-
-    return { distance: distance - 1, size }
+  const matchIndex = findMatchAtWithinBuffer(inputBytes, [cursor, cursor + 2], [endOfLastMatch, cursor])
+  if (matchIndex === -1) {
+    return { size: 0, distance: 0 }
   }
 
-  return { size: 0, distance: 0 }
+  const distance = cursor - endOfLastMatch - matchIndex
+
+  let size: number
+  if (distance > 2) {
+    size = getSizeOfMatching(inputBytes, endOfLastMatch + matchIndex, cursor)
+  } else {
+    size = 2
+  }
+
+  return { distance: distance - 1, size }
 }
 
 export class Implode {
@@ -267,6 +269,7 @@ export class Implode {
       } else {
         const byte = size + 0xfe
         this.outputBits(this.nChBits[byte], this.nChCodes[byte])
+
         if (size === 2) {
           const byte = distance >> 2
           this.outputBits(this.distBits[byte], this.distCodes[byte])
