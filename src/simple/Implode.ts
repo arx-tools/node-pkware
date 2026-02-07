@@ -23,21 +23,7 @@ const MAX_SIZE_OF_TERMINATION_LITERAL = 2
 
 type Range = [from: number, to: number]
 
-function getSizeOfMatching(inputBytes: ArrayBufferLike, a: number, b: number): number {
-  const limit = clamp(b - a, 2, LONGEST_ALLOWED_REPETITION)
-
-  const view = new Uint8Array(inputBytes)
-
-  for (let i = 2; i <= limit; i++) {
-    if (view[a + i] !== view[b + i]) {
-      return i
-    }
-  }
-
-  return limit
-}
-
-function findEarliestMatchOf2Bytes(
+function findLastMatchOf2Bytes(
   inputBytes: ArrayBufferLike,
   needleFrom: number,
   [haystackFrom, haystackTo]: Range,
@@ -52,7 +38,7 @@ function findEarliestMatchOf2Bytes(
   const needleByte1 = view[needleFrom]
   const needleByte2 = view[needleFrom + 1]
 
-  for (let i = 0; i < haystackSize - 2; i++) {
+  for (let i = haystackSize - 2 - 1; i >= 0; i--) {
     const haystackByte1 = view[haystackFrom + i]
     const haystackByte2 = view[haystackFrom + i + 1]
 
@@ -64,11 +50,20 @@ function findEarliestMatchOf2Bytes(
   return -1
 }
 
-/**
- * TODO: make sure that we find the most recent one,
- * which in turn allows us to store backward length in less amount of bits
- * currently the code goes from the furthest point
- */
+function getSizeOfMatching(inputBytes: ArrayBufferLike, a: number, b: number): number {
+  const limit = clamp(b - a, 2, LONGEST_ALLOWED_REPETITION)
+
+  const view = new Uint8Array(inputBytes)
+
+  for (let i = 2; i <= limit; i++) {
+    if (view[a + i] !== view[b + i]) {
+      return i
+    }
+  }
+
+  return limit
+}
+
 function findRepetitions(
   inputBytes: ArrayBufferLike,
   inputBytesLength: number,
@@ -82,7 +77,7 @@ function findRepetitions(
   }
 
   const haystackRange: Range = [endOfLastMatch, cursor]
-  const matchIndex = findEarliestMatchOf2Bytes(inputBytes, cursor, haystackRange)
+  const matchIndex = findLastMatchOf2Bytes(inputBytes, cursor, haystackRange)
   if (matchIndex === -1) {
     return { size: 0, distance: 0 }
   }
