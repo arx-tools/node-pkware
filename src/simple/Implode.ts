@@ -79,10 +79,11 @@ function findMatchAtWithinBuffer(
  */
 function findRepetitions(
   inputBytes: ArrayBufferLike,
+  inputBytesLength: number,
   endOfLastMatch: number,
   cursor: number,
 ): { size: number; distance: number } {
-  const notEnoughBytes = inputBytes.byteLength - cursor < 2
+  const notEnoughBytes = inputBytesLength - cursor < 2
   const tooClose = cursor - endOfLastMatch < 2
   if (notEnoughBytes || tooClose) {
     return { size: 0, distance: 0 }
@@ -107,7 +108,20 @@ function findRepetitions(
 
 export class Implode {
   private inputBuffer: ArrayBufferLike
+  /**
+   * Used for caching inputBuffer.byteLength as that getter is doing some uncached computation to measure the length of
+   * inputBuffer
+   */
+  private inputBufferSize: number
+  /**
+   * Used for accessing the data within inputBuffer
+   */
   private inputBufferView: Uint8Array
+  /**
+   * The implode algorithm works by trimming off the beginning of inputBuffer byte by byte. Instead of actually
+   * adjusting the inputBuffer every time a byte is handled we store the beginning of the unhandled section and use it
+   * when indexing data that is being read.
+   */
   private inputBufferStartIndex: number
 
   private readonly outputBuffer: ArrayBuffer
@@ -132,10 +146,11 @@ export class Implode {
     this.setupTables(compressionType, dictionarySize)
 
     this.inputBuffer = input
+    this.inputBufferSize = this.inputBuffer.byteLength
     this.inputBufferView = new Uint8Array(this.inputBuffer)
     this.inputBufferStartIndex = 0
 
-    this.outputBuffer = new ArrayBuffer(input.byteLength + SIZE_OF_HEADER + MAX_SIZE_OF_TERMINATION_LITERAL)
+    this.outputBuffer = new ArrayBuffer(this.inputBufferSize + SIZE_OF_HEADER + MAX_SIZE_OF_TERMINATION_LITERAL)
     this.outputBufferView = new Uint8Array(this.outputBuffer)
     this.outputBufferSize = 0
 
@@ -235,11 +250,11 @@ export class Implode {
   }
 
   private processInput(dictionarySize: DictionarySize): void {
-    if (this.inputBuffer.byteLength === 0) {
+    if (this.inputBufferSize === 0) {
       return
     }
 
-    if (this.inputBuffer.byteLength <= 2) {
+    if (this.inputBufferSize <= 2) {
       this.skipFirstTwoBytes()
       return
     }
@@ -249,14 +264,16 @@ export class Implode {
     // -------------------------------
     // work in progress
 
-    const endOfLastMatch = 0 // used when searching for longer repetitions later
+    // eslint-disable-next-line prefer-const -- the value will change when searching for longer repetitions is implemented
+    let endOfLastMatch = 0 // used when searching for longer repetitions later
 
-    while (this.inputBuffer.byteLength - this.inputBufferStartIndex > 0) {
+    while (this.inputBufferSize - this.inputBufferStartIndex > 0) {
       let data: { size: number; distance: number }
       if (endOfLastMatch > 0) {
-        data = findRepetitions(this.inputBuffer.slice(endOfLastMatch), endOfLastMatch, this.inputBufferStartIndex)
+        const slice = this.inputBuffer.slice(endOfLastMatch)
+        data = findRepetitions(slice, slice.byteLength, endOfLastMatch, this.inputBufferStartIndex)
       } else {
-        data = findRepetitions(this.inputBuffer, endOfLastMatch, this.inputBufferStartIndex)
+        data = findRepetitions(this.inputBuffer, this.inputBufferSize, endOfLastMatch, this.inputBufferStartIndex)
       }
 
       const { size, distance } = data
@@ -322,6 +339,7 @@ export class Implode {
 
       if (this.inputBufferStartIndex >= blockSize) {
         this.inputBuffer = this.inputBuffer.slice(blockSize)
+        this.inputBufferSize = this.inputBufferSize - blockSize
         this.inputBufferView = new Uint8Array(this.inputBuffer)
         this.inputBufferStartIndex = this.inputBufferStartIndex - blockSize
       }
@@ -349,7 +367,7 @@ export class Implode {
       return false
     }
 
-    if (size >= 8 || this.inputBuffer.byteLength - this.inputBufferStartIndex < 2) {
+    if (size >= 8 || this.inputBufferSize - this.inputBufferStartIndex < 2) {
       return true
     }
 
