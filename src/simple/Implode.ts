@@ -42,7 +42,7 @@ function getSizeOfMatching(inputBytes: ArrayBufferLike, a: number, b: number): n
  * If a match never happens or either needle or haystack is empty, then -1 is returned.
  */
 function findMatchAtWithinBuffer(
-  buffer: ArrayBufferLike,
+  inputBytes: ArrayBufferLike,
   [needleFrom, needleTo]: Range,
   [haystackFrom, haystackTo]: Range,
 ): number {
@@ -53,12 +53,12 @@ function findMatchAtWithinBuffer(
     return -1
   }
 
-  const bufferView = new Uint8Array(buffer)
+  const view = new Uint8Array(inputBytes)
 
   for (let i = 0; i < haystackSize - needleSize; i++) {
     let matches = true
     for (let j = 0; j < needleSize; j++) {
-      if (bufferView[haystackFrom + i + j] !== bufferView[needleFrom + j]) {
+      if (view[haystackFrom + i + j] !== view[needleFrom + j]) {
         matches = false
         break
       }
@@ -109,14 +109,14 @@ function findRepetitions(
 export class Implode {
   private inputBuffer: ArrayBufferLike
   /**
+   * Used for accessing the data within inputBuffer
+   */
+  private inputBufferView: Uint8Array
+  /**
    * Used for caching inputBuffer.byteLength as that getter is doing some uncached computation to measure the length of
    * inputBuffer
    */
   private inputBufferSize: number
-  /**
-   * Used for accessing the data within inputBuffer
-   */
-  private inputBufferView: Uint8Array
   /**
    * The implode algorithm works by trimming off the beginning of inputBuffer byte by byte. Instead of actually
    * adjusting the inputBuffer every time a byte is handled we store the beginning of the unhandled section and use it
@@ -146,8 +146,8 @@ export class Implode {
     this.setupTables(compressionType, dictionarySize)
 
     this.inputBuffer = input
-    this.inputBufferSize = this.inputBuffer.byteLength
     this.inputBufferView = new Uint8Array(this.inputBuffer)
+    this.inputBufferSize = this.inputBuffer.byteLength
     this.inputBufferStartIndex = 0
 
     this.outputBuffer = new ArrayBuffer(this.inputBufferSize + SIZE_OF_HEADER + MAX_SIZE_OF_TERMINATION_LITERAL)
@@ -339,8 +339,8 @@ export class Implode {
 
       if (this.inputBufferStartIndex >= blockSize) {
         this.inputBuffer = this.inputBuffer.slice(blockSize)
-        this.inputBufferSize = this.inputBufferSize - blockSize
         this.inputBufferView = new Uint8Array(this.inputBuffer)
+        this.inputBufferSize = this.inputBufferSize - blockSize
         this.inputBufferStartIndex = this.inputBufferStartIndex - blockSize
       }
     }
