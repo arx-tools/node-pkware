@@ -37,34 +37,26 @@ function getSizeOfMatching(inputBytes: ArrayBufferLike, a: number, b: number): n
   return limit
 }
 
-/**
- * Returns the index of first occurance where needle first matches haystack within the same buffer.
- * If a match never happens or either needle or haystack is empty, then -1 is returned.
- */
-function findMatchAtWithinBuffer(
+function findEarliestMatchOf2Bytes(
   inputBytes: ArrayBufferLike,
-  [needleFrom, needleTo]: Range,
+  needleFrom: number,
   [haystackFrom, haystackTo]: Range,
 ): number {
-  const needleSize = needleTo - needleFrom
   const haystackSize = haystackTo - haystackFrom
-
-  if (needleSize === 0 || haystackSize === 0) {
+  if (haystackSize < 2) {
     return -1
   }
 
   const view = new Uint8Array(inputBytes)
 
-  for (let i = 0; i < haystackSize - needleSize; i++) {
-    let matches = true
-    for (let j = 0; j < needleSize; j++) {
-      if (view[haystackFrom + i + j] !== view[needleFrom + j]) {
-        matches = false
-        break
-      }
-    }
+  const needleByte1 = view[needleFrom]
+  const needleByte2 = view[needleFrom + 1]
 
-    if (matches) {
+  for (let i = 0; i < haystackSize - 2; i++) {
+    const haystackByte1 = view[haystackFrom + i]
+    const haystackByte2 = view[haystackFrom + i + 1]
+
+    if (haystackByte1 === needleByte1 && haystackByte2 === needleByte2) {
       return i
     }
   }
@@ -89,7 +81,8 @@ function findRepetitions(
     return { size: 0, distance: 0 }
   }
 
-  const matchIndex = findMatchAtWithinBuffer(inputBytes, [cursor, cursor + 2], [endOfLastMatch, cursor])
+  const haystackRange: Range = [endOfLastMatch, cursor]
+  const matchIndex = findEarliestMatchOf2Bytes(inputBytes, cursor, haystackRange)
   if (matchIndex === -1) {
     return { size: 0, distance: 0 }
   }
