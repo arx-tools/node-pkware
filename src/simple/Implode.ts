@@ -21,26 +21,18 @@ const SIZE_OF_HEADER = 3
  */
 const MAX_SIZE_OF_TERMINATION_LITERAL = 2
 
-type Range = [from: number, to: number]
-
-function findLastMatchOf2Bytes(
-  inputBytes: ArrayBufferLike,
-  needleFrom: number,
-  [haystackFrom, haystackTo]: Range,
-): number {
-  const haystackSize = haystackTo - haystackFrom
-  if (haystackSize < 2) {
-    return -1
-  }
-
+/**
+ * function assumes that cursor >= 2
+ */
+function findLatestMatchOf2BytesBeforeCursor(inputBytes: ArrayBufferLike, cursor: number): number {
   const view = new Uint8Array(inputBytes)
 
-  const needleByte1 = view[needleFrom]
-  const needleByte2 = view[needleFrom + 1]
+  const needleByte1 = view[cursor]
+  const needleByte2 = view[cursor + 1]
 
-  for (let i = haystackSize - 2 - 1; i >= 0; i--) {
-    const haystackByte1 = view[haystackFrom + i]
-    const haystackByte2 = view[haystackFrom + i + 1]
+  for (let i = cursor - 2; i >= 0; i--) {
+    const haystackByte1 = view[i]
+    const haystackByte2 = view[i + 1]
 
     if (haystackByte1 === needleByte1 && haystackByte2 === needleByte2) {
       return i
@@ -67,26 +59,24 @@ function getSizeOfMatching(inputBytes: ArrayBufferLike, a: number, b: number): n
 function findRepetitions(
   inputBytes: ArrayBufferLike,
   inputBytesLength: number,
-  endOfLastMatch: number,
   cursor: number,
 ): { size: number; distance: number } {
   const notEnoughBytes = inputBytesLength - cursor < 2
-  const tooClose = cursor - endOfLastMatch < 2
+  const tooClose = cursor < 2
   if (notEnoughBytes || tooClose) {
     return { size: 0, distance: 0 }
   }
 
-  const haystackRange: Range = [endOfLastMatch, cursor]
-  const matchIndex = findLastMatchOf2Bytes(inputBytes, cursor, haystackRange)
+  const matchIndex = findLatestMatchOf2BytesBeforeCursor(inputBytes, cursor)
   if (matchIndex === -1) {
     return { size: 0, distance: 0 }
   }
 
-  const distance = cursor - endOfLastMatch - matchIndex
+  const distance = cursor - matchIndex
 
   let size: number
   if (distance > 2) {
-    size = getSizeOfMatching(inputBytes, endOfLastMatch + matchIndex, cursor)
+    size = getSizeOfMatching(inputBytes, matchIndex, cursor)
   } else {
     size = 2
   }
@@ -249,22 +239,9 @@ export class Implode {
 
     this.skipFirstTwoBytes()
 
-    // -------------------------------
-    // work in progress
+    while (this.inputBufferSize > this.inputBufferStartIndex) {
+      const { size, distance } = findRepetitions(this.inputBuffer, this.inputBufferSize, this.inputBufferStartIndex)
 
-    // eslint-disable-next-line prefer-const -- the value will change when searching for longer repetitions is implemented
-    let endOfLastMatch = 0 // used when searching for longer repetitions later
-
-    while (this.inputBufferSize - this.inputBufferStartIndex > 0) {
-      let data: { size: number; distance: number }
-      if (endOfLastMatch > 0) {
-        const slice = this.inputBuffer.slice(endOfLastMatch)
-        data = findRepetitions(slice, slice.byteLength, endOfLastMatch, this.inputBufferStartIndex)
-      } else {
-        data = findRepetitions(this.inputBuffer, this.inputBufferSize, endOfLastMatch, this.inputBufferStartIndex)
-      }
-
-      const { size, distance } = data
       const isFlushable = this.isRepetitionFlushable(size, distance)
 
       if (isFlushable === false) {
