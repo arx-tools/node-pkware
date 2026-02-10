@@ -22,24 +22,12 @@ const SIZE_OF_HEADER = 3
 const MAX_SIZE_OF_TERMINATION_LITERAL = 2
 
 /**
- * function assumes that cursor >= 2
+ * lookup table used for finding repetitions easier
  *
- * needle is an uint16 number
+ * key = 16 bit combination of 2 uint8 bytes
+ * value = latest occurrance within the buffer
  */
-function findLatestMatchOf2BytesBeforeCursor(view: Uint8Array, cursor: number, needle: number): number {
-  for (let i = cursor - 2; i >= 0; i--) {
-    const testByte1 = view[i]
-    const testByte2 = view[i + 1]
-
-    const test = (testByte1 << 8) | testByte2
-
-    if (needle === test) {
-      return i
-    }
-  }
-
-  return -1
-}
+let lastOccurrences: Record<number, number> = {}
 
 /**
  * function assumes a < b - 2
@@ -56,8 +44,14 @@ function getSizeOfMatching(view: Uint8Array, a: number, b: number): number {
   return limit
 }
 
+function readUint16(view: Uint8Array, at: number): number {
+  const highByte = view[at]
+  const lowByte = view[at + 1]
+  return (highByte << 8) | lowByte
+}
+
 function findRepetitions(
-  inputBytes: ArrayBufferLike,
+  view: Uint8Array,
   inputBytesLength: number,
   cursor: number,
 ): { size: number; distance: number } {
@@ -67,14 +61,11 @@ function findRepetitions(
     return { size: 0, distance: 0 }
   }
 
-  const view = new Uint8Array(inputBytes)
+  const needle = readUint16(view, cursor)
+  const matchedAt = lastOccurrences[needle] ?? -1
 
-  const needleByte1 = view[cursor]
-  const needleByte2 = view[cursor + 1]
+  lastOccurrences[needle] = cursor
 
-  const needle = (needleByte1 << 8) | needleByte2
-
-  const matchedAt = findLatestMatchOf2BytesBeforeCursor(view, cursor, needle)
   if (matchedAt === -1) {
     return { size: 0, distance: 0 }
   }
@@ -245,7 +236,7 @@ export class Implode {
     this.skipFirstTwoBytes()
 
     while (this.inputBufferSize > this.inputBufferStartIndex) {
-      const { size, distance } = findRepetitions(this.inputBuffer, this.inputBufferSize, this.inputBufferStartIndex)
+      const { size, distance } = findRepetitions(this.inputBufferView, this.inputBufferSize, this.inputBufferStartIndex)
 
       const isFlushable = this.isRepetitionFlushable(size, distance)
 
@@ -312,6 +303,7 @@ export class Implode {
         this.inputBufferView = new Uint8Array(this.inputBuffer)
         this.inputBufferSize = this.inputBufferSize - blockSize
         this.inputBufferStartIndex = this.inputBufferStartIndex - blockSize
+        lastOccurrences = {}
       }
     }
   }
