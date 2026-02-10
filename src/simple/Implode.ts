@@ -61,27 +61,25 @@ function findRepetitions(
   inputBytesLength: number,
   cursor: number,
 ): { size: number; distance: number } {
-  const notEnoughBytes = inputBytesLength - cursor < 2
+  const notEnoughBytes = cursor + 2 > inputBytesLength
   const tooClose = cursor < 2
   if (notEnoughBytes || tooClose) {
     return { size: 0, distance: 0 }
   }
 
-  const matchIndex = findLatestMatchOf2BytesBeforeCursor(inputBytes, cursor)
-  if (matchIndex === -1) {
+  const matchedAt = findLatestMatchOf2BytesBeforeCursor(inputBytes, cursor)
+  if (matchedAt === -1) {
     return { size: 0, distance: 0 }
   }
 
-  const distance = cursor - matchIndex
-
-  let size: number
-  if (distance > 2) {
-    size = getSizeOfMatching(inputBytes, matchIndex, cursor)
-  } else {
-    size = 2
+  if (matchedAt === cursor - 2) {
+    return { distance: 1, size: 2 }
   }
 
-  return { distance: distance - 1, size }
+  return {
+    distance: cursor - matchedAt - 1,
+    size: getSizeOfMatching(inputBytes, matchedAt, cursor),
+  }
 }
 
 export class Implode {
