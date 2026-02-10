@@ -23,18 +23,17 @@ const MAX_SIZE_OF_TERMINATION_LITERAL = 2
 
 /**
  * function assumes that cursor >= 2
+ *
+ * needle is an uint16 number
  */
-function findLatestMatchOf2BytesBeforeCursor(inputBytes: ArrayBufferLike, cursor: number): number {
-  const view = new Uint8Array(inputBytes)
-
-  const needleByte1 = view[cursor]
-  const needleByte2 = view[cursor + 1]
-
+function findLatestMatchOf2BytesBeforeCursor(view: Uint8Array, cursor: number, needle: number): number {
   for (let i = cursor - 2; i >= 0; i--) {
-    const haystackByte1 = view[i]
-    const haystackByte2 = view[i + 1]
+    const testByte1 = view[i]
+    const testByte2 = view[i + 1]
 
-    if (haystackByte1 === needleByte1 && haystackByte2 === needleByte2) {
+    const test = (testByte1 << 8) | testByte2
+
+    if (needle === test) {
       return i
     }
   }
@@ -42,10 +41,11 @@ function findLatestMatchOf2BytesBeforeCursor(inputBytes: ArrayBufferLike, cursor
   return -1
 }
 
-function getSizeOfMatching(inputBytes: ArrayBufferLike, a: number, b: number): number {
+/**
+ * function assumes a < b - 2
+ */
+function getSizeOfMatching(view: Uint8Array, a: number, b: number): number {
   const limit = clamp(b - a, 2, LONGEST_ALLOWED_REPETITION)
-
-  const view = new Uint8Array(inputBytes)
 
   for (let i = 2; i <= limit; i++) {
     if (view[a + i] !== view[b + i]) {
@@ -67,7 +67,14 @@ function findRepetitions(
     return { size: 0, distance: 0 }
   }
 
-  const matchedAt = findLatestMatchOf2BytesBeforeCursor(inputBytes, cursor)
+  const view = new Uint8Array(inputBytes)
+
+  const needleByte1 = view[cursor]
+  const needleByte2 = view[cursor + 1]
+
+  const needle = (needleByte1 << 8) | needleByte2
+
+  const matchedAt = findLatestMatchOf2BytesBeforeCursor(view, cursor, needle)
   if (matchedAt === -1) {
     return { size: 0, distance: 0 }
   }
@@ -78,7 +85,7 @@ function findRepetitions(
 
   return {
     distance: cursor - matchedAt - 1,
-    size: getSizeOfMatching(inputBytes, matchedAt, cursor),
+    size: getSizeOfMatching(view, matchedAt, cursor),
   }
 }
 
