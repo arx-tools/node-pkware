@@ -1,7 +1,7 @@
 {
   "name": "node-pkware",
   "version": "5.7.0",
-  "description": "nodejs implementation of StormLib's pkware compressor/de-compressor",
+  "description": "node.js implementation of StormLib's pkware compressor/de-compressor",
   "main": "dist/stream/index.js",
   "types": "dist/stream/index.d.ts",
   "type": "module",
@@ -65,13 +65,13 @@
     "xo": "^1.2.3"
   },
   "keywords": [
-    "arx-fatalis",
     "pkware",
     "stormlib",
     "implode",
     "explode",
     "compression",
     "decompression",
-    "blast"
+    "blast",
+    "arx-fatalis"
   ]
 }

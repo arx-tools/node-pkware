@@ -123,84 +123,8 @@ The returned function has the `(chunk: Buffer, encoding: string, callback: funct
 
 ### Examples
 
-#### Decompressing file with no offset into a file
-
-```js
-import fs from 'node:fs'
-import { explode, stream } from 'node-pkware/stream'
-const { through } = stream
-
-fs.createReadStream(`path-to-compressed-file`)
-  .pipe(through(explode()))
-  .pipe(fs.createWriteStream(`path-to-write-decompressed-data`))
-```
-
-#### Decompressing buffer with no offset into a buffer
-
-```js
-import { Readable } from 'node:stream'
-import { explode, stream } from 'node-pkware/stream'
-const { through, toBuffer } = stream
-
-Readable.from(buffer) // buffer is of type Buffer with compressed data
-  .pipe(through(explode()))
-  .pipe(
-    toBuffer((decompressedData) => {
-      // decompressedData holds the decompressed buffer
-    }),
-  )
-```
-
-#### Decompressing file with offset into a file, keeping initial part intact
-
-```js
-import fs from 'node:fs'
-import { explode, stream } from 'node-pkware/stream'
-const { through, transformSplitBy, splitAt, transformIdentity } = stream
-
-const offset = 150 // 150 bytes of data will be skipped and explode will decompress the data that comes afterwards
-
-fs.createReadStream(`path-to-compressed-file`)
-  .pipe(through(transformSplitBy(splitAt(offset), transformIdentity(), explode())))
-  .pipe(fs.createWriteStream(`path-to-write-decompressed-data`))
-```
-
-#### Decompressing file with offset into a file, discarding initial part
-
-```js
-import fs from 'node:fs'
-import { explode, stream } from 'node-pkware/stream'
-const { through, transformSplitBy, splitAt, transformEmpty } = stream
-
-const offset = 150 // 150 bytes of data will be skipped and explode will decompress the data that comes afterwards
-
-fs.createReadStream(`path-to-compressed-file`)
-  .pipe(through(transformSplitBy(splitAt(offset), transformEmpty(), explode())))
-  .pipe(fs.createWriteStream(`path-to-write-decompressed-data`))
-```
-
-#### Catching errors
-
-```js
-import fs from 'node:fs'
-import { explode, stream } from 'node-pkware'
-const { through } = stream
-
-fs.createReadStream(`path-to-compressed-file`)
-  .on('error', (err) => {
-    console.error('readstream error')
-  })
-  .pipe(
-    through(explode()).on('error', (err) => {
-      console.error('explode error')
-    }),
-  )
-  .pipe(
-    fs.createWriteStream(`path-to-write-decompressed-data`).on('error', (err) => {
-      console.error('writestream error')
-    }),
-  )
-```
+There are 2 APIs: "node-pkware/simple" and "node-pkware/stream".
+The "simple" api is recommended as it is much more optimized compared to the "stream" api.
 
 #### Compressing ArrayBuffer with the "simple" API (works in browser too)
 
@@ -230,6 +154,85 @@ const compressedInput = await response.arrayBuffer()
 
 // decompress it and get the result in an ArrayBuffer - all done synchronously
 const output = explode(compressedInput)
+```
+
+#### Decompressing file with no offset into a file (node.js only)
+
+```js
+import fs from 'node:fs'
+import { explode, stream } from 'node-pkware/stream'
+const { through } = stream
+
+fs.createReadStream(`path-to-compressed-file`)
+  .pipe(through(explode()))
+  .pipe(fs.createWriteStream(`path-to-write-decompressed-data`))
+```
+
+#### Decompressing buffer with no offset into a buffer (node.js only)
+
+```js
+import { Readable } from 'node:stream'
+import { explode, stream } from 'node-pkware/stream'
+const { through, toBuffer } = stream
+
+Readable.from(buffer) // buffer is of type Buffer with compressed data
+  .pipe(through(explode()))
+  .pipe(
+    toBuffer((decompressedData) => {
+      // decompressedData holds the decompressed buffer
+    }),
+  )
+```
+
+#### Decompressing file with offset into a file, keeping initial part intact (node.js only)
+
+```js
+import fs from 'node:fs'
+import { explode, stream } from 'node-pkware/stream'
+const { through, transformSplitBy, splitAt, transformIdentity } = stream
+
+const offset = 150 // 150 bytes of data will be skipped and explode will decompress the data that comes afterwards
+
+fs.createReadStream(`path-to-compressed-file`)
+  .pipe(through(transformSplitBy(splitAt(offset), transformIdentity(), explode())))
+  .pipe(fs.createWriteStream(`path-to-write-decompressed-data`))
+```
+
+#### Decompressing file with offset into a file, discarding initial part (node.js only)
+
+```js
+import fs from 'node:fs'
+import { explode, stream } from 'node-pkware/stream'
+const { through, transformSplitBy, splitAt, transformEmpty } = stream
+
+const offset = 150 // 150 bytes of data will be skipped and explode will decompress the data that comes afterwards
+
+fs.createReadStream(`path-to-compressed-file`)
+  .pipe(through(transformSplitBy(splitAt(offset), transformEmpty(), explode())))
+  .pipe(fs.createWriteStream(`path-to-write-decompressed-data`))
+```
+
+#### Catching errors (node.js only)
+
+```js
+import fs from 'node:fs'
+import { explode, stream } from 'node-pkware/stream'
+const { through } = stream
+
+fs.createReadStream(`path-to-compressed-file`)
+  .on('error', (err) => {
+    console.error('readstream error')
+  })
+  .pipe(
+    through(explode()).on('error', (err) => {
+      console.error('explode error')
+    }),
+  )
+  .pipe(
+    fs.createWriteStream(`path-to-write-decompressed-data`).on('error', (err) => {
+      console.error('writestream error')
+    }),
+  )
 ```
 
 ## Useful links
