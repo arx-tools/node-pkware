@@ -5,14 +5,14 @@ format that is commonly used today
 
 It was the de-facto compression for games from around Y2K, like [Arx Fatalis](https://en.wikipedia.org/wiki/Arx_Fatalis)
 
-## installation / update existing version
+## Installation / Updating existing version
 
 `npm i -g node-pkware`
 
 - minimum required node version: 18.0.0
 - recommended node version (to be able to run the tests): 20.6.0
 
-## command line interface (CLI)
+## Command Line Interface (CLI)
 
 `explode [<filename>] [--offset=<offset>] [--drop-before-offset] [--output=<filename> [--verbose]]` - decompresses a file or a stream
 
@@ -33,7 +33,7 @@ For implode `<dictionary size>` can either be `--small`, `--medium` or `--large`
 
 Calling either explode or implode with only the `-v` or `--version` flag will display the package's version
 
-## examples
+## Examples
 
 `explode test/files/fast.fts --output=C:/fast.fts.decompressed --offset=1816`
 
@@ -41,7 +41,7 @@ Calling either explode or implode with only the `-v` or `--version` flag will di
 
 `implode test/files/fast.fts.unpacked --output=C:/fast.fts --binary --large --offset=1816`
 
-### piping also works
+### Piping also works
 
 `cat c:/arx/level8.llf | explode > c:/arx/level8.llf.unpacked`
 
@@ -55,7 +55,7 @@ Calling either explode or implode with only the `-v` or `--version` flag will di
 
 `cat e:/piping/level8.llf.unpacked | implode --binary --large --output="e:/piping/level8.llf"`
 
-## using as a library
+## Using as a library
 
 ### API (named imports of node-pkware)
 
@@ -121,13 +121,13 @@ The returned function has the `(chunk: Buffer, encoding: string, callback: funct
 
 `errors.AbortedError` - thrown by explode when compressed data ends without reaching the end literal or in mid decompression
 
-### examples
+### Examples
 
-#### decompressing file with no offset into a file
+#### Decompressing file with no offset into a file
 
 ```js
-const fs = require('node:fs')
-const { explode, stream } = require('node-pkware')
+import fs from 'node:fs'
+import { explode, stream } from 'node-pkware/stream'
 const { through } = stream
 
 fs.createReadStream(`path-to-compressed-file`)
@@ -135,11 +135,11 @@ fs.createReadStream(`path-to-compressed-file`)
   .pipe(fs.createWriteStream(`path-to-write-decompressed-data`))
 ```
 
-#### decompressing buffer with no offset into a buffer
+#### Decompressing buffer with no offset into a buffer
 
 ```js
-const { Readable } = require('node:stream')
-const { explode, stream } = require('node-pkware')
+import { Readable } from 'node:stream'
+import { explode, stream } from 'node-pkware/stream'
 const { through, toBuffer } = stream
 
 Readable.from(buffer) // buffer is of type Buffer with compressed data
@@ -151,11 +151,11 @@ Readable.from(buffer) // buffer is of type Buffer with compressed data
   )
 ```
 
-#### decompressing file with offset into a file, keeping initial part intact
+#### Decompressing file with offset into a file, keeping initial part intact
 
 ```js
-const fs = require('node:fs')
-const { explode, stream } = require('node-pkware')
+import fs from 'node:fs'
+import { explode, stream } from 'node-pkware/stream'
 const { through, transformSplitBy, splitAt, transformIdentity } = stream
 
 const offset = 150 // 150 bytes of data will be skipped and explode will decompress the data that comes afterwards
@@ -165,11 +165,11 @@ fs.createReadStream(`path-to-compressed-file`)
   .pipe(fs.createWriteStream(`path-to-write-decompressed-data`))
 ```
 
-#### decompressing file with offset into a file, discarding initial part
+#### Decompressing file with offset into a file, discarding initial part
 
 ```js
-const fs = require('node:fs')
-const { explode, stream } = require('node-pkware')
+import fs from 'node:fs'
+import { explode, stream } from 'node-pkware/stream'
 const { through, transformSplitBy, splitAt, transformEmpty } = stream
 
 const offset = 150 // 150 bytes of data will be skipped and explode will decompress the data that comes afterwards
@@ -179,30 +179,11 @@ fs.createReadStream(`path-to-compressed-file`)
   .pipe(fs.createWriteStream(`path-to-write-decompressed-data`))
 ```
 
-#### Non-stream compression (also works in browser)
+#### Catching errors
 
 ```js
-import * as fs from 'node:fs/promises'
-import { implode } from 'node-pkware/simple'
-
-const inputString = 'hello pkware!'
-
-// create an ArrayBuffer from inputString
-const encoder = new TextEncoder()
-const input = encoder.encode(inputString).buffer
-
-// compress it and get the result in another ArrayBuffer
-const output = implode(input, 'ascii', 'large')
-
-// write the output to a file
-await fs.writeFile('/tmp/compressedHello', new Uint8Array(output))
-```
-
-### Catching errors
-
-```js
-const fs = require('node:fs')
-const { explode, stream } = require('node-pkware')
+import fs from 'node:fs'
+import { explode, stream } from 'node-pkware'
 const { through } = stream
 
 fs.createReadStream(`path-to-compressed-file`)
@@ -221,13 +202,43 @@ fs.createReadStream(`path-to-compressed-file`)
   )
 ```
 
+#### Compressing ArrayBuffer with the "simple" API (works in browser too)
+
+```js
+import { implode } from 'node-pkware/simple'
+
+const inputString = 'hello pkware!'
+
+// create an ArrayBuffer from inputString
+const encoder = new TextEncoder()
+const input = encoder.encode(inputString).buffer
+
+// compress it and get the result in an ArrayBuffer - all done synchronously
+const output = implode(input, 'ascii', 'large')
+```
+
+#### Decompressing ArrayBuffer with the "simple" API (works in browser too)
+
+```js
+import { explode } from 'node-pkware/simple'
+
+// get input as ArrayBuffer from a fetch response
+const response = await fetch(
+  'https://raw.githubusercontent.com/arx-tools/pkware-test-files/refs/heads/main/arx-fatalis/level8/level8.dlf',
+)
+const compressedInput = await response.arrayBuffer()
+
+// decompress it and get the result in an ArrayBuffer - all done synchronously
+const output = explode(compressedInput)
+```
+
 ## Useful links
 
-### test files
+### Test files
 
 https://github.com/arx-tools/pkware-test-files
 
-### sources
+### Sources
 
 - https://github.com/ladislav-zezula/StormLib/tree/master/src/pklib
 - https://github.com/ShieldBattery/implode-decoder
@@ -237,7 +248,7 @@ https://github.com/arx-tools/pkware-test-files
 
 Implode was removed from Arx Libertatis at this commit: https://github.com/arx/ArxLibertatis/commit/2db9f0dd023fdd5d4da6f06c08a92d932e218187
 
-### helpful info
+### Miscellaneous info
 
 - https://stackoverflow.com/questions/2094666/pointers-in-c-when-to-use-the-ampersand-and-the-asterisk
 - https://stackoverflow.com/a/49394095/1806628
