@@ -23,4 +23,4 @@ export { implode as compress }
 // utils and types
 
 export { concatArrayBuffers, sliceArrayBufferAt } from '@src/functions.js'
-export { type CompressionType, type DictionarySize } from '@src/simple/types.js'
+export type { CompressionType, DictionarySize } from '@src/simple/types.js'
