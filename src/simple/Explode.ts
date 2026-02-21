@@ -22,62 +22,6 @@ import {
 } from '@src/functions.js'
 import type { CompressionType, DictionarySize } from '@src/simple/types.js'
 
-/**
- * This function assumes there are at least 2 bytes of data in the buffer
- */
-function readHeader(buffer: ArrayBufferLike): {
-  compressionType: CompressionType
-  dictionarySize: DictionarySize
-} {
-  let compressionType: CompressionType
-
-  const view = new Uint8Array(buffer)
-
-  switch (view[0]) {
-    case 0: {
-      compressionType = 'binary'
-      break
-    }
-
-    case 1: {
-      compressionType = 'ascii'
-      break
-    }
-
-    default: {
-      throw new InvalidCompressionTypeError()
-    }
-  }
-
-  let dictionarySize: DictionarySize
-
-  switch (view[1]) {
-    case 4: {
-      dictionarySize = 'small'
-      break
-    }
-
-    case 5: {
-      dictionarySize = 'medium'
-      break
-    }
-
-    case 6: {
-      dictionarySize = 'large'
-      break
-    }
-
-    default: {
-      throw new InvalidDictionarySizeError()
-    }
-  }
-
-  return {
-    compressionType,
-    dictionarySize,
-  }
-}
-
 function generateDecodeTables(startIndexes: number[], lengthBits: number[]): number[] {
   const codes = repeat(0, 0x1_00)
 
@@ -117,14 +61,32 @@ function populateAsciiTable(value: number, index: number, bits: number, limit: n
 }
 
 export class Explode {
+  private readonly inputBuffer: ArrayBufferLike
+  /**
+   * Used for accessing the data within inputBuffer
+   */
+  private readonly inputBufferView: Uint8Array
+  /**
+   * Used for caching inputBuffer.byteLength as that getter is doing some uncached computation to measure the length of
+   * inputBuffer
+   */
+  private readonly inputBufferSize: number
+  /**
+   * The explode algorithm works by trimming off the beginning of inputBuffer byte by byte. Instead of actually
+   * adjusting the inputBuffer every time a byte is handled we store the beginning of the unhandled section and use it
+   * when indexing data that is being read.
+   */
+  private inputBufferStartIndex: number
+
+  private outputBuffer: ArrayBuffer
+  private outputBufferSize: number
+
   private needMoreInput: boolean
   private extraBits: number
   private bitBuffer: number
   private readonly lengthCodes: number[]
   private readonly distPosCodes: number[]
-  private readonly inputBuffer: ArrayBufferLike
-  private inputBufferStartIndex: number
-  private outputBuffer: ArrayBuffer
+
   private compressionType: CompressionType | 'unknown'
   private dictionarySize: DictionarySize | 'unknown'
   private dictionarySizeMask: number
@@ -152,9 +114,15 @@ export class Explode {
     this.bitBuffer = 0
     this.lengthCodes = generateDecodeTables(LenCode, LenBits)
     this.distPosCodes = generateDecodeTables(DistCode, DistBits)
+
     this.inputBuffer = input
+    this.inputBufferView = new Uint8Array(this.inputBuffer)
+    this.inputBufferSize = this.inputBuffer.byteLength
     this.inputBufferStartIndex = 0
+
     this.outputBuffer = EMPTY_BUFFER
+    this.outputBufferSize = 0
+
     this.compressionType = 'unknown'
     this.dictionarySize = 'unknown'
     this.dictionarySizeMask = 0
@@ -177,7 +145,7 @@ export class Explode {
    * @throws {AbortedError}
    */
   getResult(): ArrayBuffer {
-    return this.outputBuffer.slice(0, this.outputBuffer.byteLength)
+    return this.outputBuffer.slice(0, this.outputBufferSize)
   }
 
   private generateAsciiTables(): void {
@@ -225,7 +193,7 @@ export class Explode {
    * @throws {@link AbortedError} when there isn't enough data to be wasted
    */
   private wasteBits(numberOfBits: number): void {
-    if (numberOfBits > this.extraBits && this.inputBuffer.byteLength - this.inputBufferStartIndex === 0) {
+    if (numberOfBits > this.extraBits && this.inputBufferSize - this.inputBufferStartIndex === 0) {
       throw new AbortedError()
     }
 
@@ -235,8 +203,7 @@ export class Explode {
       return
     }
 
-    const inputBufferView = new Uint8Array(this.inputBuffer)
-    const nextByte = inputBufferView[this.inputBufferStartIndex]
+    const nextByte = this.inputBufferView[this.inputBufferStartIndex]
     this.inputBufferStartIndex = this.inputBufferStartIndex + 1
 
     this.bitBuffer = ((this.bitBuffer >> this.extraBits) | (nextByte << 8)) >> (numberOfBits - this.extraBits)
@@ -348,13 +315,13 @@ export class Explode {
   }
 
   private processInput(): void {
-    if (this.inputBuffer.byteLength - this.inputBufferStartIndex === 0) {
+    if (this.inputBufferSize - this.inputBufferStartIndex === 0) {
       return
     }
 
     if (this.compressionType === 'unknown') {
       const headerParsedSuccessfully = this.parseInitialData()
-      if (!headerParsedSuccessfully || this.inputBuffer.byteLength - this.inputBufferStartIndex === 0) {
+      if (!headerParsedSuccessfully || this.inputBufferSize - this.inputBufferStartIndex === 0) {
         return
       }
     }
@@ -390,37 +357,45 @@ export class Explode {
         const minusDistance = this.decodeDistance(repeatLength)
 
         // dump the beginning of the output buffer if outputBuffer and the additions exceed 2 blocks
-        if (this.outputBuffer.byteLength + additionsByteSum > blockSize * 2) {
-          this.outputBuffer = concatArrayBuffers([this.outputBuffer, ...additions])
+        if (this.outputBufferSize + additionsByteSum > blockSize * 2) {
+          this.outputBufferSize = this.outputBufferSize + additionsByteSum
+          this.outputBuffer = concatArrayBuffers([this.outputBuffer, ...additions], this.outputBufferSize)
           additions.length = 0
           additionsByteSum = 0
 
           const [a, b] = sliceArrayBufferAt(this.outputBuffer, blockSize)
           finalizedChunks.push(a)
           this.outputBuffer = b
+          this.outputBufferSize = this.outputBufferSize - blockSize
         }
 
-        const start = this.outputBuffer.byteLength + additionsByteSum - minusDistance
+        const start = this.outputBufferSize + additionsByteSum - minusDistance
 
         // only add the additions if the "repetition" bleeds into the bytes of "additions"
-        if (this.outputBuffer.byteLength < start + repeatLength) {
-          this.outputBuffer = concatArrayBuffers([this.outputBuffer, ...additions])
+        if (this.outputBufferSize < start + repeatLength) {
+          this.outputBufferSize = this.outputBufferSize + additionsByteSum
+          this.outputBuffer = concatArrayBuffers([this.outputBuffer, ...additions], this.outputBufferSize)
           additions.length = 0
           additionsByteSum = 0
         }
 
         const availableData = this.outputBuffer.slice(start, start + repeatLength)
+        const availableDataSize = Math.min(start + repeatLength, this.outputBufferSize) - start
 
         let addition: ArrayBufferLike
+        let additionSize: number
         if (repeatLength > minusDistance) {
-          const multipliedData = repeat(availableData, Math.ceil(repeatLength / availableData.byteLength))
-          addition = concatArrayBuffers(multipliedData).slice(0, repeatLength)
+          const repeats = Math.ceil(repeatLength / availableDataSize)
+          const multipliedData = repeat(availableData, repeats)
+          addition = concatArrayBuffers(multipliedData, repeatLength * repeats).slice(0, repeatLength)
+          additionSize = repeatLength
         } else {
           addition = availableData
+          additionSize = availableDataSize
         }
 
         additions.push(addition)
-        additionsByteSum = additionsByteSum + addition.byteLength
+        additionsByteSum = additionsByteSum + additionSize
 
         nextLiteral = this.decodeNextLiteral()
       }
@@ -428,22 +403,20 @@ export class Explode {
       this.needMoreInput = true
     }
 
-    this.outputBuffer = concatArrayBuffers([...finalizedChunks, this.outputBuffer, ...additions])
+    this.outputBufferSize = finalizedChunks.length * blockSize + this.outputBufferSize + additionsByteSum
+    this.outputBuffer = concatArrayBuffers([...finalizedChunks, this.outputBuffer, ...additions], this.outputBufferSize)
   }
 
   private parseInitialData(): boolean {
-    if (this.inputBuffer.byteLength - this.inputBufferStartIndex < 4) {
+    if (this.inputBufferSize < 4) {
       return false
     }
 
-    const { compressionType, dictionarySize } = readHeader(
-      this.inputBuffer.slice(this.inputBufferStartIndex, this.inputBufferStartIndex + 2),
-    )
+    const { compressionType, dictionarySize } = this.readHeader()
 
     this.compressionType = compressionType
     this.dictionarySize = dictionarySize
-    const inputBufferView = new Uint8Array(this.inputBuffer)
-    this.bitBuffer = inputBufferView[this.inputBufferStartIndex + 2]
+    this.bitBuffer = this.inputBufferView[this.inputBufferStartIndex + 2]
     this.inputBufferStartIndex = this.inputBufferStartIndex + 3
 
     switch (dictionarySize) {
@@ -468,5 +441,62 @@ export class Explode {
     }
 
     return true
+  }
+
+  /**
+   * This function assumes there are at least 2 bytes of data in the buffer
+   *
+   * @throws `InvalidCompressionTypeError`
+   * @throws `InvalidDictionarySizeError`
+   */
+  private readHeader(): {
+    compressionType: CompressionType
+    dictionarySize: DictionarySize
+  } {
+    let compressionType: CompressionType
+
+    switch (this.inputBufferView[0]) {
+      case 0: {
+        compressionType = 'binary'
+        break
+      }
+
+      case 1: {
+        compressionType = 'ascii'
+        break
+      }
+
+      default: {
+        throw new InvalidCompressionTypeError()
+      }
+    }
+
+    let dictionarySize: DictionarySize
+
+    switch (this.inputBufferView[1]) {
+      case 4: {
+        dictionarySize = 'small'
+        break
+      }
+
+      case 5: {
+        dictionarySize = 'medium'
+        break
+      }
+
+      case 6: {
+        dictionarySize = 'large'
+        break
+      }
+
+      default: {
+        throw new InvalidDictionarySizeError()
+      }
+    }
+
+    return {
+      compressionType,
+      dictionarySize,
+    }
   }
 }

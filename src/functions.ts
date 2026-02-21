@@ -218,14 +218,16 @@ export function quotientAndRemainder(dividend: number, divisor: number): [quotie
 /**
  * @see https://stackoverflow.com/a/49129872/1806628
  */
-export function concatArrayBuffers(buffers: ArrayBufferLike[]): ArrayBuffer {
+export function concatArrayBuffers(buffers: ArrayBufferLike[], totalLength?: number): ArrayBuffer {
   if (buffers.length === 1) {
     return buffers[0] as ArrayBuffer
   }
 
-  let totalLength = 0
-  for (const buffer of buffers) {
-    totalLength = totalLength + buffer.byteLength
+  if (totalLength === undefined) {
+    totalLength = 0
+    for (const buffer of buffers) {
+      totalLength = totalLength + buffer.byteLength
+    }
   }
 
   const combinedBuffer = new Uint8Array(totalLength)
