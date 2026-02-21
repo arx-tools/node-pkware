@@ -315,15 +315,9 @@ export class Explode {
   }
 
   private processInput(): void {
-    if (this.inputBufferSize - this.inputBufferStartIndex === 0) {
+    const headerParsedSuccessfully = this.parseInitialData()
+    if (!headerParsedSuccessfully || this.inputBufferSize - this.inputBufferStartIndex === 0) {
       return
-    }
-
-    if (this.compressionType === 'unknown') {
-      const headerParsedSuccessfully = this.parseInitialData()
-      if (!headerParsedSuccessfully || this.inputBufferSize - this.inputBufferStartIndex === 0) {
-        return
-      }
     }
 
     this.needMoreInput = false
