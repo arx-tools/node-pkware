@@ -37,7 +37,12 @@ const xoConfig: FlatXoConfig = {
       { fixStyle: 'separate-type-imports', prefer: 'type-imports' },
     ],
     '@typescript-eslint/explicit-function-return-type': 'error',
-    '@typescript-eslint/array-type': ['error', { default: 'array' }],
+    '@typescript-eslint/array-type': [
+      'error',
+      {
+        default: 'array-simple',
+      },
+    ],
     '@typescript-eslint/parameter-properties': ['error', { prefer: 'class-property' }],
     'operator-assignment': ['error', 'never'],
     'logical-assignment-operators': ['error', 'never'],

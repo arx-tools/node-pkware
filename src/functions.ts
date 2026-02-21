@@ -151,8 +151,8 @@ export function toHex(num: number, digits: number = 0, withoutPrefix: boolean = 
  * mergeSparseArrays(a, b) // -> [1, undefined, 2, 13, 3]
  * ```
  */
-export function mergeSparseArrays<T>(a: T[], b: T[]): (T | undefined)[] {
-  let result: (T | undefined)[]
+export function mergeSparseArrays<T>(a: T[], b: T[]): Array<T | undefined> {
+  let result: Array<T | undefined>
 
   if (b.length < a.length) {
     result = [...b, ...repeat(undefined, a.length - b.length)]
