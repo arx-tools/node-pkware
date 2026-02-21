@@ -2,7 +2,7 @@ import { Buffer } from 'node:buffer'
 import { Transform, Writable, type TransformCallback } from 'node:stream'
 import { promisify } from 'node:util'
 import { isFunction } from '@src/functions.js'
-import { ExpandingBuffer } from '@src/ExpandingBuffer.js'
+import { ExpandingBuffer } from '@src/stream/ExpandingBuffer.js'
 
 export type StreamHandler = (
   this: Transform,

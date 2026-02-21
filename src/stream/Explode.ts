@@ -14,7 +14,7 @@ import {
   LITERAL_END_STREAM,
 } from '@src/constants.js'
 import { AbortedError, InvalidCompressionTypeError, InvalidDictionarySizeError } from '@src/errors.js'
-import { ExpandingBuffer } from '@src/ExpandingBuffer.js'
+import { ExpandingBuffer } from '@src/stream/ExpandingBuffer.js'
 import {
   quotientAndRemainder,
   getLowestNBitsOf,
@@ -24,7 +24,7 @@ import {
   toHex,
   unfold,
 } from '@src/functions.js'
-import type { Config, Stats } from '@src/types.js'
+import type { Config, Stats } from '@src/stream/types.js'
 
 /**
  * This function assumes there are at least 2 bytes of data in the buffer

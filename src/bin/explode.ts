@@ -10,9 +10,9 @@ import {
   splitAt,
   through,
   type StreamHandler,
-} from '@src/stream.js'
-import type { Config } from '@src/types.js'
-import { explode } from '@src/index.js'
+} from '@src/stream/stream.js'
+import type { Config } from '@src/stream/types.js'
+import { explode } from '@src/stream/index.js'
 
 type AppArgs = {
   _: string[]

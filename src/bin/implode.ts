@@ -11,9 +11,9 @@ import {
   splitAt,
   through,
   type StreamHandler,
-} from '@src/stream.js'
-import type { Config } from '@src/types.js'
-import { implode } from '@src/index.js'
+} from '@src/stream/stream.js'
+import type { Config } from '@src/stream/types.js'
+import { implode } from '@src/stream/index.js'
 
 type AppArgs = {
   _: string[]
