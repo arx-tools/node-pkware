@@ -20,7 +20,7 @@ import {
   concatArrayBuffers,
   sliceArrayBufferAt,
 } from '@src/functions.js'
-import type { CompressionType, DictionarySize } from './types.js'
+import type { CompressionType, DictionarySize } from '@src/simple/types.js'
 
 /**
  * This function assumes there are at least 2 bytes of data in the buffer
