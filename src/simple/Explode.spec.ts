@@ -23,8 +23,8 @@ describe('simple/Explode', () => {
     const packedFile = await fs.readFile(path.resolve(pkwareTestFilesFolder, './arx-fatalis/level1/level1.llf'))
 
     console.time('    ⏱ Explode decompressed level1.llf')
-    const explode = new Explode()
-    explode.handleData(packedFile.buffer)
+    const explode = new Explode(packedFile.buffer)
+    explode.getResult()
     console.timeEnd('    ⏱ Explode decompressed level1.llf')
   })
 
@@ -36,8 +36,8 @@ describe('simple/Explode', () => {
       path.resolve(pkwareTestFilesFolder, './arx-fatalis/level1/level1.llf.unpacked'),
     )
 
-    const explode = new Explode()
-    const unpacked = explode.handleData(packedFile.buffer)
+    const explode = new Explode(packedFile.buffer)
+    const unpacked = explode.getResult()
 
     const equals = unpackedReference.equals(new Uint8Array(unpacked))
 

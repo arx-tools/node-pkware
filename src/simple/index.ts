@@ -2,9 +2,9 @@ import { Explode } from '@src/simple/Explode.js'
 import { Implode } from '@src/simple/Implode.js'
 import type { CompressionType, DictionarySize } from '@src/simple/types.js'
 
-export function explode(input: ArrayBufferLike): ArrayBufferLike {
-  const instance = new Explode()
-  return instance.handleData(input)
+export function explode(input: ArrayBufferLike): ArrayBuffer {
+  const instance = new Explode(input)
+  return instance.getResult()
 }
 
 export function implode(

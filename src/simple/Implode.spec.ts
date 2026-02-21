@@ -41,8 +41,8 @@ describe('simple/Implode', () => {
     const instance = new Implode(unpackedFile.buffer, 'binary', 'large')
     const packed = instance.getResult()
 
-    const explode = new Explode()
-    const unpacked = explode.handleData(packed)
+    const explode = new Explode(packed)
+    const unpacked = explode.getResult()
 
     const equals = unpackedFile.equals(new Uint8Array(unpacked))
 

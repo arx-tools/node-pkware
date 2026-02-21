@@ -122,9 +122,9 @@ export class Explode {
   private bitBuffer: number
   private readonly lengthCodes: number[]
   private readonly distPosCodes: number[]
-  private inputBuffer: ArrayBufferLike
+  private readonly inputBuffer: ArrayBufferLike
   private inputBufferStartIndex: number
-  private outputBuffer: ArrayBufferLike
+  private outputBuffer: ArrayBuffer
   private compressionType: CompressionType | 'unknown'
   private dictionarySize: DictionarySize | 'unknown'
   private dictionarySizeMask: number
@@ -146,13 +146,13 @@ export class Explode {
    */
   private asciiTable2EB4: number[]
 
-  constructor() {
+  constructor(input: ArrayBufferLike) {
     this.needMoreInput = true
     this.extraBits = 0
     this.bitBuffer = 0
     this.lengthCodes = generateDecodeTables(LenCode, LenBits)
     this.distPosCodes = generateDecodeTables(DistCode, DistBits)
-    this.inputBuffer = EMPTY_BUFFER
+    this.inputBuffer = input
     this.inputBufferStartIndex = 0
     this.outputBuffer = EMPTY_BUFFER
     this.compressionType = 'unknown'
@@ -163,6 +163,12 @@ export class Explode {
     this.asciiTable2D34 = repeat(0, 0x1_00)
     this.asciiTable2E34 = repeat(0, 0x80)
     this.asciiTable2EB4 = repeat(0, 0x1_00)
+
+    this.processInput()
+
+    if (this.needMoreInput) {
+      throw new AbortedError()
+    }
   }
 
   /**
@@ -170,18 +176,8 @@ export class Explode {
    * @throws {InvalidDictionarySizeError}
    * @throws {AbortedError}
    */
-  handleData(input: ArrayBufferLike): ArrayBufferLike {
-    this.needMoreInput = true
-    this.inputBuffer = input
-    this.inputBufferStartIndex = 0
-
-    this.processChunkData()
-
-    if (this.needMoreInput) {
-      throw new AbortedError()
-    }
-
-    return this.outputBuffer
+  getResult(): ArrayBuffer {
+    return this.outputBuffer.slice(0, this.outputBuffer.byteLength)
   }
 
   private generateAsciiTables(): void {
@@ -351,7 +347,7 @@ export class Explode {
     return distance + 1
   }
 
-  private processChunkData(): void {
+  private processInput(): void {
     if (this.inputBuffer.byteLength - this.inputBufferStartIndex === 0) {
       return
     }
