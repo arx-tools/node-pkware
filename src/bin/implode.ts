@@ -2,7 +2,7 @@
 
 import * as process from 'node:process'
 import minimist from 'minimist-lite'
-import { Compression, DictionarySize } from '@src/constants.js'
+import { Compression, DictionarySize } from '@src/stream/constants.js'
 import { getPackageVersion, parseNumberString, getInputStream, getOutputStream } from '@bin/helpers.js'
 import {
   transformEmpty,

@@ -3,8 +3,6 @@ import type { Transform, TransformCallback } from 'node:stream'
 import {
   ChBitsAsc,
   ChCodeAsc,
-  Compression,
-  DictionarySize,
   DistBits,
   DistCode,
   ExLenBits,
@@ -25,6 +23,7 @@ import {
   unfold,
 } from '@src/functions.js'
 import type { Config, Stats } from '@src/stream/types.js'
+import { Compression, DictionarySize } from '@src/stream/constants.js'
 
 /**
  * This function assumes there are at least 2 bytes of data in the buffer

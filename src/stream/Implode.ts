@@ -3,8 +3,6 @@ import type { Transform, TransformCallback } from 'node:stream'
 import {
   ChBitsAsc,
   ChCodeAsc,
-  Compression,
-  DictionarySize,
   DistBits,
   DistCode,
   ExLenBits,
@@ -17,6 +15,7 @@ import { ExpandingBuffer } from '@src/stream/ExpandingBuffer.js'
 import { clamp, quotientAndRemainder, getLowestNBitsOf, nBitsOfOnes, repeat, toHex } from '@src/functions.js'
 import type { StreamHandler } from '@src/stream/stream.js'
 import type { Config, Stats } from '@src/stream/types.js'
+import { Compression, DictionarySize } from '@src/stream/constants.js'
 
 function getSizeOfMatching(inputBytes: Buffer, a: number, b: number): number {
   const limit = clamp(b - a, 2, LONGEST_ALLOWED_REPETITION)
