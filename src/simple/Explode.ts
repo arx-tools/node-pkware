@@ -140,9 +140,9 @@ export class Explode {
   }
 
   /**
-   * @throws {InvalidCompressionTypeError}
-   * @throws {InvalidDictionarySizeError}
-   * @throws {AbortedError}
+   * @throws `InvalidCompressionTypeError`
+   * @throws `InvalidDictionarySizeError`
+   * @throws `AbortedError`
    */
   getResult(): ArrayBuffer {
     return this.outputBuffer.slice(0, this.outputBufferSize)
@@ -190,7 +190,7 @@ export class Explode {
   }
 
   /**
-   * @throws {@link AbortedError} when there isn't enough data to be wasted
+   * @throws `AbortedError` when there isn't enough data to be wasted
    */
   private wasteBits(numberOfBits: number): void {
     if (numberOfBits > this.extraBits && this.inputBufferSize - this.inputBufferStartIndex === 0) {
@@ -211,7 +211,7 @@ export class Explode {
   }
 
   /**
-   * @throws {@link AbortedError}
+   * @throws `AbortedError`
    */
   private decodeNextLiteral(): number {
     const lastBit = getLowestNBitsOf(this.bitBuffer, 1)
@@ -273,7 +273,7 @@ export class Explode {
   }
 
   /**
-   * @throws {@link AbortedError}
+   * @throws `AbortedError`
    */
   private decodeDistance(repeatLength: number): number {
     const distPosCode = this.distPosCodes[getLowestNBitsOf(this.bitBuffer, 8)]
