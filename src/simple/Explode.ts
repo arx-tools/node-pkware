@@ -17,7 +17,7 @@ import {
   nBitsOfOnes,
   repeat,
   unfold,
-  concatArrayBuffers,
+  concatArrayBuffersAndLengthedDatas,
   sliceArrayBufferAt,
 } from '@src/functions.js'
 import type { CompressionType, DictionarySize } from '@src/simple/types.js'
@@ -322,7 +322,7 @@ export class Explode {
 
     this.needMoreInput = false
 
-    const additions: ArrayBufferLike[] = []
+    const additions: Array<ArrayBufferLike | { data: number[]; byteLength: number }> = []
     let additionsByteSum = 0
     const finalizedChunks: ArrayBufferLike[] = []
     const blockSize = 0x10_00
@@ -333,12 +333,8 @@ export class Explode {
       while (nextLiteral !== LITERAL_END_STREAM) {
         // we have a character literal here
         if (nextLiteral < 0x1_00) {
-          const addition = new ArrayBuffer(1)
-          const additionView = new Uint8Array(addition)
-          additionView[0] = nextLiteral
-          additions.push(addition)
+          additions.push({ data: [nextLiteral], byteLength: 1 })
           additionsByteSum = additionsByteSum + 1
-
           nextLiteral = this.decodeNextLiteral()
           continue
         }
@@ -353,7 +349,10 @@ export class Explode {
         // dump the beginning of the output buffer if outputBuffer and the additions exceed 2 blocks
         if (this.outputBufferSize + additionsByteSum > blockSize * 2) {
           this.outputBufferSize = this.outputBufferSize + additionsByteSum
-          this.outputBuffer = concatArrayBuffers([this.outputBuffer, ...additions], this.outputBufferSize)
+          this.outputBuffer = concatArrayBuffersAndLengthedDatas(
+            [this.outputBuffer, ...additions],
+            this.outputBufferSize,
+          )
           additions.length = 0
           additionsByteSum = 0
 
@@ -368,7 +367,10 @@ export class Explode {
         // only add the additions if the "repetition" bleeds into the bytes of "additions"
         if (this.outputBufferSize < start + repeatLength) {
           this.outputBufferSize = this.outputBufferSize + additionsByteSum
-          this.outputBuffer = concatArrayBuffers([this.outputBuffer, ...additions], this.outputBufferSize)
+          this.outputBuffer = concatArrayBuffersAndLengthedDatas(
+            [this.outputBuffer, ...additions],
+            this.outputBufferSize,
+          )
           additions.length = 0
           additionsByteSum = 0
         }
@@ -381,7 +383,7 @@ export class Explode {
         if (repeatLength > minusDistance) {
           const repeats = Math.ceil(repeatLength / availableDataSize)
           const multipliedData = repeat(availableData, repeats)
-          addition = concatArrayBuffers(multipliedData, repeatLength * repeats).slice(0, repeatLength)
+          addition = concatArrayBuffersAndLengthedDatas(multipliedData, repeatLength * repeats).slice(0, repeatLength)
           additionSize = repeatLength
         } else {
           addition = availableData
@@ -398,7 +400,10 @@ export class Explode {
     }
 
     this.outputBufferSize = finalizedChunks.length * blockSize + this.outputBufferSize + additionsByteSum
-    this.outputBuffer = concatArrayBuffers([...finalizedChunks, this.outputBuffer, ...additions], this.outputBufferSize)
+    this.outputBuffer = concatArrayBuffersAndLengthedDatas(
+      [...finalizedChunks, this.outputBuffer, ...additions],
+      this.outputBufferSize,
+    )
   }
 
   private parseInitialData(): boolean {

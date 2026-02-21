@@ -217,16 +217,24 @@ export function quotientAndRemainder(dividend: number, divisor: number): [quotie
 
 /**
  * @see https://stackoverflow.com/a/49129872/1806628
+ *
  */
-export function concatArrayBuffers(buffers: ArrayBufferLike[], totalLength?: number): ArrayBuffer {
-  if (buffers.length === 1) {
+export function concatArrayBuffersAndLengthedDatas(
+  buffers: Array<ArrayBufferLike | { data: number[]; byteLength: number }>,
+  totalLength?: number,
+): ArrayBuffer {
+  if (buffers.length === 1 && 'byteLength' in buffers[0]) {
     return buffers[0] as ArrayBuffer
   }
 
   if (totalLength === undefined) {
     totalLength = 0
     for (const buffer of buffers) {
-      totalLength = totalLength + buffer.byteLength
+      if (buffer instanceof ArrayBuffer || buffer instanceof SharedArrayBuffer) {
+        totalLength = totalLength + buffer.byteLength
+      } else {
+        totalLength = totalLength + buffer.byteLength
+      }
     }
   }
 
@@ -234,9 +242,14 @@ export function concatArrayBuffers(buffers: ArrayBufferLike[], totalLength?: num
 
   let offset = 0
   for (const buffer of buffers) {
-    const view = new Uint8Array(buffer)
-    combinedBuffer.set(view, offset)
-    offset = offset + buffer.byteLength
+    if (buffer instanceof ArrayBuffer || buffer instanceof SharedArrayBuffer) {
+      const view = new Uint8Array(buffer)
+      combinedBuffer.set(view, offset)
+      offset = offset + buffer.byteLength
+    } else {
+      combinedBuffer.set(buffer.data, offset)
+      offset = offset + buffer.byteLength
+    }
   }
 
   return combinedBuffer.buffer
