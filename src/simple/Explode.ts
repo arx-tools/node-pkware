@@ -79,6 +79,7 @@ export class Explode {
   private inputBufferStartIndex: number
 
   private outputBuffer: ArrayBuffer
+  private outputBufferView: Uint8Array
   private outputBufferSize: number
 
   private needMoreInput: boolean
@@ -121,6 +122,7 @@ export class Explode {
     this.inputBufferStartIndex = 0
 
     this.outputBuffer = EMPTY_BUFFER
+    this.outputBufferView = new Uint8Array(this.outputBuffer)
     this.outputBufferSize = 0
 
     this.compressionType = 'unknown'
@@ -353,12 +355,14 @@ export class Explode {
             [this.outputBuffer, ...additions],
             this.outputBufferSize,
           )
+          this.outputBufferView = new Uint8Array(this.outputBuffer)
           additions.length = 0
           additionsByteSum = 0
 
           const [a, b] = sliceArrayBufferAt(this.outputBuffer, blockSize)
           finalizedChunks.push(a)
           this.outputBuffer = b
+          this.outputBufferView = new Uint8Array(this.outputBuffer)
           this.outputBufferSize = this.outputBufferSize - blockSize
         }
 
@@ -371,27 +375,38 @@ export class Explode {
             [this.outputBuffer, ...additions],
             this.outputBufferSize,
           )
+          this.outputBufferView = new Uint8Array(this.outputBuffer)
           additions.length = 0
           additionsByteSum = 0
         }
 
-        const availableData = this.outputBuffer.slice(start, start + repeatLength)
-        const availableDataSize = Math.min(start + repeatLength, this.outputBufferSize) - start
-
         let addition: ArrayBufferLike
         let additionSize: number
+
         if (repeatLength > minusDistance) {
+          const availableData = this.outputBuffer.slice(start, start + repeatLength)
+          const availableDataSize = Math.min(start + repeatLength, this.outputBufferSize) - start
+
           const repeats = Math.ceil(repeatLength / availableDataSize)
           const multipliedData = repeat(availableData, repeats)
           addition = concatArrayBuffersAndLengthedDatas(multipliedData, repeatLength * repeats).slice(0, repeatLength)
           additionSize = repeatLength
-        } else {
-          addition = availableData
-          additionSize = availableDataSize
-        }
 
-        additions.push(addition)
-        additionsByteSum = additionsByteSum + additionSize
+          additions.push(addition)
+          additionsByteSum = additionsByteSum + additionSize
+        } else {
+          const addition: { data: number[]; byteLength: number } = {
+            data: [],
+            byteLength: Math.min(start + repeatLength, this.outputBufferSize) - start,
+          }
+
+          for (let i = 0; i < addition.byteLength; i++) {
+            addition.data.push(this.outputBufferView[start + i])
+          }
+
+          additions.push(addition)
+          additionsByteSum = additionsByteSum + addition.byteLength
+        }
 
         nextLiteral = this.decodeNextLiteral()
       }
@@ -404,6 +419,7 @@ export class Explode {
       [...finalizedChunks, this.outputBuffer, ...additions],
       this.outputBufferSize,
     )
+    this.outputBufferView = new Uint8Array(this.outputBuffer)
   }
 
   private parseInitialData(): boolean {
