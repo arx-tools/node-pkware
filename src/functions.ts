@@ -29,7 +29,6 @@ export function repeat<T>(value: T, repetitions: number): T[] {
 /**
  * Makes sure `n` is between `min` and `max`:
  *
- *
  * @example
  * ```js
  * clamp(8, 3, 7) === 7
@@ -57,7 +56,7 @@ export function clamp(n: number, min: number, max: number): number {
 /**
  * @see https://github.com/ramda/ramda/blob/master/source/internal/_isFunction.js
  */
-// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type -- I'm perfectly happy with only such little info on the return type as whether it's a function or not, nothing more needs to be done by this function
+// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type -- I'm perfectly happy with only knowing whether the input a function or not, nothing more is needed to be done by this function
 export function isFunction(x: any): x is Function {
   return Object.prototype.toString.call(x) === '[object Function]'
 }
