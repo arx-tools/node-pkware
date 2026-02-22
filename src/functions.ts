@@ -215,6 +215,10 @@ export function quotientAndRemainder(dividend: number, divisor: number): [quotie
   return [Math.floor(dividend / divisor), dividend % divisor]
 }
 
+function isArrayBufferLike(buffer: any): buffer is ArrayBufferLike {
+  return buffer instanceof ArrayBuffer || buffer instanceof SharedArrayBuffer
+}
+
 /**
  * @see https://stackoverflow.com/a/49129872/1806628
  *
@@ -230,11 +234,7 @@ export function concatArrayBuffersAndLengthedDatas(
   if (totalLength === undefined) {
     totalLength = 0
     for (const buffer of buffers) {
-      if (buffer instanceof ArrayBuffer || buffer instanceof SharedArrayBuffer) {
-        totalLength = totalLength + buffer.byteLength
-      } else {
-        totalLength = totalLength + buffer.byteLength
-      }
+      totalLength = totalLength + buffer.byteLength
     }
   }
 
@@ -242,14 +242,14 @@ export function concatArrayBuffersAndLengthedDatas(
 
   let offset = 0
   for (const buffer of buffers) {
-    if (buffer instanceof ArrayBuffer || buffer instanceof SharedArrayBuffer) {
+    if (isArrayBufferLike(buffer)) {
       const view = new Uint8Array(buffer)
       combinedBuffer.set(view, offset)
-      offset = offset + buffer.byteLength
     } else {
       combinedBuffer.set(buffer.data, offset)
-      offset = offset + buffer.byteLength
     }
+
+    offset = offset + buffer.byteLength
   }
 
   return combinedBuffer.buffer
@@ -260,4 +260,14 @@ export function sliceArrayBufferAt(buffer: ArrayBufferLike, at: number): [ArrayB
   const left = view.slice(0, at).buffer
   const right = view.slice(at).buffer
   return [left, right]
+}
+
+export function uint8ArrayToArray(view: Uint8Array, from: number, length: number): number[] {
+  const arr: number[] = []
+
+  for (let i = 0; i < length; i++) {
+    arr.push(view[from + i])
+  }
+
+  return arr
 }

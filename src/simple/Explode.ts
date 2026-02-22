@@ -19,6 +19,7 @@ import {
   unfold,
   concatArrayBuffersAndLengthedDatas,
   sliceArrayBufferAt,
+  uint8ArrayToArray,
 } from '@src/functions.js'
 import type { CompressionType, DictionarySize } from '@src/simple/types.js'
 
@@ -380,13 +381,11 @@ export class Explode {
           additionsByteSum = 0
         }
 
-        const availableData: { data: number[]; byteLength: number } = {
-          data: [],
-          byteLength: Math.min(start + repeatLength, this.outputBufferSize) - start,
-        }
+        const availableDataLength = Math.min(start + repeatLength, this.outputBufferSize) - start
 
-        for (let i = 0; i < availableData.byteLength; i++) {
-          availableData.data.push(this.outputBufferView[start + i])
+        const availableData: { data: number[]; byteLength: number } = {
+          data: uint8ArrayToArray(this.outputBufferView, start, availableDataLength),
+          byteLength: availableDataLength,
         }
 
         if (repeatLength > minusDistance) {
