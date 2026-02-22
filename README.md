@@ -124,7 +124,7 @@ The returned function has the `(chunk: Buffer, encoding: string, callback: funct
 ### Examples
 
 There are 2 APIs: "node-pkware/simple" and "node-pkware/stream".
-The "simple" api is recommended as it is much more optimized compared to the "stream" api.
+The "simple" api is recommended as it is much more performant compared to the "stream" api.
 
 #### Compressing ArrayBuffer with the "simple" API (works in browser too)
 
@@ -235,6 +235,17 @@ fs.createReadStream(`path-to-compressed-file`)
   )
 ```
 
+## Other infos
+
+`TypedArray.byteLength` is much slower compared to caching the length of the TypedArray yourself, even though the
+[documentation on MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer#instance_properties)
+says that:
+
+> The size, in bytes, of the ArrayBuffer. This is established when the array is constructed and can only be
+> changed using the ArrayBuffer.prototype.resize() method if the ArrayBuffer is resizable.
+
+_(tested in node v20.19.2)_
+
 ## Useful links
 
 ### Test files
@@ -251,7 +262,7 @@ https://github.com/arx-tools/pkware-test-files
 
 Implode was removed from Arx Libertatis at this commit: https://github.com/arx/ArxLibertatis/commit/2db9f0dd023fdd5d4da6f06c08a92d932e218187
 
-### Miscellaneous info
+### Miscellaneous
 
 - https://stackoverflow.com/questions/2094666/pointers-in-c-when-to-use-the-ampersand-and-the-asterisk
 - https://stackoverflow.com/a/49394095/1806628
