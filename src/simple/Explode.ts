@@ -380,32 +380,29 @@ export class Explode {
           additionsByteSum = 0
         }
 
-        let addition: ArrayBufferLike
-        let additionSize: number
+        const availableData: { data: number[]; byteLength: number } = {
+          data: [],
+          byteLength: Math.min(start + repeatLength, this.outputBufferSize) - start,
+        }
+
+        for (let i = 0; i < availableData.byteLength; i++) {
+          availableData.data.push(this.outputBufferView[start + i])
+        }
 
         if (repeatLength > minusDistance) {
-          const availableData = this.outputBuffer.slice(start, start + repeatLength)
-          const availableDataSize = Math.min(start + repeatLength, this.outputBufferSize) - start
-
-          const repeats = Math.ceil(repeatLength / availableDataSize)
+          const repeats = Math.ceil(repeatLength / availableData.byteLength)
           const multipliedData = repeat(availableData, repeats)
-          addition = concatArrayBuffersAndLengthedDatas(multipliedData, repeatLength * repeats).slice(0, repeatLength)
-          additionSize = repeatLength
+
+          const addition = concatArrayBuffersAndLengthedDatas(multipliedData, repeatLength * repeats).slice(
+            0,
+            repeatLength,
+          )
 
           additions.push(addition)
-          additionsByteSum = additionsByteSum + additionSize
+          additionsByteSum = additionsByteSum + repeatLength
         } else {
-          const addition: { data: number[]; byteLength: number } = {
-            data: [],
-            byteLength: Math.min(start + repeatLength, this.outputBufferSize) - start,
-          }
-
-          for (let i = 0; i < addition.byteLength; i++) {
-            addition.data.push(this.outputBufferView[start + i])
-          }
-
-          additions.push(addition)
-          additionsByteSum = additionsByteSum + addition.byteLength
+          additions.push(availableData)
+          additionsByteSum = additionsByteSum + availableData.byteLength
         }
 
         nextLiteral = this.decodeNextLiteral()
