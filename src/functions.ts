@@ -216,7 +216,17 @@ export function quotientAndRemainder(dividend: number, divisor: number): [quotie
 }
 
 function isArrayBufferLike(buffer: any): buffer is ArrayBufferLike {
-  return buffer instanceof ArrayBuffer || buffer instanceof SharedArrayBuffer
+  if (buffer instanceof ArrayBuffer) {
+    return true
+  }
+
+  // SharedArrayBuffer is not available in the browser, unless the website that has the script has special CORS headers set
+  // see https://stackoverflow.com/questions/64650119/react-error-sharedarraybuffer-is-not-defined-in-firefox
+  if (typeof SharedArrayBuffer !== 'undefined' && buffer instanceof SharedArrayBuffer) {
+    return true
+  }
+
+  return false
 }
 
 /**
