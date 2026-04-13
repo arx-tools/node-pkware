@@ -7,10 +7,29 @@ It was the de-facto compression for games from around Y2K, like [Arx Fatalis](ht
 
 ## Installation / Updating existing version
 
+### node.js
+
 `npm i -g node-pkware`
 
 - minimum required node version: 18.0.0
 - recommended node version (to be able to run the tests): 20.6.0
+
+### browser
+
+```html
+<script type="importmap">
+  {
+    "imports": {
+      "node-pkware/simple": "https://esm.sh/node-pkware/simple"
+    }
+  }
+</script>
+<script type="module">
+  import { explode } from 'node-pkware/simple'
+
+  // ...
+</script>
+```
 
 ## Command Line Interface (CLI)
 
