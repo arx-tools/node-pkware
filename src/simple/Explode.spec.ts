@@ -44,6 +44,24 @@ describe('simple/Explode', () => {
     expect(equals).toBe(true)
   })
 
+  it('can unpack fully compressed binary files when called repeatedly', async () => {
+    for (let i = 0; i < 5; i++) {
+      expect.assertions(1)
+
+      const packedFile = await fs.readFile(path.resolve(pkwareTestFilesFolder, './arx-fatalis/level1/level1.llf'))
+      const unpackedReference = await fs.readFile(
+        path.resolve(pkwareTestFilesFolder, './arx-fatalis/level1/level1.llf.unpacked'),
+      )
+
+      const explode = new Explode(packedFile.buffer)
+      const unpacked = explode.getResult()
+
+      const equals = unpackedReference.equals(new Uint8Array(unpacked))
+
+      expect(equals).toBe(true)
+    }
+  })
+
   // it('can unpack partially compressed binary files', async () => {
   //   // TODO
   // })

@@ -1,5 +1,6 @@
 import * as fs from 'node:fs/promises'
 import * as path from 'node:path'
+import { Buffer } from 'node:buffer'
 import { expect } from 'expect'
 import { Implode } from '@src/simple/Implode.js'
 import { fileExists, pathToRepoRoot } from '@bin/helpers.js'
@@ -60,5 +61,19 @@ describe('simple/Implode', () => {
     const packed = instance.getResult()
 
     expect(packed.byteLength).toBeLessThan(unpackedFile.byteLength)
+  })
+
+  it('can compress the same data consistently over and over again when called repeatedly', () => {
+    for (let i = 0; i < 4; i++) {
+      const data = Buffer.from('The quick brown fox jumps over the lazy dog. '.repeat(40))
+
+      const implodeInstance = new Implode(data, 'binary', 'large')
+      const compressed = implodeInstance.getResult()
+
+      const explode = new Explode(compressed)
+      const decompressed = explode.getResult()
+
+      expect(Buffer.from(decompressed).equals(data)).toBe(true)
+    }
   })
 })
