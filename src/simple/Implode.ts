@@ -27,7 +27,7 @@ const MAX_SIZE_OF_TERMINATION_LITERAL = 2
  * key = 16 bit combination of 2 uint8 bytes
  * value = latest occurrance within the buffer
  */
-let lastOccurrences: Record<number, number> = {}
+let lastOccurrences: Record<number, number>
 
 /**
  * function assumes a < b - 2
@@ -224,6 +224,8 @@ export class Implode {
   }
 
   private processInput(dictionarySize: DictionarySize): void {
+    lastOccurrences = {}
+
     if (this.inputBufferSize === 0) {
       return
     }
