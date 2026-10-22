@@ -46,6 +46,11 @@
   },
   "homepage": "https://github.com/arx-tools/node-pkware#readme",
   "author": "Lajos Meszaros <m_lajos@hotmail.com>",
+  "contributors": [
+    {
+      "name": "DeepSeek Harness (AI coding agent) using DeepSeek-V41-Flash"
+    }
+  ],
   "license": "MIT",
   "dependencies": {
     "minimist-lite": "^2.3.0"
