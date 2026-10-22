@@ -33,8 +33,9 @@
     "lint": "rm -f xo.config.mjs && xo --ignore 'xo.config.mjs'",
     "lint:watch": "nodemon --watch src --exec \"npm run lint\" --ext ts",
     "prepublishOnly": "npm run lint && rm -rf dist && rm -f tsconfig.tsbuildinfo && npm run build && find dist -type f -name '*.spec.*' -delete",
-    "test": "ts-mocha --import=@hyperse/ts-node/register --timeout=10000 src/**/*.spec.ts",
-    "test:watch": "nodemon --watch src --exec \"npm run test\" --ext ts"
+    "test": "node --test dist/simple/*.spec.js",
+    "test:watch": "nodemon --watch src --exec \"npm run test\" --ext ts",
+    "pretest": "rm -rf dist && rm -f tsconfig.tsbuildinfo && npm run build"
   },
   "repository": {
     "type": "git",
@@ -50,18 +51,12 @@
     "minimist-lite": "^2.3.0"
   },
   "devDependencies": {
-    "@hyperse/ts-node": "^1.2.0",
     "@trivago/prettier-plugin-sort-imports": "^5.2.2",
-    "@types/expect": "^1.20.4",
-    "@types/mocha": "^10.0.10",
     "@types/node": "^22.20.5",
     "eslint-plugin-unused-imports": "^4.4.1",
-    "expect": "^30.5.2",
-    "mocha": "^11.8.0",
     "nodemon": "^3.1.14",
-    "ts-mocha": "^11.1.0",
     "tsc-alias": "^1.9.9",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "xo": "^5.0.1"
   },
   "keywords": [

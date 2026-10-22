@@ -1,7 +1,8 @@
+import assert from 'node:assert/strict'
 import { Buffer } from 'node:buffer'
 import * as fs from 'node:fs/promises'
 import * as path from 'node:path'
-import { expect } from 'expect'
+import { before, describe, it } from 'node:test'
 import { Explode } from '@src/simple/Explode.js'
 import { Implode } from '@src/simple/Implode.js'
 import { fileExists, pathToRepoRoot } from '@bin/helpers.js'
@@ -12,16 +13,14 @@ import { fileExists, pathToRepoRoot } from '@bin/helpers.js'
  */
 const pkwareTestFilesFolder = path.resolve(pathToRepoRoot(), '../pkware-test-files/')
 
-before(async () => {
-  if (!(await fileExists(pkwareTestFilesFolder))) {
-    throw new Error(
-      '"pkware-test-files" not found, download it from https://github.com/arx-tools/pkware-test-files and place it next to your "node-pkware" folder!',
-    )
-  }
-})
-
-describe('simple/Implode', () => {
+void describe('simple/Implode', () => {
   before(async () => {
+    if (!(await fileExists(pkwareTestFilesFolder))) {
+      throw new Error(
+        '"pkware-test-files" not found, download it from https://github.com/arx-tools/pkware-test-files and place it next to your "node-pkware" folder!',
+      )
+    }
+
     const unpackedFile = await fs.readFile(
       path.resolve(pkwareTestFilesFolder, './arx-fatalis/level1/level1.llf.unpacked'),
     )
@@ -32,9 +31,7 @@ describe('simple/Implode', () => {
     console.timeEnd('    ⏱ Implode compressed level1.llf.unpacked')
   })
 
-  it('can compress binary files', async () => {
-    expect.assertions(1)
-
+  void it('can compress binary files', async () => {
     const unpackedFile = await fs.readFile(
       path.resolve(pkwareTestFilesFolder, './arx-fatalis/level1/level1.llf.unpacked'),
     )
@@ -45,14 +42,10 @@ describe('simple/Implode', () => {
     const explode = new Explode(packed)
     const unpacked = explode.getResult()
 
-    const equals = unpackedFile.equals(new Uint8Array(unpacked))
-
-    expect(equals).toBe(true)
+    assert.ok(unpackedFile.equals(new Uint8Array(unpacked)), 'the compressed and decompressed data should match')
   })
 
-  it('makes the file smaller and actually compress the data, not just encode it', async () => {
-    expect.assertions(1)
-
+  void it('makes the file smaller and actually compress the data, not just encode it', async () => {
     const unpackedFile = await fs.readFile(
       path.resolve(pkwareTestFilesFolder, './arx-fatalis/level1/level1.llf.unpacked'),
     )
@@ -60,10 +53,12 @@ describe('simple/Implode', () => {
     const instance = new Implode(unpackedFile.buffer, 'binary', 'large')
     const packed = instance.getResult()
 
-    expect(packed.byteLength).toBeLessThan(unpackedFile.byteLength)
+    assert.ok(packed.byteLength < unpackedFile.byteLength, 'the compressed data should be smaller than the original')
   })
 
-  it('can compress the same data consistently over and over again when called repeatedly', () => {
+  void it('can compress the same data consistently over and over again when called repeatedly', () => {
+    const matches: boolean[] = []
+
     for (let i = 0; i < 4; i++) {
       const data = Buffer.from('The quick brown fox jumps over the lazy dog. '.repeat(40))
 
@@ -73,7 +68,9 @@ describe('simple/Implode', () => {
       const explode = new Explode(compressed)
       const decompressed = explode.getResult()
 
-      expect(Buffer.from(decompressed).equals(data)).toBe(true)
+      matches.push(Buffer.from(decompressed).equals(data))
     }
+
+    assert.deepEqual(matches, [true, true, true, true], 'every repeated round trip should be stable')
   })
 })
