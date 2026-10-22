@@ -1,5 +1,5 @@
 /**
- * Creates a copy of `value` `repetitions` times into an array:
+ * Creates a copy of `value` `numberOfRepetitions` times into an array:
  *
  * @example
  * ```js
@@ -16,10 +16,10 @@
  * console.log(data) // -> { x: 20, y: 20 }
  * ```
  */
-export function repeat<T>(value: T, repetitions: number): T[] {
+export function repeat<T>(value: T, numberOfRepetitions: number): T[] {
   const values: T[] = []
 
-  for (let i = 0; i < repetitions; i++) {
+  for (let i = 0; i < numberOfRepetitions; i++) {
     values.push(value)
   }
 
@@ -54,6 +54,8 @@ export function clamp(n: number, min: number, max: number): number {
 }
 
 /**
+ * Checks whether the value is a function
+ *
  * @see https://github.com/ramda/ramda/blob/master/source/internal/_isFunction.js
  */
 // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type -- I'm perfectly happy with only knowing whether the input a function or not, nothing more is needed to be done by this function
@@ -71,7 +73,7 @@ export function isFunction(x: any): x is Function {
  * ```
  */
 export function nBitsOfOnes(numberOfBits: number): number {
-  if (!Number.isInteger(numberOfBits) || numberOfBits < 0) {
+  if (!Number.isSafeInteger(numberOfBits) || numberOfBits < 0) {
     return 0
   }
 
@@ -116,7 +118,7 @@ export function getLowestNBitsOf(number: number, numberOfBits: number): number {
  * ```
  */
 export function toHex(num: number, digits: number = 0, withoutPrefix: boolean = false): string {
-  if (!Number.isInteger(num) || !Number.isInteger(digits) || digits < 0) {
+  if (!Number.isSafeInteger(num) || !Number.isSafeInteger(digits) || digits < 0) {
     return ''
   }
 
@@ -206,6 +208,8 @@ export function unfold<T, TResult>(fn: (seed: T) => [result: TResult, nextSeed: 
 }
 
 /**
+ * Splits an integer division into a quotient and a remainder
+ *
  * @example
  * ```js
  * quotientAndRemainder(20, 3) // -> [6, 2]
@@ -230,8 +234,9 @@ function isArrayBufferLike(buffer: any): buffer is ArrayBufferLike {
 }
 
 /**
- * @see https://stackoverflow.com/a/49129872/1806628
+ * Concatenates array buffers and length data objects into one array buffer
  *
+ * @see https://stackoverflow.com/a/49129872/1806628
  */
 export function concatArrayBuffersAndLengthedDatas(
   buffers: Array<ArrayBufferLike | { data: number[]; byteLength: number }>,

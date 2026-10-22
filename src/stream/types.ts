@@ -4,6 +4,7 @@
 export type Config = {
   /**
    * Whether the code should display extra messages on the console or not
+   *
    * @default false
    */
   verbose?: boolean

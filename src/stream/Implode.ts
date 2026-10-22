@@ -17,16 +17,18 @@ import { Compression, DictionarySize } from '@src/stream/constants.js'
 import type { StreamHandler } from '@src/stream/stream.js'
 import type { Config, Stats } from '@src/stream/types.js'
 
-function getSizeOfMatching(inputBytes: Buffer, a: number, b: number): number {
-  const limit = clamp(b - a, 2, LONGEST_ALLOWED_REPETITION)
+const BLOCK_SIZE_IN_BYTES = 0x8_00
 
-  for (let i = 2; i <= limit; i++) {
+function getSizeOfMatching(inputBytes: Buffer, a: number, b: number): number {
+  const maxLength = clamp(b - a, 2, LONGEST_ALLOWED_REPETITION)
+
+  for (let i = 2; i <= maxLength; i++) {
     if (inputBytes[a + i] !== inputBytes[b + i]) {
       return i
     }
   }
 
-  return limit
+  return maxLength
 }
 
 /**
@@ -133,19 +135,17 @@ export class Implode {
 
         instance.processChunkData()
 
-        const blockSize = 0x8_00
-
-        if (instance.outputBuffer.size() <= blockSize) {
+        if (instance.outputBuffer.size() <= BLOCK_SIZE_IN_BYTES) {
           callback(null, Buffer.from([]))
           return
         }
 
-        let [numberOfBlocks] = quotientAndRemainder(instance.outputBuffer.size(), blockSize)
+        let [numberOfBlocks] = quotientAndRemainder(instance.outputBuffer.size(), BLOCK_SIZE_IN_BYTES)
 
         // making sure to leave one block worth of data for lookback when processing chunk data
         numberOfBlocks = numberOfBlocks - 1
 
-        const numberOfBytes = numberOfBlocks * blockSize
+        const numberOfBytes = numberOfBlocks * BLOCK_SIZE_IN_BYTES
         // make sure to create a copy of the output buffer slice as it will get flushed in the next line
         const output = Buffer.from(instance.outputBuffer.read(0, numberOfBytes))
         instance.outputBuffer.flushStart(numberOfBytes)
@@ -284,9 +284,10 @@ export class Implode {
   }
 
   /**
-   * @returns false - non flushable
-   * @returns true - flushable
-   * @returns null - flushable, but there might be a better repetition
+   * Tells whether the repetition can be flushed at the current position
+   *
+   * @returns false when it is not flushable, true when it is, and null when it is flushable but a
+   * better repetition might be found
    */
   private isRepetitionFlushable(size: number, distance: number): boolean | null {
     if (size === 0) {
@@ -308,7 +309,7 @@ export class Implode {
   }
 
   /**
-   * repetitions are at least 2 bytes long,
+   * Repetitions are at least 2 bytes long,
    * so the initial 2 bytes can be moved to the output as is
    */
   private handleFirstTwoBytes(): void {

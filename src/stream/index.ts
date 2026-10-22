@@ -6,6 +6,7 @@ import type { Config } from '@src/stream/types.js'
 
 /**
  * Decompresses stream
+ *
  * @returns a function that you can use as a `transform._transform` method.
  */
 export function explode(config: Config = {}): StreamHandler {
@@ -15,6 +16,7 @@ export function explode(config: Config = {}): StreamHandler {
 
 /**
  * Compresses stream
+ *
  * @returns a function that you can use as a `transform._transform` method.
  */
 export function implode(

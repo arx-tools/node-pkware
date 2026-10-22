@@ -25,37 +25,44 @@ import { ExpandingBuffer } from '@src/stream/ExpandingBuffer.js'
 import { Compression, DictionarySize } from '@src/stream/constants.js'
 import type { Config, Stats } from '@src/stream/types.js'
 
+const BLOCK_SIZE_IN_BYTES = 0x10_00
+
 /**
+ * Reads the compression type and the dictionary size from the first two bytes.
+ *
  * This function assumes there are at least 2 bytes of data in the buffer
+ *
+ * @throws `InvalidCompressionTypeError` when the compression type is not a known value
+ * @throws `InvalidDictionarySizeError` when the dictionary size is not a known value
  */
 function readHeader(buffer: Buffer): { compressionType: Compression; dictionarySize: DictionarySize } {
   const compressionType = buffer.readUint8(0)
   const dictionarySize = buffer.readUint8(1)
 
   // a raw byte is only a valid value when the enum has a reverse mapping for it, and `Unknown` is
-  // mapped as well, so it is rejected separately
-  if (!(compressionType in Compression) || (compressionType as Compression) === Compression.Unknown) {
+  // mapped as well, so it is rejected by name
+  if (!(compressionType in Compression) || Compression[compressionType] === 'Unknown') {
     throw new InvalidCompressionTypeError()
   }
 
-  if (!(dictionarySize in DictionarySize) || (dictionarySize as DictionarySize) === DictionarySize.Unknown) {
+  if (!(dictionarySize in DictionarySize) || DictionarySize[dictionarySize] === 'Unknown') {
     throw new InvalidDictionarySizeError()
   }
 
   return {
-    compressionType: compressionType as Compression,
-    dictionarySize: dictionarySize as DictionarySize,
+    compressionType,
+    dictionarySize,
   }
 }
 
 function generateDecodeTables(startIndexes: number[], lengthBits: number[]): number[] {
   const codes = repeat(0, 0x1_00)
 
-  lengthBits.forEach((lengthBit, i) => {
+  for (const [i, lengthBit] of lengthBits.entries()) {
     for (let index = startIndexes[i]; index < 0x1_00; index = index + (1 << lengthBit)) {
       codes[index] = i
     }
-  })
+  }
 
   return codes
 }
@@ -79,9 +86,9 @@ function populateAsciiTable(value: number, index: number, bits: number, limit: n
   const indices = unfold(iterator, seed)
 
   const table: number[] = []
-  indices.forEach((idx) => {
+  for (const idx of indices) {
     table[idx] = index
-  })
+  }
 
   return table
 }
@@ -156,19 +163,17 @@ export class Explode {
 
         instance.processChunkData()
 
-        const blockSize = 0x10_00
-
-        if (instance.outputBuffer.size() <= blockSize) {
+        if (instance.outputBuffer.size() <= BLOCK_SIZE_IN_BYTES) {
           callback(null, Buffer.from([]))
           return
         }
 
-        let [numberOfBlocks] = quotientAndRemainder(instance.outputBuffer.size(), blockSize)
+        let [numberOfBlocks] = quotientAndRemainder(instance.outputBuffer.size(), BLOCK_SIZE_IN_BYTES)
 
         // making sure to leave one block worth of data for lookback when processing chunk data
         numberOfBlocks = numberOfBlocks - 1
 
-        const numberOfBytes = numberOfBlocks * blockSize
+        const numberOfBytes = numberOfBlocks * BLOCK_SIZE_IN_BYTES
         // make sure to create a copy of the output buffer slice as it will get flushed in the next line
         const output = Buffer.from(instance.outputBuffer.read(0, numberOfBytes))
         instance.outputBuffer.flushStart(numberOfBytes)
@@ -238,6 +243,8 @@ export class Explode {
   }
 
   /**
+   * Skips the given number of bits of the input
+   *
    * @throws `AbortedError` when there isn't enough data to be wasted
    */
   private wasteBits(numberOfBits: number): void {
@@ -259,6 +266,8 @@ export class Explode {
   }
 
   /**
+   * Decodes the next literal from the input
+   *
    * @throws `AbortedError`
    */
   private decodeNextLiteral(): number {
@@ -266,7 +275,7 @@ export class Explode {
 
     this.wasteBits(1)
 
-    if (lastBit) {
+    if (lastBit !== 0) {
       let lengthCode = this.lengthCodes[getLowestNBitsOf(this.bitBuffer, 8)]
 
       this.wasteBits(LenBits[lengthCode])
@@ -302,12 +311,12 @@ export class Explode {
       value = this.asciiTable2C34[lastByte]
 
       if (value === 0xff) {
-        if (getLowestNBitsOf(this.bitBuffer, 6)) {
-          this.wasteBits(4)
-          value = this.asciiTable2D34[getLowestNBitsOf(this.bitBuffer, 8)]
-        } else {
+        if (getLowestNBitsOf(this.bitBuffer, 6) === 0) {
           this.wasteBits(6)
           value = this.asciiTable2E34[getLowestNBitsOf(this.bitBuffer, 7)]
+        } else {
+          this.wasteBits(4)
+          value = this.asciiTable2D34[getLowestNBitsOf(this.bitBuffer, 8)]
         }
       }
     } else {
@@ -321,6 +330,8 @@ export class Explode {
   }
 
   /**
+   * Decodes the distance of a repetition
+   *
    * @throws `AbortedError`
    */
   private decodeDistance(repeatLength: number): number {
@@ -345,6 +356,13 @@ export class Explode {
     return distance + 1
   }
 
+  /**
+   * Processes the buffered input
+   *
+   * @throws `InvalidCompressionTypeError` when the compression type is not a known value
+   * @throws `InvalidDictionarySizeError` when the dictionary size is not a known value
+   * @throws `AbortedError` when the input is malformed
+   */
   private processChunkData(): void {
     if (this.inputBuffer.isEmpty()) {
       return
@@ -398,6 +416,13 @@ export class Explode {
     }
   }
 
+  /**
+   * Parses the header and the first bit of the buffered input
+   *
+   * @returns true when the header is parsed, false when there is not enough data yet
+   * @throws `InvalidCompressionTypeError` when the compression type is not a known value
+   * @throws `InvalidDictionarySizeError` when the dictionary size is not a known value
+   */
   private parseInitialData(): boolean {
     if (this.inputBuffer.size() < 4) {
       return false

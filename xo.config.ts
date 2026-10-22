@@ -79,6 +79,34 @@ const xoConfig: FlatXoConfig = [
       'prettier/prettier': ['error', { bracketSpacing: true }],
       // keep the classic JSDoc style with the asterisk prefix (xo's default flipped to "never")
       'jsdoc/require-asterisk-prefix': ['error', 'always'],
+      // the node stream callbacks are `void | Promise<void>` by contract (promisify, the Transform
+      // options, the _flush assignment), so a value-returning function is not a bug here
+      '@typescript-eslint/strict-void-return': 'off',
+      // the description comes first, then an empty line before the @ tags
+      'jsdoc/tag-lines': ['error', 'any', { startLines: 1 }],
+      // every thrown error is documented with @throws, including the callers of a throwing function
+      'jsdoc/require-throws': 'error',
+      // statics first, then the instance fields, the constructor and the methods from public to private
+      '@typescript-eslint/member-ordering': [
+        'error',
+        {
+          default: [
+            'public-static-field',
+            'protected-static-field',
+            'private-static-field',
+            'public-static-method',
+            'protected-static-method',
+            'private-static-method',
+            'public-instance-field',
+            'protected-instance-field',
+            'private-instance-field',
+            'constructor',
+            'public-instance-method',
+            'protected-instance-method',
+            'private-instance-method',
+          ],
+        },
+      ],
       // the project convention is `operator-assignment: never` (see the .infos rules), the unicorn
       // variant wants the same rule with the opposite setting
       'unicorn/operator-assignment': 'off',
@@ -94,6 +122,20 @@ const xoConfig: FlatXoConfig = [
       'unicorn/prefer-class-fields': 'off',
       // TODO: rename the shadowed `byte` variables in src/simple/Implode.ts when that method is touched
       '@typescript-eslint/no-shadow': 'off',
+      // reduce is banned everywhere: the loop is always clearer than the accumulator dance
+      'unicorn/no-array-reduce': 'error',
+      // the project convention prefers `Number.parseInt(value, 10)` over the bare `Number(value)`
+      'unicorn/prefer-number-coercion': 'off',
+      // the stream handlers reach these members through the aliased `this` (see the no-this-alias
+      // reasoning), the rule can not follow that, so it reports used members as unused
+      '@typescript-eslint/no-unused-private-class-members': 'off',
+      // the codec's hot loops are written after the C original: the guards, the early exits and the
+      // shared branch prefixes stay where they are, restructuring them would only churn the port
+      'unicorn/prefer-combined-guards': 'off',
+      'unicorn/prefer-hoisting-branch-code': 'off',
+      'unicorn/prefer-continue': 'off',
+      'unicorn/prefer-early-return': 'off',
+      'unicorn/no-declarations-before-early-exit': 'off',
       'n/no-sync': 'error',
       // the `v` flag needs Node >= 20, but the published package still supports Node >= 18
       'require-unicode-regexp': 'off',

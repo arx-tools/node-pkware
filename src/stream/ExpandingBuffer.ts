@@ -1,7 +1,7 @@
 import { Buffer } from 'node:buffer'
 import { clamp } from '@src/functions.js'
 
-const blockSize = 0x10_00
+const BLOCK_SIZE_IN_BYTES = 0x10_00
 
 export class ExpandingBuffer {
   private heap: Buffer
@@ -70,7 +70,9 @@ export class ExpandingBuffer {
 
     const currentData = this.getActualData()
 
-    this.heap = Buffer.allocUnsafe((Math.ceil((currentData.byteLength + 1) / blockSize) + 1) * blockSize)
+    this.heap = Buffer.allocUnsafe(
+      (Math.ceil((currentData.byteLength + 1) / BLOCK_SIZE_IN_BYTES) + 1) * BLOCK_SIZE_IN_BYTES,
+    )
     currentData.copy(this.heap, 0)
     this.heap[currentData.byteLength] = value
     this.startIndex = 0
@@ -92,7 +94,7 @@ export class ExpandingBuffer {
     const currentData = this.getActualData()
 
     this.heap = Buffer.allocUnsafe(
-      (Math.ceil((currentData.byteLength + newData.byteLength) / blockSize) + 1) * blockSize,
+      (Math.ceil((currentData.byteLength + newData.byteLength) / BLOCK_SIZE_IN_BYTES) + 1) * BLOCK_SIZE_IN_BYTES,
     )
     currentData.copy(this.heap, 0)
     newData.copy(this.heap, currentData.byteLength)
@@ -198,7 +200,7 @@ export class ExpandingBuffer {
   }
 
   /**
-   * returns the internal buffer
+   * Returns the internal buffer
    */
   getHeap(): Buffer {
     return this.heap

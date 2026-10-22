@@ -26,11 +26,11 @@ import type { CompressionType, DictionarySize } from '@src/simple/types.js'
 function generateDecodeTables(startIndexes: number[], lengthBits: number[]): number[] {
   const codes = repeat(0, 0x1_00)
 
-  lengthBits.forEach((lengthBit, i) => {
+  for (const [i, lengthBit] of lengthBits.entries()) {
     for (let index = startIndexes[i]; index < 0x1_00; index = index + (1 << lengthBit)) {
       codes[index] = i
     }
-  })
+  }
 
   return codes
 }
@@ -54,9 +54,9 @@ function populateAsciiTable(value: number, index: number, bits: number, limit: n
   const indices = unfold(iterator, seed)
 
   const table: number[] = []
-  indices.forEach((idx) => {
+  for (const idx of indices) {
     table[idx] = index
-  })
+  }
 
   return table
 }
@@ -94,19 +94,19 @@ export class Explode {
   private dictionarySizeMask: number
   private chBitsAsc: number[]
   /**
-   * the naming comes from stormlib, the 2C34 refers to the table's position in memory
+   * The naming comes from stormlib, the 2C34 refers to the table's position in memory
    */
   private asciiTable2C34: number[]
   /**
-   * the naming comes from stormlib, the 2D34 refers to the table's position in memory
+   * The naming comes from stormlib, the 2D34 refers to the table's position in memory
    */
   private asciiTable2D34: number[]
   /**
-   * the naming comes from stormlib, the 2E34 refers to the table's position in memory
+   * The naming comes from stormlib, the 2E34 refers to the table's position in memory
    */
   private asciiTable2E34: number[]
   /**
-   * the naming comes from stormlib, the 2EB4 refers to the table's position in memory
+   * The naming comes from stormlib, the 2EB4 refers to the table's position in memory
    */
   private asciiTable2EB4: number[]
 
@@ -143,9 +143,7 @@ export class Explode {
   }
 
   /**
-   * @throws `InvalidCompressionTypeError`
-   * @throws `InvalidDictionarySizeError`
-   * @throws `AbortedError`
+   * Returns the decompressed data
    */
   getResult(): ArrayBuffer {
     return this.outputBuffer.slice(0, this.outputBufferSize)
@@ -193,10 +191,12 @@ export class Explode {
   }
 
   /**
+   * Skips the given number of bits of the input
+   *
    * @throws `AbortedError` when there isn't enough data to be wasted
    */
   private wasteBits(numberOfBits: number): void {
-    if (numberOfBits > this.extraBits && this.inputBufferSize - this.inputBufferStartIndex === 0) {
+    if (numberOfBits > this.extraBits && this.inputBufferSize === this.inputBufferStartIndex) {
       throw new AbortedError()
     }
 
@@ -214,6 +214,8 @@ export class Explode {
   }
 
   /**
+   * Decodes the next literal from the input
+   *
    * @throws `AbortedError`
    */
   private decodeNextLiteral(): number {
@@ -221,7 +223,7 @@ export class Explode {
 
     this.wasteBits(1)
 
-    if (lastBit) {
+    if (lastBit !== 0) {
       let lengthCode = this.lengthCodes[getLowestNBitsOf(this.bitBuffer, 8)]
 
       this.wasteBits(LenBits[lengthCode])
@@ -257,12 +259,12 @@ export class Explode {
       value = this.asciiTable2C34[lastByte]
 
       if (value === 0xff) {
-        if (getLowestNBitsOf(this.bitBuffer, 6)) {
-          this.wasteBits(4)
-          value = this.asciiTable2D34[getLowestNBitsOf(this.bitBuffer, 8)]
-        } else {
+        if (getLowestNBitsOf(this.bitBuffer, 6) === 0) {
           this.wasteBits(6)
           value = this.asciiTable2E34[getLowestNBitsOf(this.bitBuffer, 7)]
+        } else {
+          this.wasteBits(4)
+          value = this.asciiTable2D34[getLowestNBitsOf(this.bitBuffer, 8)]
         }
       }
     } else {
@@ -276,6 +278,8 @@ export class Explode {
   }
 
   /**
+   * Decodes the distance of a repetition
+   *
    * @throws `AbortedError`
    */
   private decodeDistance(repeatLength: number): number {
@@ -317,9 +321,16 @@ export class Explode {
     return distance + 1
   }
 
+  /**
+   * Decompresses the whole input buffer
+   *
+   * @throws `InvalidCompressionTypeError` when the compression type is not a known value
+   * @throws `InvalidDictionarySizeError` when the dictionary size is not a known value
+   * @throws `AbortedError` when the input is malformed
+   */
   private processInput(): void {
     const headerParsedSuccessfully = this.parseInitialData()
-    if (!headerParsedSuccessfully || this.inputBufferSize - this.inputBufferStartIndex === 0) {
+    if (!headerParsedSuccessfully || this.inputBufferSize === this.inputBufferStartIndex) {
       return
     }
 
@@ -328,7 +339,7 @@ export class Explode {
     const additions: Array<ArrayBufferLike | { data: number[]; byteLength: number }> = []
     let additionsByteSum = 0
     const finalizedChunks: ArrayBufferLike[] = []
-    const blockSize = 0x10_00
+    const blockSizeInBytes = 0x10_00
 
     try {
       let nextLiteral = this.decodeNextLiteral()
@@ -350,7 +361,7 @@ export class Explode {
         const minusDistance = this.decodeDistance(repeatLength)
 
         // dump the beginning of the output buffer if outputBuffer and the additions exceed 2 blocks
-        if (this.outputBufferSize + additionsByteSum > blockSize * 2) {
+        if (this.outputBufferSize + additionsByteSum > blockSizeInBytes * 2) {
           this.outputBufferSize = this.outputBufferSize + additionsByteSum
           this.outputBuffer = concatArrayBuffersAndLengthedDatas(
             [this.outputBuffer, ...additions],
@@ -360,11 +371,11 @@ export class Explode {
           additions.length = 0
           additionsByteSum = 0
 
-          const [a, b] = sliceArrayBufferAt(this.outputBuffer, blockSize)
+          const [a, b] = sliceArrayBufferAt(this.outputBuffer, blockSizeInBytes)
           finalizedChunks.push(a)
           this.outputBuffer = b
           this.outputBufferView = new Uint8Array(this.outputBuffer)
-          this.outputBufferSize = this.outputBufferSize - blockSize
+          this.outputBufferSize = this.outputBufferSize - blockSizeInBytes
         }
 
         const start = this.outputBufferSize + additionsByteSum - minusDistance
@@ -410,7 +421,8 @@ export class Explode {
       this.needMoreInput = true
     }
 
-    this.outputBufferSize = finalizedChunks.length * blockSize + this.outputBufferSize + additionsByteSum
+    const finalizedChunksSize = finalizedChunks.length * blockSizeInBytes
+    this.outputBufferSize = finalizedChunksSize + this.outputBufferSize + additionsByteSum
     this.outputBuffer = concatArrayBuffersAndLengthedDatas(
       [...finalizedChunks, this.outputBuffer, ...additions],
       this.outputBufferSize,
@@ -418,6 +430,13 @@ export class Explode {
     this.outputBufferView = new Uint8Array(this.outputBuffer)
   }
 
+  /**
+   * Parses the header and the first bit of the input
+   *
+   * @returns true when the header is parsed, false when there is not enough data yet
+   * @throws `InvalidCompressionTypeError` when the compression type is not a known value
+   * @throws `InvalidDictionarySizeError` when the dictionary size is not a known value
+   */
   private parseInitialData(): boolean {
     if (this.inputBufferSize < 4) {
       return false
@@ -458,6 +477,7 @@ export class Explode {
    * This function assumes there are at least 2 bytes of data in the buffer
    *
    * @throws `InvalidCompressionTypeError`
+   *
    * @throws `InvalidDictionarySizeError`
    */
   private readHeader(): {
