@@ -23,7 +23,7 @@ class QuasiTransform {
   }
 
   async handle(chunk: Buffer, encoding: NodeJS.BufferEncoding): Promise<Buffer> {
-    return await (promisify(this.#handler).call(this, chunk, encoding) as Promise<Buffer>)
+    return promisify(this.#handler).call(this, chunk, encoding) as Promise<Buffer>
   }
 }
 
@@ -131,6 +131,7 @@ export function transformSplitBy(
     const transformedLeft = leftTransform.handle(left, encoding)
     const transformedRight = rightTransform.handle(right, encoding)
 
+    // eslint-disable-next-line unicorn/no-this-assignment, @typescript-eslint/no-this-alias -- the transform callback needs both values: this is the stream, the alias is the closure state
     const transformInstance = this
 
     if (isFirstChunk) {

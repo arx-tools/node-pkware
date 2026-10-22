@@ -11,11 +11,11 @@ import {
   LONGEST_ALLOWED_REPETITION,
 } from '@src/constants.js'
 import { InvalidCompressionTypeError, InvalidDictionarySizeError } from '@src/errors.js'
-import { ExpandingBuffer } from '@src/stream/ExpandingBuffer.js'
 import { clamp, quotientAndRemainder, getLowestNBitsOf, nBitsOfOnes, repeat, toHex } from '@src/functions.js'
+import { ExpandingBuffer } from '@src/stream/ExpandingBuffer.js'
+import { Compression, DictionarySize } from '@src/stream/constants.js'
 import type { StreamHandler } from '@src/stream/stream.js'
 import type { Config, Stats } from '@src/stream/types.js'
-import { Compression, DictionarySize } from '@src/stream/constants.js'
 
 function getSizeOfMatching(inputBytes: Buffer, a: number, b: number): number {
   const limit = clamp(b - a, 2, LONGEST_ALLOWED_REPETITION)
@@ -109,6 +109,7 @@ export class Implode {
   }
 
   getHandler(): StreamHandler {
+    // eslint-disable-next-line unicorn/no-this-assignment, @typescript-eslint/no-this-alias -- the stream handler needs both values: this is the Transform, the alias is the encoder instance
     const instance = this
 
     return function (

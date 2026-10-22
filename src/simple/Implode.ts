@@ -80,8 +80,26 @@ function findRepetitions(
   }
 }
 
+/**
+ * Returns a byte view over the input without copying it.
+ *
+ * A `Buffer` is a `Uint8Array`, so it is a valid input for the codec, but it is not an
+ * `ArrayBuffer`. Since `Buffer` became generic (`Buffer<ArrayBuffer>`) it is not assignable to
+ * `ArrayBufferLike` anymore, which is why the input is typed as the union of the two here and the
+ * view is made in one place: a single `new Uint8Array(input)` can not resolve its overloads for the
+ * union, and copying a typed array which is already a byte view would be wasteful.
+ * @see https://github.com/DefinitelyTyped/DefinitelyTyped/pull/70694
+ */
+function asByteView(input: ArrayBufferLike | Uint8Array): Uint8Array {
+  if (input instanceof Uint8Array) {
+    return input
+  }
+
+  return new Uint8Array(input)
+}
+
 export class Implode {
-  private inputBuffer: ArrayBufferLike
+  private inputBuffer: ArrayBufferLike | Uint8Array
   /**
    * Used for accessing the data within inputBuffer
    */
@@ -109,7 +127,7 @@ export class Implode {
   private readonly nChBits: number[]
   private readonly nChCodes: number[]
 
-  constructor(input: ArrayBufferLike, compressionType: CompressionType, dictionarySize: DictionarySize) {
+  constructor(input: ArrayBufferLike | Uint8Array, compressionType: CompressionType, dictionarySize: DictionarySize) {
     this.dictionarySizeMask = 0
     this.distCodes = structuredClone(DistCode)
     this.distBits = structuredClone(DistBits)
@@ -120,7 +138,7 @@ export class Implode {
     this.setupTables(compressionType, dictionarySize)
 
     this.inputBuffer = input
-    this.inputBufferView = new Uint8Array(this.inputBuffer)
+    this.inputBufferView = asByteView(this.inputBuffer)
     this.inputBufferSize = this.inputBuffer.byteLength
     this.inputBufferStartIndex = 0
 
@@ -247,6 +265,8 @@ export class Implode {
         this.outputBits(this.nChBits[byte], this.nChCodes[byte])
         this.inputBufferStartIndex = this.inputBufferStartIndex + 1
       } else {
+        // TODO: the `byte` variables below shadow this one, they should have their own names when
+        // this method is touched (the @typescript-eslint/no-shadow rule is off for now)
         const byte = size + 0xfe
         this.outputBits(this.nChBits[byte], this.nChCodes[byte])
 
@@ -302,7 +322,7 @@ export class Implode {
 
       if (this.inputBufferStartIndex >= blockSize) {
         this.inputBuffer = this.inputBuffer.slice(blockSize)
-        this.inputBufferView = new Uint8Array(this.inputBuffer)
+        this.inputBufferView = asByteView(this.inputBuffer)
         this.inputBufferSize = this.inputBufferSize - blockSize
         this.inputBufferStartIndex = this.inputBufferStartIndex - blockSize
         lastOccurrences = {}

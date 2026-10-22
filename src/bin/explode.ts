@@ -1,8 +1,7 @@
 #!/usr/bin/env -S node --enable-source-maps
-
 import * as process from 'node:process'
 import minimist from 'minimist-lite'
-import { getPackageVersion, parseNumberString, getInputStream, getOutputStream } from '@bin/helpers.js'
+import { explode } from '@src/stream/index.js'
 import {
   transformEmpty,
   transformIdentity,
@@ -12,7 +11,7 @@ import {
   type StreamHandler,
 } from '@src/stream/stream.js'
 import type { Config } from '@src/stream/types.js'
-import { explode } from '@src/stream/index.js'
+import { getPackageVersion, parseNumberString, getInputStream, getOutputStream } from '@bin/helpers.js'
 
 type AppArgs = {
   _: string[]
@@ -51,7 +50,6 @@ async function decompress(
 
   const handler = transformSplitBy(splitAt(offset), leftHandler, rightHandler)
 
-  // eslint-disable-next-line @typescript-eslint/return-await -- I'm not gonna rewrite this classic promise nonsense to async/await as I don't know where are the return points exactly
   return new Promise<void>((resolve, reject) => {
     input.pipe(through(handler).on('error', reject)).pipe(output).on('finish', resolve).on('error', reject)
   })

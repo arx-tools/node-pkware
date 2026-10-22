@@ -159,7 +159,7 @@ export class Explode {
           this.asciiTable2C34,
         ) as number[]
 
-        return value - 0
+        return value
       }
 
       const acc = getLowestNBitsOf(ChCodeAsc[index], 8)

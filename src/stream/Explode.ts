@@ -12,7 +12,6 @@ import {
   LITERAL_END_STREAM,
 } from '@src/constants.js'
 import { AbortedError, InvalidCompressionTypeError, InvalidDictionarySizeError } from '@src/errors.js'
-import { ExpandingBuffer } from '@src/stream/ExpandingBuffer.js'
 import {
   quotientAndRemainder,
   getLowestNBitsOf,
@@ -22,8 +21,9 @@ import {
   toHex,
   unfold,
 } from '@src/functions.js'
-import type { Config, Stats } from '@src/stream/types.js'
+import { ExpandingBuffer } from '@src/stream/ExpandingBuffer.js'
 import { Compression, DictionarySize } from '@src/stream/constants.js'
+import type { Config, Stats } from '@src/stream/types.js'
 
 /**
  * This function assumes there are at least 2 bytes of data in the buffer
@@ -32,11 +32,13 @@ function readHeader(buffer: Buffer): { compressionType: Compression; dictionaryS
   const compressionType = buffer.readUint8(0)
   const dictionarySize = buffer.readUint8(1)
 
-  if (!(compressionType in Compression) || compressionType === Compression.Unknown) {
+  // a raw byte is only a valid value when the enum has a reverse mapping for it, and `Unknown` is
+  // mapped as well, so it is rejected separately
+  if (!(compressionType in Compression) || (compressionType as Compression) === Compression.Unknown) {
     throw new InvalidCompressionTypeError()
   }
 
-  if (!(dictionarySize in DictionarySize) || dictionarySize === DictionarySize.Unknown) {
+  if (!(dictionarySize in DictionarySize) || (dictionarySize as DictionarySize) === DictionarySize.Unknown) {
     throw new InvalidDictionarySizeError()
   }
 
@@ -128,6 +130,7 @@ export class Explode {
   }
 
   getHandler() {
+    // eslint-disable-next-line unicorn/no-this-assignment, @typescript-eslint/no-this-alias -- the stream handler needs both values: this is the Transform, the alias is the decoder instance
     const instance = this
 
     return function (
@@ -185,7 +188,7 @@ export class Explode {
           this.asciiTable2C34,
         ) as number[]
 
-        return value - 0
+        return value
       }
 
       const acc = getLowestNBitsOf(ChCodeAsc[index], 8)
