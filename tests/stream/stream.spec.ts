@@ -15,11 +15,11 @@ import {
 import { transformToABC } from '../helpers.ts'
 
 /**
- * Runs the given chunks through a stream handler
+ * Runs the given chunks through a stream handler.
  *
- * @param handler the transform handler to run
- * @param chunks the input chunks
- * @returns the concatenated output of the stream
+ * @param handler The transform handler to run.
+ * @param chunks The input chunks.
+ * @returns The concatenated output of the stream.
  */
 async function runChunks(handler: StreamHandler, chunks: string[]): Promise<Buffer> {
   const output: Buffer[] = []
@@ -44,10 +44,10 @@ async function runChunks(handler: StreamHandler, chunks: string[]): Promise<Buff
 }
 
 /**
- * Runs the given bytes into a `toBuffer` sink
+ * Runs the given bytes into a `toBuffer` sink.
  *
- * @param input the bytes to collect
- * @returns the buffer the sink received
+ * @param input The bytes to collect.
+ * @returns The buffer the sink received.
  */
 async function collectWithToBuffer(input: Buffer): Promise<Buffer> {
   let result: Buffer = Buffer.alloc(0)
@@ -71,10 +71,10 @@ type LetterState = {
 }
 
 /**
- * A handler which passes the chunks through, but registers a flush callback on the stream
+ * A handler which passes the chunks through, but registers a flush callback on the stream.
  *
- * @param state the object which records whether the flush was called
- * @returns a transform handler
+ * @param state The object which records whether the flush was called.
+ * @returns A transform handler.
  */
 function createFlushTrackingHandler(state: FlushState): StreamHandler {
   return function (this: Transform, chunk, encoding, callback): void {
@@ -88,10 +88,10 @@ function createFlushTrackingHandler(state: FlushState): StreamHandler {
 }
 
 /**
- * A handler which replaces the flush of the handler it is given with a single letter
+ * A handler which replaces the flush of the handler it is given with a single letter.
  *
- * @param state the object which holds the next letter to output
- * @returns a transform handler
+ * @param state The object which holds the next letter to output.
+ * @returns A transform handler.
  */
 function createFillerHandler(state: LetterState): StreamHandler {
   let isFirstChunk = true

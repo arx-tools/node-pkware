@@ -38,7 +38,7 @@ function generateDecodeTables(startIndexes: number[], lengthBits: number[]): num
 }
 
 /**
- * PAT = populate ascii table
+ * PAT = populate ascii table.
  */
 function createPATIterator(limit: number, stepper: number): (n: number) => [result: number, nextSeed: number] | false {
   return function (n: number): [result: number, nextSeed: number] | false {
@@ -66,12 +66,12 @@ function populateAsciiTable(value: number, index: number, bits: number, limit: n
 export class Explode {
   private readonly inputBuffer: ArrayBufferLike
   /**
-   * Used for accessing the data within inputBuffer
+   * Used for accessing the data within inputBuffer.
    */
   private readonly inputBufferView: Uint8Array
   /**
    * Used for caching inputBuffer.byteLength as that getter is doing some uncached computation to measure the length of
-   * inputBuffer
+   * inputBuffer.
    */
   private readonly inputBufferSize: number
   /**
@@ -96,19 +96,19 @@ export class Explode {
   private dictionarySizeMask: number
   private chBitsAsc: number[]
   /**
-   * The naming comes from stormlib, the 2C34 refers to the table's position in memory
+   * The naming comes from stormlib, the 2C34 refers to the table's position in memory.
    */
   private asciiTable2C34: number[]
   /**
-   * The naming comes from stormlib, the 2D34 refers to the table's position in memory
+   * The naming comes from stormlib, the 2D34 refers to the table's position in memory.
    */
   private asciiTable2D34: number[]
   /**
-   * The naming comes from stormlib, the 2E34 refers to the table's position in memory
+   * The naming comes from stormlib, the 2E34 refers to the table's position in memory.
    */
   private asciiTable2E34: number[]
   /**
-   * The naming comes from stormlib, the 2EB4 refers to the table's position in memory
+   * The naming comes from stormlib, the 2EB4 refers to the table's position in memory.
    */
   private asciiTable2EB4: number[]
 
@@ -190,9 +190,9 @@ export class Explode {
   }
 
   /**
-   * Skips the given number of bits of the input
+   * Skips the given number of bits of the input.
    *
-   * @throws `AbortedError` when there isn't enough data to be wasted
+   * @throws `AbortedError` when there isn't enough data to be wasted.
    */
   private wasteBits(numberOfBits: number): void {
     if (numberOfBits > this.extraBits && this.inputBufferSize === this.inputBufferStartIndex) {
@@ -213,9 +213,9 @@ export class Explode {
   }
 
   /**
-   * Decodes the next literal from the input
+   * Decodes the next literal from the input.
    *
-   * @throws `AbortedError`
+   * @throws `AbortedError`.
    */
   private decodeNextLiteral(): number {
     const lastBit = getLowestNBitsOf(this.bitBuffer, 1)
@@ -277,9 +277,9 @@ export class Explode {
   }
 
   /**
-   * Decodes the distance of a repetition
+   * Decodes the distance of a repetition.
    *
-   * @throws `AbortedError`
+   * @throws `AbortedError`.
    */
   private decodeDistance(repeatLength: number): number {
     const distPosCode = this.distPosCodes[getLowestNBitsOf(this.bitBuffer, 8)]
@@ -321,11 +321,11 @@ export class Explode {
   }
 
   /**
-   * Decompresses the whole input buffer
+   * Decompresses the whole input buffer.
    *
-   * @throws `InvalidCompressionTypeError` when the compression type is not a known value
-   * @throws `InvalidDictionarySizeError` when the dictionary size is not a known value
-   * @throws `AbortedError` when the input is malformed
+   * @throws `InvalidCompressionTypeError` when the compression type is not a known value.
+   * @throws `InvalidDictionarySizeError` when the dictionary size is not a known value.
+   * @throws `AbortedError` when the input is malformed.
    */
   private processInput(): void {
     const headerParsedSuccessfully = this.parseInitialData()
@@ -430,11 +430,11 @@ export class Explode {
   }
 
   /**
-   * Parses the header and the first bit of the input
+   * Parses the header and the first bit of the input.
    *
-   * @returns true when the header is parsed, false when there is not enough data yet
-   * @throws `InvalidCompressionTypeError` when the compression type is not a known value
-   * @throws `InvalidDictionarySizeError` when the dictionary size is not a known value
+   * @returns True when the header is parsed, false when there is not enough data yet.
+   * @throws `InvalidCompressionTypeError` when the compression type is not a known value.
+   * @throws `InvalidDictionarySizeError` when the dictionary size is not a known value.
    */
   private parseInitialData(): boolean {
     if (this.inputBufferSize < 4) {
@@ -473,11 +473,11 @@ export class Explode {
   }
 
   /**
-   * This function assumes there are at least 2 bytes of data in the buffer
+   * This function assumes there are at least 2 bytes of data in the buffer.
    *
-   * @throws `InvalidCompressionTypeError`
+   * @throws `InvalidCompressionTypeError`.
    *
-   * @throws `InvalidDictionarySizeError`
+   * @throws `InvalidDictionarySizeError`.
    */
   private readHeader(): {
     compressionType: CompressionType

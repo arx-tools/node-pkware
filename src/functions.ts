@@ -1,5 +1,5 @@
 /**
- * Creates a copy of `value` `numberOfRepetitions` times into an array:
+ * Creates a copy of `value` `numberOfRepetitions` times into an array.
  *
  * @example
  * ```js
@@ -27,7 +27,7 @@ export function repeat<T>(value: T, numberOfRepetitions: number): T[] {
 }
 
 /**
- * Makes sure `n` is between `min` and `max`:
+ * Makes sure `n` is between `min` and `max`.
  *
  * @example
  * ```js
@@ -54,7 +54,7 @@ export function clamp(n: number, min: number, max: number): number {
 }
 
 /**
- * Checks whether the value is a function
+ * Checks whether the value is a function.
  *
  * @see https://github.com/ramda/ramda/blob/master/source/internal/_isFunction.js
  */
@@ -64,7 +64,7 @@ export function isFunction(x: any): x is Function {
 }
 
 /**
- * Creates `numberOfBits` number of 1s:
+ * Creates `numberOfBits` number of 1s.
  *
  * @example
  * ```js
@@ -81,7 +81,7 @@ export function nBitsOfOnes(numberOfBits: number): number {
 }
 
 /**
- * Keeps the `numberOfBits` lower bits of `number` as is and discards higher bits:
+ * Keeps the `numberOfBits` lower bits of `number` as is and discards higher bits.
  *
  * ```
  * getLowestNBitsOf(0bXXXX_XXXX, 3) === 0b0000_0XXX
@@ -98,7 +98,7 @@ export function getLowestNBitsOf(number: number, numberOfBits: number): number {
 }
 
 /**
- * Converts a decimal integer into a hexadecimal number in a string with or without prefix and padding zeros
+ * Converts a decimal integer into a hexadecimal number in a string with or without prefix and padding zeros.
  *
  * @example
  * ```js
@@ -131,7 +131,7 @@ export function toHex(num: number, digits: number = 0, withoutPrefix: boolean = 
 }
 
 /**
- * A sparse array is an array with holes in it:
+ * A sparse array is an array with holes in it.
  *
  * @example
  * ```js
@@ -208,7 +208,7 @@ export function unfold<T, TResult>(fn: (seed: T) => [result: TResult, nextSeed: 
 }
 
 /**
- * Splits an integer division into a quotient and a remainder
+ * Splits an integer division into a quotient and a remainder.
  *
  * @example
  * ```js
@@ -234,7 +234,7 @@ function isArrayBufferLike(buffer: any): buffer is ArrayBufferLike {
 }
 
 /**
- * Concatenates array buffers and length data objects into one array buffer
+ * Concatenates array buffers and length data objects into one array buffer.
  *
  * @see https://stackoverflow.com/a/49129872/1806628
  */

@@ -5,9 +5,9 @@ import type { StreamHandler } from './stream.ts'
 import type { Config } from './types.ts'
 
 /**
- * Decompresses stream
+ * Decompresses stream.
  *
- * @returns a function that you can use as a `transform._transform` method.
+ * @returns A function that you can use as a `transform._transform` method.
  */
 export function explode(config: Config = {}): StreamHandler {
   const instance = new Explode(config)
@@ -15,9 +15,9 @@ export function explode(config: Config = {}): StreamHandler {
 }
 
 /**
- * Compresses stream
+ * Compresses stream.
  *
- * @returns a function that you can use as a `transform._transform` method.
+ * @returns A function that you can use as a `transform._transform` method.
  */
 export function implode(
   compressionType: CompressionType,

@@ -35,15 +35,13 @@ class QuasiTransform {
  *
  * Splitting is done by returning an array with `[left: Buffer, right: Buffer, isLeftDone: bool]`.
  *
- * If you want to split data at the 100th byte and you keep feeding 60 byte long buffers to the function
- * returned by `splitAt(100)`, then it will return arrays in the following manner:
+ * @param index - A positive integer at which to split the buffer.
+ * @example
+ * // feeding 60 byte long buffers to splitAt(100) returns arrays in the following manner
  * 1. `[inputBuffer, emptyBuffer, false]`
  * 2. `[inputBuffer.slice(0, 40), inputBuffer.slice(40, 60), true]`
  * 3. `[emptyBuffer, inputBuffer, true]`
  * 4. `[emptyBuffer, inputBuffer, true]`
- * 5. ... and so on
- *
- * @param index - a positive integer at which to split the buffer
  */
 export function splitAt(index: number): TransformPredicate {
   let cntr = 0
@@ -77,7 +75,7 @@ export function splitAt(index: number): TransformPredicate {
 }
 
 /**
- * A `transform._transform` type function, which lets the input chunks through without any changes
+ * A `transform._transform` type function, which lets the input chunks through without any changes.
  */
 export function transformIdentity(): StreamHandler {
   return function (this: Transform, chunk: Buffer, encoding: NodeJS.BufferEncoding, callback: TransformCallback): void {
@@ -86,7 +84,7 @@ export function transformIdentity(): StreamHandler {
 }
 
 /**
- * A `transform._transform` type function, which for every input chunk will output an empty buffer
+ * A `transform._transform` type function, which for every input chunk will output an empty buffer.
  */
 export function transformEmpty(): StreamHandler {
   return function (this: Transform, chunk: Buffer, encoding: NodeJS.BufferEncoding, callback: TransformCallback): void {
@@ -95,11 +93,11 @@ export function transformEmpty(): StreamHandler {
 }
 
 /**
- * Takes a `transform._transform` type function and turns it into a Transform stream instance
+ * Takes a `transform._transform` type function and turns it into a Transform stream instance.
  *
- * @param handler a `transform._transform` type function
+ * @param handler A `transform._transform` type function.
  *
- * @returns a Transform stream instance
+ * @returns A Transform stream instance.
  */
 export function through(handler: StreamHandler): Transform {
   return new Transform({
@@ -111,7 +109,7 @@ export function through(handler: StreamHandler): Transform {
  * Higher order function for introducing conditional logic to `transform._transform` functions.
  * This is used internally to handle offsets for `explode()`.
  *
- * @returns a `transform._transform` type function
+ * @returns A `transform._transform` type function.
  */
 export function transformSplitBy(
   predicate: TransformPredicate,
@@ -227,7 +225,7 @@ export function transformSplitBy(
 /**
  * Data can be piped to the returned function from a stream and it will concatenate all chunks into a single buffer.
  *
- * @param done a callback function, which will receive the concatenated buffer as a parameter
+ * @param done A callback function, which will receive the concatenated buffer as a parameter.
  */
 export function toBuffer(done: (buffer: Buffer) => void): Writable {
   const buffer = new ExpandingBuffer()

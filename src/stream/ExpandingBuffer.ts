@@ -38,9 +38,9 @@ export class ExpandingBuffer {
   }
 
   /**
-   * Sets a single byte of the stored data
+   * Sets a single byte of the stored data.
    *
-   * If offset is negative, then the method calculates the index from the end backwards
+   * If offset is negative, then the method calculates the index from the end backwards.
    */
   setByte(offset: number, value: number): void {
     if (offset < 0) {
@@ -59,7 +59,7 @@ export class ExpandingBuffer {
 
   /**
    * Adds a single byte to the end of the stored data.
-   * This expands the underlying Buffer (heap) by 0x10_00 bytes if it is full
+   * This expands the underlying Buffer (heap) by 0x10_00 bytes if it is full.
    */
   appendByte(value: number): void {
     if (this.endIndex + 1 < this.heapSize()) {
@@ -82,7 +82,7 @@ export class ExpandingBuffer {
   /**
    * Concatenates a buffer to the end of the stored data.
    * If the new data exceeds the size of the underlying Buffer (heap) then it
-   * gets expanded by the integer multiples of 0x10_00 bytes
+   * gets expanded by the integer multiples of 0x10_00 bytes.
    */
   append(newData: Buffer): void {
     if (this.endIndex + newData.byteLength < this.heapSize()) {
@@ -125,18 +125,18 @@ export class ExpandingBuffer {
   }
 
   /**
-   * Reads a single byte from the stored data
+   * Reads a single byte from the stored data.
    */
   readByte(offset: number = 0): number {
     return this.heap[this.startIndex + offset]
   }
 
   /**
-   * Does hard delete
+   * Does hard delete.
    *
    * Removes data from the start of the underlying Buffer (heap)
    * by copying bytes to lower indices making sure the
-   * startIndex goes back to 0 afterwards
+   * startIndex goes back to 0 afterwards.
    */
   flushStart(numberOfBytes: number): void {
     numberOfBytes = clamp(numberOfBytes, 0, this.heapSize())
@@ -151,10 +151,10 @@ export class ExpandingBuffer {
   }
 
   /**
-   * Does hard delete
+   * Does hard delete.
    *
    * Removes data from the end of the underlying Buffer (heap)
-   * by moving the endIndex back
+   * by moving the endIndex back.
    */
   flushEnd(numberOfBytes: number): void {
     const clampedNumberOfBytes = clamp(numberOfBytes, 0, this.heapSize())
@@ -164,11 +164,11 @@ export class ExpandingBuffer {
   }
 
   /**
-   * Does soft delete
+   * Does soft delete.
    *
    * Removes data from the start of the underlying Buffer (heap)
    * by moving the startIndex forward
-   * When the heap gets empty it also resets the indices as a cleanup
+   * When the heap gets empty it also resets the indices as a cleanup.
    */
   dropStart(numberOfBytes: number): void {
     if (numberOfBytes <= 0) {
@@ -182,11 +182,11 @@ export class ExpandingBuffer {
   }
 
   /**
-   * Does soft delete
+   * Does soft delete.
    *
    * Removes data from the end of the underlying Buffer (heap)
    * by moving the endIndex back
-   * When the heap gets empty it also resets the indices as a cleanup
+   * When the heap gets empty it also resets the indices as a cleanup.
    */
   dropEnd(numberOfBytes: number): void {
     if (numberOfBytes <= 0) {

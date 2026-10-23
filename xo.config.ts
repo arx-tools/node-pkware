@@ -69,6 +69,9 @@ const rules = {
   // the node stream callbacks are `void | Promise<void>` by contract (promisify, the Transform
   // options, the _flush assignment), so a value-returning function is not a bug here
   '@typescript-eslint/strict-void-return': 'off',
+  // every description is a complete sentence: a capital first letter and a period at the end, so it
+  // does not have to be checked by hand
+  'jsdoc/require-description-complete-sentence': 'error',
   // the description comes first, then an empty line before the @ tags
   'jsdoc/tag-lines': ['error', 'any', { startLines: 1 }],
   // every thrown error is documented with @throws, including the callers of a throwing function

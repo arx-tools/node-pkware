@@ -36,7 +36,7 @@ function getSizeOfMatching(inputBytes: Buffer, a: number, b: number): number {
 /**
  * TODO: make sure that we find the most recent one,
  * which in turn allows us to store backward length in less amount of bits
- * currently the code goes from the furthest point
+ * currently the code goes from the furthest point.
  */
 function findRepetitions(
   inputBytes: Buffer,
@@ -287,10 +287,10 @@ export class Implode {
   }
 
   /**
-   * Tells whether the repetition can be flushed at the current position
+   * Tells whether the repetition can be flushed at the current position.
    *
-   * @returns false when it is not flushable, true when it is, and null when it is flushable but a
-   * better repetition might be found
+   * @returns False when it is not flushable, true when it is, and null when it is flushable but a
+   * better repetition might be found.
    */
   private isRepetitionFlushable(size: number, distance: number): boolean | null {
     if (size === 0) {
@@ -313,7 +313,7 @@ export class Implode {
 
   /**
    * Repetitions are at least 2 bytes long,
-   * so the initial 2 bytes can be moved to the output as is
+   * so the initial 2 bytes can be moved to the output as is.
    */
   private handleFirstTwoBytes(): void {
     const byte1 = this.inputBuffer.readByte(0)

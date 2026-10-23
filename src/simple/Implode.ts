@@ -18,15 +18,15 @@ const HEADER_SIZE_IN_BYTES = 3
 const TERMINATION_LITERAL_MAX_SIZE_IN_BYTES = 2
 
 /**
- * Lookup table used for finding repetitions easier
+ * Lookup table used for finding repetitions easier.
  *
- * key = 16 bit combination of 2 uint8 bytes
- * value = latest occurrance within the buffer
+ * Key = 16 bit combination of 2 uint8 bytes
+ * value = latest occurrance within the buffer.
  */
 let lastOccurrences: Record<number, number>
 
 /**
- * Function assumes a < b - 2
+ * Function assumes a < b - 2.
  */
 function getSizeOfMatching(view: Uint8Array, a: number, b: number): number {
   const maxLength = clamp(b - a, 2, LONGEST_ALLOWED_REPETITION)
@@ -98,12 +98,12 @@ function asByteView(input: ArrayBufferLike | Uint8Array): Uint8Array {
 export class Implode {
   private inputBuffer: ArrayBufferLike | Uint8Array
   /**
-   * Used for accessing the data within inputBuffer
+   * Used for accessing the data within inputBuffer.
    */
   private inputBufferView: Uint8Array
   /**
    * Used for caching inputBuffer.byteLength as that getter is doing some uncached computation to measure the length of
-   * inputBuffer
+   * inputBuffer.
    */
   private inputBufferSize: number
   /**
@@ -308,10 +308,10 @@ export class Implode {
   }
 
   /**
-   * Tells whether the repetition can be flushed at the current position
+   * Tells whether the repetition can be flushed at the current position.
    *
-   * @returns false when it is not flushable, true when it is, and null when it is flushable but a
-   * better repetition might be found
+   * @returns False when it is not flushable, true when it is, and null when it is flushable but a
+   * better repetition might be found.
    */
   private isRepetitionFlushable(size: number, distance: number): boolean | null {
     if (size === 0) {
@@ -334,7 +334,7 @@ export class Implode {
 
   /**
    * Repetitions are at least 2 bytes long,
-   * so the initial 2 bytes can be moved to the output as is
+   * so the initial 2 bytes can be moved to the output as is.
    */
   private skipFirstTwoBytes(): void {
     const [byte1, byte2] = this.inputBufferView

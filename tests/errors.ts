@@ -1,5 +1,5 @@
 /**
- * Thrown when the `pkware-test-files` fixture repository is not next to the node-pkware folder
+ * Thrown when the `pkware-test-files` fixture repository is not next to the node-pkware folder.
  */
 export class PkwareTestFilesNotFoundException extends Error {
   constructor() {

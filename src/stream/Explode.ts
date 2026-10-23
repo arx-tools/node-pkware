@@ -32,15 +32,15 @@ const BLOCK_SIZE_IN_BYTES = 0x10_00
 /**
  * Reads the compression type and the dictionary size from the first two bytes.
  *
- * This function assumes there are at least 2 bytes of data in the buffer
+ * This function assumes there are at least 2 bytes of data in the buffer.
  *
- * @throws `InvalidCompressionTypeError` when the compression type is not a known value
- * @throws `InvalidDictionarySizeError` when the dictionary size is not a known value
+ * @throws `InvalidCompressionTypeError` when the compression type is not a known value.
+ * @throws `InvalidDictionarySizeError` when the dictionary size is not a known value.
  */
 /**
- * Reads the compression type from a raw header byte
+ * Reads the compression type from a raw header byte.
  *
- * @throws `InvalidCompressionTypeError` when the byte is not a known code
+ * @throws `InvalidCompressionTypeError` when the byte is not a known code.
  */
 function readCompressionType(code: number): CompressionType {
   switch (code) {
@@ -59,9 +59,9 @@ function readCompressionType(code: number): CompressionType {
 }
 
 /**
- * Reads the dictionary size from a raw header byte
+ * Reads the dictionary size from a raw header byte.
  *
- * @throws `InvalidDictionarySizeError` when the byte is not a known code
+ * @throws `InvalidDictionarySizeError` when the byte is not a known code.
  */
 function readDictionarySize(code: number): DictionarySize {
   switch (code) {
@@ -103,7 +103,7 @@ function generateDecodeTables(startIndexes: number[], lengthBits: number[]): num
 }
 
 /**
- * PAT = populate ascii table
+ * PAT = populate ascii table.
  */
 function createPATIterator(limit: number, stepper: number): (n: number) => [result: number, nextSeed: number] | false {
   return function (n: number): [result: number, nextSeed: number] | false {
@@ -280,9 +280,9 @@ export class Explode {
   }
 
   /**
-   * Skips the given number of bits of the input
+   * Skips the given number of bits of the input.
    *
-   * @throws `AbortedError` when there isn't enough data to be wasted
+   * @throws `AbortedError` when there isn't enough data to be wasted.
    */
   private wasteBits(numberOfBits: number): void {
     if (numberOfBits > this.extraBits && this.inputBuffer.isEmpty()) {
@@ -303,9 +303,9 @@ export class Explode {
   }
 
   /**
-   * Decodes the next literal from the input
+   * Decodes the next literal from the input.
    *
-   * @throws `AbortedError`
+   * @throws `AbortedError`.
    */
   private decodeNextLiteral(): number {
     const lastBit = getLowestNBitsOf(this.bitBuffer, 1)
@@ -367,9 +367,9 @@ export class Explode {
   }
 
   /**
-   * Decodes the distance of a repetition
+   * Decodes the distance of a repetition.
    *
-   * @throws `AbortedError`
+   * @throws `AbortedError`.
    */
   private decodeDistance(repeatLength: number): number {
     const distPosCode = this.distPosCodes[getLowestNBitsOf(this.bitBuffer, 8)]
@@ -394,11 +394,11 @@ export class Explode {
   }
 
   /**
-   * Processes the buffered input
+   * Processes the buffered input.
    *
-   * @throws `InvalidCompressionTypeError` when the compression type is not a known value
-   * @throws `InvalidDictionarySizeError` when the dictionary size is not a known value
-   * @throws `AbortedError` when the input is malformed
+   * @throws `InvalidCompressionTypeError` when the compression type is not a known value.
+   * @throws `InvalidDictionarySizeError` when the dictionary size is not a known value.
+   * @throws `AbortedError` when the input is malformed.
    */
   private processChunkData(): void {
     if (this.inputBuffer.isEmpty()) {
@@ -454,11 +454,11 @@ export class Explode {
   }
 
   /**
-   * Parses the header and the first bit of the buffered input
+   * Parses the header and the first bit of the buffered input.
    *
-   * @returns true when the header is parsed, false when there is not enough data yet
-   * @throws `InvalidCompressionTypeError` when the compression type is not a known value
-   * @throws `InvalidDictionarySizeError` when the dictionary size is not a known value
+   * @returns True when the header is parsed, false when there is not enough data yet.
+   * @throws `InvalidCompressionTypeError` when the compression type is not a known value.
+   * @throws `InvalidDictionarySizeError` when the dictionary size is not a known value.
    */
   private parseInitialData(): boolean {
     if (this.inputBuffer.size() < 4) {

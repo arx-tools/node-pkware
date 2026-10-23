@@ -12,7 +12,7 @@ import * as process from 'node:process'
 const DEFAULT_TEST_FILE_PATTERN = 'tests/**/*.spec.ts'
 
 /**
- * The summary line the test reporter prints when it is done
+ * The summary line the test reporter prints when it is done.
  */
 const TEST_COUNT_PATTERN = /^# tests (?<count>\d+)$/m
 

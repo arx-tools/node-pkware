@@ -100,7 +100,7 @@ export const ChCodeAsc = [
 export const EMPTY_BUFFER = new ArrayBuffer(0)
 
 /**
- * The byte codes of the compression types in the file header
+ * The byte codes of the compression types in the file header.
  */
 export const COMPRESSION_CODES: Record<CompressionType, number> = {
   binary: 0,
@@ -108,7 +108,7 @@ export const COMPRESSION_CODES: Record<CompressionType, number> = {
 }
 
 /**
- * The byte codes of the dictionary sizes in the file header
+ * The byte codes of the dictionary sizes in the file header.
  */
 export const DICTIONARY_CODES: Record<DictionarySize, number> = {
   small: 4,

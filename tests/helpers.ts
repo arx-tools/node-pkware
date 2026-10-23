@@ -9,14 +9,14 @@ import { PkwareTestFilesNotFoundException } from './errors.ts'
 
 /**
  * Expecting the {@link https://github.com/arx-tools/pkware-test-files|pkware-test-files}
- * repo to be on the same level as the node-pkware folder
+ * repo to be on the same level as the node-pkware folder.
  */
 export const pkwareTestFilesFolder = path.resolve(pathToRepoRoot(), '../pkware-test-files/')
 
 /**
- * Throws when the fixture repository is not next to this one
+ * Throws when the fixture repository is not next to this one.
  *
- * @throws `PkwareTestFilesNotFoundException` when the folder is missing
+ * @throws `PkwareTestFilesNotFoundException` when the folder is missing.
  */
 export async function assertTestFilesFolderExists(): Promise<void> {
   if (!(await fileExists(pkwareTestFilesFolder))) {
@@ -25,22 +25,22 @@ export async function assertTestFilesFolderExists(): Promise<void> {
 }
 
 /**
- * Reads a file from the level1 fixture folder
+ * Reads a file from the level1 fixture folder.
  *
- * @param name the file name inside the level1 folder
- * @returns the content of the fixture
+ * @param name The file name inside the level1 folder.
+ * @returns The content of the fixture.
  */
 export async function readFixture(name: string): Promise<Buffer> {
   return fs.readFile(path.resolve(pkwareTestFilesFolder, `./arx-fatalis/level1/${name}`))
 }
 
 /**
- * Runs the bytes through a stream handler in chunks of the given size
+ * Runs the bytes through a stream handler in chunks of the given size.
  *
- * @param handler the transform handler to run
- * @param input the bytes to transform
- * @param chunkSize the size of the chunks the input is split into
- * @returns the concatenated output of the stream
+ * @param handler The transform handler to run.
+ * @param input The bytes to transform.
+ * @param chunkSize The size of the chunks the input is split into.
+ * @returns The concatenated output of the stream.
  */
 export async function runStream(handler: StreamHandler, input: Buffer, chunkSize: number): Promise<Buffer> {
   const chunks: Buffer[] = []
@@ -63,10 +63,10 @@ export async function runStream(handler: StreamHandler, input: Buffer, chunkSize
 }
 
 /**
- * A handler which yields A, B, C, ... for every chunk it receives, so the position of the chunks can
- * be tracked in the output
+ * A handler which yields the letters A, B, C and so on for every chunk it receives, so the position
+ * of the chunks can be tracked in the output.
  *
- * @returns a transform handler
+ * @returns A transform handler.
  */
 export function transformToABC(): StreamHandler {
   let counter = 0
