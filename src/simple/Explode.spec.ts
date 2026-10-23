@@ -2,8 +2,8 @@ import assert from 'node:assert/strict'
 import * as fs from 'node:fs/promises'
 import * as path from 'node:path'
 import { before, describe, it } from 'node:test'
-import { Explode } from '@src/simple/Explode.js'
-import { fileExists, pathToRepoRoot } from '@bin/helpers.js'
+import { fileExists, pathToRepoRoot } from '../bin/helpers.ts'
+import { Explode } from './Explode.ts'
 
 /**
  * Expecting the {@link https://github.com/arx-tools/pkware-test-files|pkware-test-files}

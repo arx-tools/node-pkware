@@ -1,8 +1,8 @@
 #!/usr/bin/env -S node --enable-source-maps
+
 import * as process from 'node:process'
 import minimist from 'minimist-lite'
-import { Compression, DictionarySize } from '@src/stream/constants.js'
-import { implode } from '@src/stream/index.js'
+import { implode } from '../stream/index.ts'
 import {
   transformEmpty,
   transformIdentity,
@@ -10,9 +10,10 @@ import {
   splitAt,
   through,
   type StreamHandler,
-} from '@src/stream/stream.js'
-import type { Config } from '@src/stream/types.js'
-import { getPackageVersion, parseNumberString, getInputStream, getOutputStream } from '@bin/helpers.js'
+} from '../stream/stream.ts'
+import type { Config } from '../stream/types.ts'
+import type { CompressionType, DictionarySize } from '../types.ts'
+import { getPackageVersion, parseNumberString, getInputStream, getOutputStream } from './helpers.ts'
 
 type AppArgs = {
   _: string[]
@@ -53,7 +54,7 @@ async function compress(
   output: NodeJS.WritableStream,
   offset: number,
   keepHeader: boolean,
-  compressionType: Compression,
+  compressionType: CompressionType,
   dictionarySize: DictionarySize,
   config: Config,
 ): Promise<void> {
@@ -118,20 +119,20 @@ try {
   process.exit(1)
 }
 
-let compressionType
+let compressionType: CompressionType
 if (args.ascii) {
-  compressionType = Compression.Ascii
+  compressionType = 'ascii'
 } else {
-  compressionType = Compression.Binary
+  compressionType = 'binary'
 }
 
-let dictionarySize
+let dictionarySize: DictionarySize
 if (args.small) {
-  dictionarySize = DictionarySize.Small
+  dictionarySize = 'small'
 } else if (args.medium) {
-  dictionarySize = DictionarySize.Medium
+  dictionarySize = 'medium'
 } else {
-  dictionarySize = DictionarySize.Large
+  dictionarySize = 'large'
 }
 
 const offset = parseNumberString(args.offset, 0)

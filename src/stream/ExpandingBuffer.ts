@@ -1,5 +1,5 @@
 import { Buffer } from 'node:buffer'
-import { clamp } from '@src/functions.js'
+import { clamp } from '../functions.ts'
 
 const BLOCK_SIZE_IN_BYTES = 0x10_00
 

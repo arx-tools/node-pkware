@@ -1,7 +1,8 @@
 #!/usr/bin/env -S node --enable-source-maps
+
 import * as process from 'node:process'
 import minimist from 'minimist-lite'
-import { explode } from '@src/stream/index.js'
+import { explode } from '../stream/index.ts'
 import {
   transformEmpty,
   transformIdentity,
@@ -9,9 +10,9 @@ import {
   splitAt,
   through,
   type StreamHandler,
-} from '@src/stream/stream.js'
-import type { Config } from '@src/stream/types.js'
-import { getPackageVersion, parseNumberString, getInputStream, getOutputStream } from '@bin/helpers.js'
+} from '../stream/stream.ts'
+import type { Config } from '../stream/types.ts'
+import { getPackageVersion, parseNumberString, getInputStream, getOutputStream } from './helpers.ts'
 
 type AppArgs = {
   _: string[]

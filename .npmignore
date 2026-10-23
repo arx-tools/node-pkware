@@ -1,10 +1,13 @@
+# everything listed here is repository tooling, only the build output (dist) is published
 original-c-lib
 test
 .editorconfig
-.eslintrc
 .gitignore
 .prettierrc
-tsconfig.json
 src
-.xo-config
-tsconfig.tsbuildinfo
+scripts
+tsconfig.json
+tsconfig.src.json
+tsconfig.scripts.json
+xo.config.ts
+*.tsbuildinfo

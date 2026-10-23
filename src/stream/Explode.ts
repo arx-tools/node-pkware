@@ -1,17 +1,19 @@
 import { Buffer } from 'node:buffer'
 import type { Transform, TransformCallback } from 'node:stream'
 import {
+  COMPRESSION_CODES,
   ChBitsAsc,
   ChCodeAsc,
+  DICTIONARY_CODES,
   DistBits,
   DistCode,
   ExLenBits,
+  LITERAL_END_STREAM,
   LenBase,
   LenBits,
   LenCode,
-  LITERAL_END_STREAM,
-} from '@src/constants.js'
-import { AbortedError, InvalidCompressionTypeError, InvalidDictionarySizeError } from '@src/errors.js'
+} from '../constants.ts'
+import { AbortedError, InvalidCompressionTypeError, InvalidDictionarySizeError } from '../errors.ts'
 import {
   quotientAndRemainder,
   getLowestNBitsOf,
@@ -20,10 +22,10 @@ import {
   repeat,
   toHex,
   unfold,
-} from '@src/functions.js'
-import { ExpandingBuffer } from '@src/stream/ExpandingBuffer.js'
-import { Compression, DictionarySize } from '@src/stream/constants.js'
-import type { Config, Stats } from '@src/stream/types.js'
+} from '../functions.ts'
+import type { CompressionType, DictionarySize } from '../types.ts'
+import { ExpandingBuffer } from './ExpandingBuffer.ts'
+import type { Config, Stats } from './types.ts'
 
 const BLOCK_SIZE_IN_BYTES = 0x10_00
 
@@ -35,24 +37,57 @@ const BLOCK_SIZE_IN_BYTES = 0x10_00
  * @throws `InvalidCompressionTypeError` when the compression type is not a known value
  * @throws `InvalidDictionarySizeError` when the dictionary size is not a known value
  */
-function readHeader(buffer: Buffer): { compressionType: Compression; dictionarySize: DictionarySize } {
-  const compressionType = buffer.readUint8(0)
-  const dictionarySize = buffer.readUint8(1)
+/**
+ * Reads the compression type from a raw header byte
+ *
+ * @throws `InvalidCompressionTypeError` when the byte is not a known code
+ */
+function readCompressionType(code: number): CompressionType {
+  switch (code) {
+    case COMPRESSION_CODES.binary: {
+      return 'binary'
+    }
 
-  // a raw byte is only a valid value when the enum has a reverse mapping for it, and `Unknown` is
-  // mapped as well, so it is rejected by name
-  if (!(compressionType in Compression) || Compression[compressionType] === 'Unknown') {
-    throw new InvalidCompressionTypeError()
-  }
+    case COMPRESSION_CODES.ascii: {
+      return 'ascii'
+    }
 
-  if (!(dictionarySize in DictionarySize) || DictionarySize[dictionarySize] === 'Unknown') {
-    throw new InvalidDictionarySizeError()
+    default: {
+      throw new InvalidCompressionTypeError()
+    }
   }
+}
 
-  return {
-    compressionType,
-    dictionarySize,
+/**
+ * Reads the dictionary size from a raw header byte
+ *
+ * @throws `InvalidDictionarySizeError` when the byte is not a known code
+ */
+function readDictionarySize(code: number): DictionarySize {
+  switch (code) {
+    case DICTIONARY_CODES.small: {
+      return 'small'
+    }
+
+    case DICTIONARY_CODES.medium: {
+      return 'medium'
+    }
+
+    case DICTIONARY_CODES.large: {
+      return 'large'
+    }
+
+    default: {
+      throw new InvalidDictionarySizeError()
+    }
   }
+}
+
+function readHeader(buffer: Buffer): { compressionType: CompressionType; dictionarySize: DictionarySize } {
+  const compressionType = readCompressionType(buffer.readUint8(0))
+  const dictionarySize = readDictionarySize(buffer.readUint8(1))
+
+  return { compressionType, dictionarySize }
 }
 
 function generateDecodeTables(startIndexes: number[], lengthBits: number[]): number[] {
@@ -105,9 +140,10 @@ export class Explode {
   private readonly inputBuffer: ExpandingBuffer
   private readonly outputBuffer: ExpandingBuffer
   private readonly stats: Stats
-  private compressionType: Compression
-  private dictionarySize: DictionarySize
+  private compressionType: CompressionType | 'unknown'
+  private dictionarySize: DictionarySize | 'unknown'
   private dictionarySizeMask: number
+  private dictionarySizeBits: number
   private chBitsAsc: number[]
   private asciiTable2C34: number[]
   private asciiTable2D34: number[]
@@ -126,9 +162,10 @@ export class Explode {
     this.inputBuffer = new ExpandingBuffer(0x1_00_00)
     this.outputBuffer = new ExpandingBuffer(0x4_00_00)
     this.stats = { chunkCounter: 0 }
-    this.compressionType = Compression.Unknown
-    this.dictionarySize = DictionarySize.Unknown
+    this.compressionType = 'unknown'
+    this.dictionarySize = 'unknown'
     this.dictionarySizeMask = 0
+    this.dictionarySizeBits = 0
     this.chBitsAsc = repeat(0, 0x1_00)
     this.asciiTable2C34 = repeat(0, 0x1_00)
     this.asciiTable2D34 = repeat(0, 0x1_00)
@@ -300,7 +337,7 @@ export class Explode {
 
     const lastByte = getLowestNBitsOf(this.bitBuffer, 8)
 
-    if (this.compressionType === Compression.Binary) {
+    if (this.compressionType === 'binary') {
       this.wasteBits(8)
       return lastByte
     }
@@ -347,8 +384,8 @@ export class Explode {
       distance = (distPosCode << 2) | getLowestNBitsOf(this.bitBuffer, 2)
       bitsToWaste = 2
     } else {
-      distance = (distPosCode << this.dictionarySize) | (this.bitBuffer & this.dictionarySizeMask)
-      bitsToWaste = this.dictionarySize
+      distance = (distPosCode << this.dictionarySizeBits) | (this.bitBuffer & this.dictionarySizeMask)
+      bitsToWaste = this.dictionarySizeBits
     }
 
     this.wasteBits(bitsToWaste)
@@ -368,7 +405,7 @@ export class Explode {
       return
     }
 
-    if (this.compressionType === Compression.Unknown) {
+    if (this.compressionType === 'unknown') {
       const headerParsedSuccessfully = this.parseInitialData()
       if (!headerParsedSuccessfully || this.inputBuffer.isEmpty()) {
         return
@@ -434,15 +471,16 @@ export class Explode {
     this.dictionarySize = dictionarySize
     this.bitBuffer = this.inputBuffer.readByte(2)
     this.inputBuffer.dropStart(3)
-    this.dictionarySizeMask = nBitsOfOnes(dictionarySize)
+    this.dictionarySizeBits = DICTIONARY_CODES[dictionarySize]
+    this.dictionarySizeMask = nBitsOfOnes(this.dictionarySizeBits)
 
-    if (this.compressionType === Compression.Ascii) {
+    if (this.compressionType === 'ascii') {
       this.generateAsciiTables()
     }
 
     if (this.verbose) {
-      console.log(`explode: compression type: ${Compression[this.compressionType]}`)
-      console.log(`explode: compression level: ${DictionarySize[this.dictionarySize]}`)
+      console.log(`explode: compression type: ${this.compressionType}`)
+      console.log(`explode: compression level: ${this.dictionarySize}`)
     }
 
     return true

@@ -1,8 +1,8 @@
 import { Buffer } from 'node:buffer'
 import { Transform, Writable, type TransformCallback } from 'node:stream'
 import { promisify } from 'node:util'
-import { isFunction } from '@src/functions.js'
-import { ExpandingBuffer } from '@src/stream/ExpandingBuffer.js'
+import { isFunction } from '../functions.ts'
+import { ExpandingBuffer } from './ExpandingBuffer.ts'
 
 const STAGING_CHUNK_SIZE_IN_BYTES = 0x1_00_00
 

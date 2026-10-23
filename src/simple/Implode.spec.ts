@@ -3,9 +3,9 @@ import { Buffer } from 'node:buffer'
 import * as fs from 'node:fs/promises'
 import * as path from 'node:path'
 import { before, describe, it } from 'node:test'
-import { Explode } from '@src/simple/Explode.js'
-import { Implode } from '@src/simple/Implode.js'
-import { fileExists, pathToRepoRoot } from '@bin/helpers.js'
+import { fileExists, pathToRepoRoot } from '../bin/helpers.ts'
+import { Explode } from './Explode.ts'
+import { Implode } from './Implode.ts'
 
 /**
  * Expecting the {@link https://github.com/arx-tools/pkware-test-files|pkware-test-files}

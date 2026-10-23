@@ -1,16 +1,18 @@
 import {
+  COMPRESSION_CODES,
   ChBitsAsc,
   ChCodeAsc,
+  DICTIONARY_CODES,
   DistBits,
   DistCode,
   EMPTY_BUFFER,
   ExLenBits,
+  LITERAL_END_STREAM,
   LenBase,
   LenBits,
   LenCode,
-  LITERAL_END_STREAM,
-} from '@src/constants.js'
-import { AbortedError, InvalidCompressionTypeError, InvalidDictionarySizeError } from '@src/errors.js'
+} from '../constants.ts'
+import { AbortedError, InvalidCompressionTypeError, InvalidDictionarySizeError } from '../errors.ts'
 import {
   getLowestNBitsOf,
   mergeSparseArrays,
@@ -20,8 +22,8 @@ import {
   concatArrayBuffersAndLengthedDatas,
   sliceArrayBufferAt,
   uint8ArrayToArray,
-} from '@src/functions.js'
-import type { CompressionType, DictionarySize } from '@src/simple/types.js'
+} from '../functions.ts'
+import type { CompressionType, DictionarySize } from '../types.ts'
 
 function generateDecodeTables(startIndexes: number[], lengthBits: number[]): number[] {
   const codes = repeat(0, 0x1_00)
@@ -487,12 +489,12 @@ export class Explode {
     let compressionType: CompressionType
 
     switch (this.inputBufferView[0]) {
-      case 0: {
+      case COMPRESSION_CODES.binary: {
         compressionType = 'binary'
         break
       }
 
-      case 1: {
+      case COMPRESSION_CODES.ascii: {
         compressionType = 'ascii'
         break
       }
@@ -505,17 +507,17 @@ export class Explode {
     let dictionarySize: DictionarySize
 
     switch (this.inputBufferView[1]) {
-      case 4: {
+      case DICTIONARY_CODES.small: {
         dictionarySize = 'small'
         break
       }
 
-      case 5: {
+      case DICTIONARY_CODES.medium: {
         dictionarySize = 'medium'
         break
       }
 
-      case 6: {
+      case DICTIONARY_CODES.large: {
         dictionarySize = 'large'
         break
       }

@@ -5,8 +5,6 @@
   "importOrder": [
     "^node:",
     "<THIRD_PARTY_MODULES>",
-    "^@src/",
-    "^@",
     "^[./]"
   ],
   "printWidth": 120,

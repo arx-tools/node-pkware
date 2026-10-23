@@ -1,21 +1,23 @@
 import { Buffer } from 'node:buffer'
 import type { Transform, TransformCallback } from 'node:stream'
 import {
+  COMPRESSION_CODES,
   ChBitsAsc,
   ChCodeAsc,
+  DICTIONARY_CODES,
   DistBits,
   DistCode,
   ExLenBits,
+  LONGEST_ALLOWED_REPETITION,
   LenBits,
   LenCode,
-  LONGEST_ALLOWED_REPETITION,
-} from '@src/constants.js'
-import { InvalidCompressionTypeError, InvalidDictionarySizeError } from '@src/errors.js'
-import { clamp, quotientAndRemainder, getLowestNBitsOf, nBitsOfOnes, repeat, toHex } from '@src/functions.js'
-import { ExpandingBuffer } from '@src/stream/ExpandingBuffer.js'
-import { Compression, DictionarySize } from '@src/stream/constants.js'
-import type { StreamHandler } from '@src/stream/stream.js'
-import type { Config, Stats } from '@src/stream/types.js'
+} from '../constants.ts'
+import { InvalidCompressionTypeError, InvalidDictionarySizeError } from '../errors.ts'
+import { clamp, quotientAndRemainder, getLowestNBitsOf, nBitsOfOnes, repeat, toHex } from '../functions.ts'
+import type { CompressionType, DictionarySize } from '../types.ts'
+import { ExpandingBuffer } from './ExpandingBuffer.ts'
+import type { StreamHandler } from './stream.ts'
+import type { Config, Stats } from './types.ts'
 
 const BLOCK_SIZE_IN_BYTES = 0x8_00
 
@@ -71,8 +73,8 @@ export class Implode {
   private readonly inputBuffer: ExpandingBuffer
   private readonly outputBuffer: ExpandingBuffer
   private readonly stats: Stats
-  private readonly compressionType: Exclude<Compression, Compression.Unknown>
-  private readonly dictionarySize: Exclude<DictionarySize, DictionarySize.Unknown>
+  private readonly compressionType: CompressionType
+  private readonly dictionarySize: DictionarySize
   private dictionarySizeMask: number
   private streamEnded: boolean
   private readonly distCodes: number[]
@@ -83,12 +85,13 @@ export class Implode {
   private nChBits: number[]
   private nChCodes: number[]
 
-  constructor(compressionType: Compression, dictionarySize: DictionarySize, config: Config) {
-    if (!(compressionType in Compression) || compressionType === Compression.Unknown) {
+  constructor(compressionType: CompressionType, dictionarySize: DictionarySize, config: Config) {
+    // the type system covers the callers, but a plain javascript one can still pass anything
+    if (!Object.hasOwn(COMPRESSION_CODES, compressionType)) {
       throw new InvalidCompressionTypeError()
     }
 
-    if (!(dictionarySize in DictionarySize) || dictionarySize === DictionarySize.Unknown) {
+    if (!Object.hasOwn(DICTIONARY_CODES, dictionarySize)) {
       throw new InvalidDictionarySizeError()
     }
 
@@ -245,9 +248,9 @@ export class Implode {
             this.outputBits(this.distBits[byte], this.distCodes[byte])
             this.outputBits(2, distance & 3)
           } else {
-            const byte = distance >> this.dictionarySize
+            const byte = distance >> DICTIONARY_CODES[this.dictionarySize]
             this.outputBits(this.distBits[byte], this.distCodes[byte])
-            this.outputBits(this.dictionarySize, this.dictionarySizeMask & distance)
+            this.outputBits(DICTIONARY_CODES[this.dictionarySize], this.dictionarySizeMask & distance)
           }
 
           this.startIndex = this.startIndex + size
@@ -259,13 +262,13 @@ export class Implode {
         endOfLastMatch = 0
         */
 
-        if (this.dictionarySize === DictionarySize.Small && this.startIndex >= 0x4_00) {
+        if (this.dictionarySize === 'small' && this.startIndex >= 0x4_00) {
           this.inputBuffer.dropStart(0x4_00)
           this.startIndex = this.startIndex - 0x4_00
-        } else if (this.dictionarySize === DictionarySize.Medium && this.startIndex >= 0x8_00) {
+        } else if (this.dictionarySize === 'medium' && this.startIndex >= 0x8_00) {
           this.inputBuffer.dropStart(0x8_00)
           this.startIndex = this.startIndex - 0x8_00
-        } else if (this.dictionarySize === DictionarySize.Large && this.startIndex >= 0x10_00) {
+        } else if (this.dictionarySize === 'large' && this.startIndex >= 0x10_00) {
           this.inputBuffer.dropStart(0x10_00)
           this.startIndex = this.startIndex - 0x10_00
         }
@@ -322,7 +325,7 @@ export class Implode {
 
   private setup(): void {
     switch (this.compressionType) {
-      case Compression.Ascii: {
+      case 'ascii': {
         for (let nCount = 0; nCount < 0x1_00; nCount++) {
           this.nChBits[nCount] = ChBitsAsc[nCount] + 1
           this.nChCodes[nCount] = ChCodeAsc[nCount] * 2
@@ -331,7 +334,7 @@ export class Implode {
         break
       }
 
-      case Compression.Binary: {
+      case 'binary': {
         let nChCode = 0
         for (let nCount = 0; nCount < 0x1_00; nCount++) {
           this.nChBits[nCount] = 9
@@ -344,18 +347,18 @@ export class Implode {
     }
 
     switch (this.dictionarySize) {
-      case DictionarySize.Small: {
-        this.dictionarySizeMask = nBitsOfOnes(4)
+      case 'small': {
+        this.dictionarySizeMask = nBitsOfOnes(DICTIONARY_CODES.small)
         break
       }
 
-      case DictionarySize.Medium: {
-        this.dictionarySizeMask = nBitsOfOnes(5)
+      case 'medium': {
+        this.dictionarySizeMask = nBitsOfOnes(DICTIONARY_CODES.medium)
         break
       }
 
-      case DictionarySize.Large: {
-        this.dictionarySizeMask = nBitsOfOnes(6)
+      case 'large': {
+        this.dictionarySizeMask = nBitsOfOnes(DICTIONARY_CODES.large)
         break
       }
     }
@@ -370,8 +373,8 @@ export class Implode {
       }
     }
 
-    this.outputBuffer.appendByte(this.compressionType)
-    this.outputBuffer.appendByte(this.dictionarySize)
+    this.outputBuffer.appendByte(COMPRESSION_CODES[this.compressionType])
+    this.outputBuffer.appendByte(DICTIONARY_CODES[this.dictionarySize])
     this.outputBuffer.appendByte(0)
     this.outBits = 0
   }

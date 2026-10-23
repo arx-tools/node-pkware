@@ -1,15 +1,17 @@
 import {
+  COMPRESSION_CODES,
   ChBitsAsc,
   ChCodeAsc,
+  DICTIONARY_CODES,
   DistBits,
   DistCode,
   ExLenBits,
+  LONGEST_ALLOWED_REPETITION,
   LenBits,
   LenCode,
-  LONGEST_ALLOWED_REPETITION,
-} from '@src/constants.js'
-import { clamp, getLowestNBitsOf, repeat, nBitsOfOnes } from '@src/functions.js'
-import type { CompressionType, DictionarySize } from '@src/simple/types.js'
+} from '../constants.ts'
+import { clamp, getLowestNBitsOf, repeat, nBitsOfOnes } from '../functions.ts'
+import type { CompressionType, DictionarySize } from '../types.ts'
 
 /**
  * In bytes
@@ -211,34 +213,8 @@ export class Implode {
   }
 
   private outputHeader(compressionType: CompressionType, dictionarySize: DictionarySize): void {
-    switch (compressionType) {
-      case 'ascii': {
-        this.outputBufferView[0] = 1
-        break
-      }
-
-      case 'binary': {
-        this.outputBufferView[0] = 0
-        break
-      }
-    }
-
-    switch (dictionarySize) {
-      case 'small': {
-        this.outputBufferView[1] = 4
-        break
-      }
-
-      case 'medium': {
-        this.outputBufferView[1] = 5
-        break
-      }
-
-      case 'large': {
-        this.outputBufferView[1] = 6
-        break
-      }
-    }
+    this.outputBufferView[0] = COMPRESSION_CODES[compressionType]
+    this.outputBufferView[1] = DICTIONARY_CODES[dictionarySize]
 
     this.outputBufferView[2] = 0
     this.outputBufferSize = 3

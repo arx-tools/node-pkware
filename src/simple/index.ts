@@ -1,6 +1,6 @@
-import { Explode } from '@src/simple/Explode.js'
-import { Implode } from '@src/simple/Implode.js'
-import type { CompressionType, DictionarySize } from '@src/simple/types.js'
+import type { CompressionType, DictionarySize } from '../types.ts'
+import { Explode } from './Explode.ts'
+import { Implode } from './Implode.ts'
 
 export function explode(input: ArrayBufferLike): ArrayBuffer {
   const instance = new Explode(input)
@@ -22,5 +22,5 @@ export { implode as compress }
 // -----------------
 // utils and types
 
-export { concatArrayBuffersAndLengthedDatas as concatArrayBuffers, sliceArrayBufferAt } from '@src/functions.js'
-export type { CompressionType, DictionarySize } from '@src/simple/types.js'
+export { concatArrayBuffersAndLengthedDatas as concatArrayBuffers, sliceArrayBufferAt } from '../functions.ts'
+export type { CompressionType, DictionarySize } from '../types.ts'

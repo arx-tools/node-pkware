@@ -1,8 +1,8 @@
-import { Explode } from '@src/stream/Explode.js'
-import { Implode } from '@src/stream/Implode.js'
-import type { Compression, DictionarySize } from '@src/stream/constants.js'
-import type { StreamHandler } from '@src/stream/stream.js'
-import type { Config } from '@src/stream/types.js'
+import type { CompressionType, DictionarySize } from '../types.ts'
+import { Explode } from './Explode.ts'
+import { Implode } from './Implode.ts'
+import type { StreamHandler } from './stream.ts'
+import type { Config } from './types.ts'
 
 /**
  * Decompresses stream
@@ -20,7 +20,7 @@ export function explode(config: Config = {}): StreamHandler {
  * @returns a function that you can use as a `transform._transform` method.
  */
 export function implode(
-  compressionType: Compression,
+  compressionType: CompressionType,
   dictionarySize: DictionarySize,
   config: Config = {},
 ): StreamHandler {
@@ -31,7 +31,7 @@ export function implode(
 export { explode as decompress }
 export { implode as compress }
 
-export { Compression, DictionarySize } from '@src/stream/constants.js'
-export * as errors from '@src/errors.js'
-export * as stream from '@src/stream/stream.js'
-export type { Config } from '@src/stream/types.js'
+export type { CompressionType, DictionarySize } from '../types.ts'
+export * as errors from '../errors.ts'
+export * as stream from './stream.ts'
+export type { Config } from './types.ts'

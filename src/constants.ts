@@ -1,3 +1,5 @@
+import type { CompressionType, DictionarySize } from './types.ts'
+
 export const LONGEST_ALLOWED_REPETITION = 0x2_04
 
 export const LITERAL_END_STREAM = 0x3_05
@@ -96,3 +98,20 @@ export const ChCodeAsc = [
 ]
 
 export const EMPTY_BUFFER = new ArrayBuffer(0)
+
+/**
+ * The byte codes of the compression types in the file header
+ */
+export const COMPRESSION_CODES: Record<CompressionType, number> = {
+  binary: 0,
+  ascii: 1,
+}
+
+/**
+ * The byte codes of the dictionary sizes in the file header
+ */
+export const DICTIONARY_CODES: Record<DictionarySize, number> = {
+  small: 4,
+  medium: 5,
+  large: 6,
+}
