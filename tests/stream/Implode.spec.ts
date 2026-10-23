@@ -3,7 +3,7 @@ import { Buffer } from 'node:buffer'
 import { before, describe, it } from 'node:test'
 import { Explode as SimpleExplode } from '../../src/simple/Explode.ts'
 import { explode, implode } from '../../src/stream/index.ts'
-import { assertTestFilesFolderExists, readFixture, runStream } from '../helpers.ts'
+import { assertTestFilesFolderExists, measure, readFixture, runStream } from '../helpers.ts'
 
 void describe('stream/Implode', () => {
   before(async () => {
@@ -11,9 +11,9 @@ void describe('stream/Implode', () => {
 
     const unpackedFile = await readFixture('level1.llf.unpacked')
 
-    console.time('    ⏱ stream/Implode compressed level1.llf.unpacked')
-    await runStream(implode('binary', 'large'), unpackedFile, 0x10_00)
-    console.timeEnd('    ⏱ stream/Implode compressed level1.llf.unpacked')
+    await measure('⏱ stream/Implode compressed level1.llf.unpacked', async () => {
+      await runStream(implode('binary', 'large'), unpackedFile, 0x10_00)
+    })
   })
 
   void it('can compress a binary file and unpack it back through the same api', async () => {
@@ -49,6 +49,21 @@ void describe('stream/Implode', () => {
 
     assert.ok(unpackedSingle.equals(unpackedFile), 'the single chunk stream should be lossless')
     assert.ok(unpackedSmall.equals(unpackedFile), 'the small chunk stream should be lossless')
+  })
+
+  void it('can compress inputs that are shorter than the two leading literals', async () => {
+    const matches: boolean[] = []
+
+    for (const size of [0, 1, 2, 3]) {
+      const data = Buffer.from([0x0b, 0x30, 0x9f].slice(0, size))
+
+      const compressed = await runStream(implode('binary', 'large'), data, data.length)
+      const unpacked = await runStream(explode(), Buffer.from(compressed), 0x10_00)
+
+      matches.push(unpacked.equals(data))
+    }
+
+    assert.deepEqual(matches, [true, true, true, true], 'every short input should survive the round trip')
   })
 
   void it('can compress the same data repeatedly', async () => {

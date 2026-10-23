@@ -3,7 +3,7 @@ import { Buffer } from 'node:buffer'
 import { before, describe, it } from 'node:test'
 import { Implode as SimpleImplode } from '../../src/simple/Implode.ts'
 import { explode } from '../../src/stream/index.ts'
-import { assertTestFilesFolderExists, readFixture, runStream } from '../helpers.ts'
+import { assertTestFilesFolderExists, measure, readFixture, runStream } from '../helpers.ts'
 
 void describe('stream/Explode', () => {
   before(async () => {
@@ -11,9 +11,9 @@ void describe('stream/Explode', () => {
 
     const packedFile = await readFixture('level1.llf')
 
-    console.time('    ⏱ stream/Explode decompressed level1.llf')
-    await runStream(explode(), packedFile, packedFile.length)
-    console.timeEnd('    ⏱ stream/Explode decompressed level1.llf')
+    await measure('⏱ stream/Explode decompressed level1.llf', async () => {
+      await runStream(explode(), packedFile, packedFile.length)
+    })
   })
 
   void it('can unpack a fully compressed binary file', async () => {

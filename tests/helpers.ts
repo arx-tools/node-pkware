@@ -3,6 +3,7 @@ import * as fs from 'node:fs/promises'
 import * as path from 'node:path'
 import { Readable, Writable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
+import { durationFormatFromEnvironment, formatDuration } from '../scripts/formatDuration.ts'
 import { fileExists, pathToRepoRoot } from '../src/bin/helpers.ts'
 import { through, type StreamHandler } from '../src/stream/stream.ts'
 import { PkwareTestFilesNotFoundException } from './errors.ts'
@@ -75,4 +76,27 @@ export function transformToABC(): StreamHandler {
     counter = counter + 1
     callback(null, Buffer.from([65 + ((counter - 1) % 26)]))
   }
+}
+
+/**
+ * Runs the block and prints how long it took.
+ *
+ * @param label The name of the measured block.
+ * @param block The measured work.
+ * @returns The value the block returns.
+ */
+export async function measure<T>(label: string, block: () => T | Promise<T>): Promise<T> {
+  const startedAt = performance.now()
+  const result = await block()
+  const duration = formatDuration(performance.now() - startedAt, durationFormatFromEnvironment())
+
+  if (duration.length === 0) {
+    console.log(label)
+
+    return result
+  }
+
+  console.log(`${label}: ${duration}`)
+
+  return result
 }

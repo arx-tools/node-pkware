@@ -180,7 +180,7 @@ export class Implode {
       this.startIndex = 0
 
       if (!this.handledFirstTwoBytes) {
-        if (this.inputBuffer.size() < 3) {
+        if (this.inputBuffer.isEmpty()) {
           return
         }
 
@@ -289,11 +289,15 @@ export class Implode {
    * so the initial 2 bytes can be moved to the output as is.
    */
   private handleFirstTwoBytes(): void {
-    const byte1 = this.inputBuffer.readByte(0)
-    const byte2 = this.inputBuffer.readByte(1)
-    this.outputBits(this.nChBits[byte1], this.nChCodes[byte1])
-    this.outputBits(this.nChBits[byte2], this.nChCodes[byte2])
-    this.startIndex = this.startIndex + 2
+    const availableBytes = Math.min(2, this.inputBuffer.size() - this.startIndex)
+
+    for (let index = 0; index < availableBytes; index++) {
+      const byte = this.inputBuffer.readByte(index)
+
+      this.outputBits(this.nChBits[byte], this.nChCodes[byte])
+    }
+
+    this.startIndex = this.startIndex + availableBytes
   }
 
   private setup(): void {

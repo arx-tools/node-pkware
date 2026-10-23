@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { before, describe, it } from 'node:test'
 import { Explode } from '../../src/simple/Explode.ts'
-import { assertTestFilesFolderExists, readFixture } from '../helpers.ts'
+import { assertTestFilesFolderExists, measure, readFixture } from '../helpers.ts'
 
 void describe('simple/Explode', () => {
   before(async () => {
@@ -9,10 +9,10 @@ void describe('simple/Explode', () => {
 
     const packedFile = await readFixture('level1.llf')
 
-    console.time('    ⏱ Explode decompressed level1.llf')
-    const explode = new Explode(packedFile.buffer)
-    explode.getResult()
-    console.timeEnd('    ⏱ Explode decompressed level1.llf')
+    await measure('⏱ simple/Explode decompressed level1.llf', () => {
+      const explode = new Explode(packedFile.buffer)
+      explode.getResult()
+    })
   })
 
   void it('can unpack fully compressed binary files', async () => {

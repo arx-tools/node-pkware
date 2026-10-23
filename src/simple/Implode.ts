@@ -98,7 +98,7 @@ export class Implode {
    */
   private inputBufferStartIndex: number
 
-  private readonly outputBuffer: ArrayBuffer
+  private outputBuffer: ArrayBuffer
   private outputBufferView: Uint8Array
   private outputBufferSize: number
 
@@ -307,10 +307,29 @@ export class Implode {
    * so the initial 2 bytes can be moved to the output as is.
    */
   private skipFirstTwoBytes(): void {
-    const [byte1, byte2] = this.inputBufferView
-    this.outputBits(this.nChBits[byte1], this.nChCodes[byte1])
-    this.outputBits(this.nChBits[byte2], this.nChCodes[byte2])
-    this.inputBufferStartIndex = this.inputBufferStartIndex + 2
+    const availableBytes = Math.min(2, this.inputBufferSize - this.inputBufferStartIndex)
+
+    for (let index = 0; index < availableBytes; index++) {
+      const byte = this.inputBufferView[this.inputBufferStartIndex + index]
+
+      this.outputBits(this.nChBits[byte], this.nChCodes[byte])
+    }
+
+    this.inputBufferStartIndex = this.inputBufferStartIndex + availableBytes
+  }
+
+  /**
+   * Doubles the output buffer when the compressed data does not fit into it. A byte of the input can
+   * take more than a byte in the output (a literal is a marker bit plus eight data bits, so the
+   * incompressible input grows), which is why the initial size is not always enough.
+   */
+  private growOutputBuffer(): void {
+    const grownView = new Uint8Array(Math.max(this.outputBufferView.length * 2, 0x1_00))
+
+    grownView.set(this.outputBufferView)
+
+    this.outputBuffer = grownView.buffer
+    this.outputBufferView = grownView
   }
 
   private outputBits(numberOfBits: number, bitBuffer: number): void {
@@ -318,6 +337,10 @@ export class Implode {
       this.outputBits(8, bitBuffer)
       bitBuffer = bitBuffer >> 8
       numberOfBits = numberOfBits - 8
+    }
+
+    if (this.outputBufferSize >= this.outputBufferView.length) {
+      this.growOutputBuffer()
     }
 
     const oldOutBits = this.outBits
