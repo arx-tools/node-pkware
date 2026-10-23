@@ -238,7 +238,7 @@ export function toBuffer(done: (buffer: Buffer) => void): Writable {
       callback()
     },
     final(callback): void {
-      done(buffer.getHeap())
+      done(buffer.read())
       callback()
     },
   })

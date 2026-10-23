@@ -2,11 +2,6 @@
   "arrowParens": "always",
   "bracketSpacing": true,
   "endOfLine": "auto",
-  "importOrder": [
-    "^node:",
-    "<THIRD_PARTY_MODULES>",
-    "^[./]"
-  ],
   "printWidth": 120,
   "semi": false,
   "singleQuote": true,

@@ -1,1 +1,15 @@
-{ "extends": "./tsconfig.src.json" }
+{
+  // this file exists for the editors only: visual studio code discovers the `tsconfig.json` files and
+  // ignores the folder specific ones. without it the sources under `tests/` and `scripts/` would fall
+  // into the inferred project, where the `node:` imports are unresolved (and `types: ["node"]` is not
+  // applied). for the actual checks look at the folder specific configs: `tsconfig.src.json`,
+  // `tsconfig.scripts.json` and `tsconfig.tests.json` — the build and the `typecheck` script always
+  // pass an explicit `-p` flag
+  "extends": "./tsconfig.src.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "incremental": false,
+    "rootDir": "."
+  },
+  "include": ["src/**/*", "tests/**/*", "scripts/**/*", "xo.config.ts"]
+}

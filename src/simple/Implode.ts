@@ -13,14 +13,8 @@ import {
 import { clamp, getLowestNBitsOf, repeat, nBitsOfOnes } from '../functions.ts'
 import type { CompressionType, DictionarySize } from '../types.ts'
 
-/**
- * In bytes
- */
 const HEADER_SIZE_IN_BYTES = 3
 
-/**
- * In bytes
- */
 const TERMINATION_LITERAL_MAX_SIZE_IN_BYTES = 2
 
 /**

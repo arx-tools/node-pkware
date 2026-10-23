@@ -174,6 +174,19 @@ const xoConfig: FlatXoConfig = [
   },
   {
     plugins,
+    files: ['tests/**/*.ts'],
+    // the tests have their own (noEmit) project which includes the sources they import
+    languageOptions: {
+      parserOptions: {
+        projectService: false,
+        project: './tsconfig.tests.json',
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules,
+  },
+  {
+    plugins,
     files: ['scripts/**/*.ts', 'xo.config.ts'],
     // the tooling files (the build script and this config) live outside of the src tsconfig,
     // they have their own (noEmit) project

@@ -59,7 +59,7 @@ export class ExpandingBuffer {
 
   /**
    * Adds a single byte to the end of the stored data.
-   * This expands the internal buffer by 0x10_00 bytes if the heap is full
+   * This expands the underlying Buffer (heap) by 0x10_00 bytes if it is full
    */
   appendByte(value: number): void {
     if (this.endIndex + 1 < this.heapSize()) {
@@ -81,8 +81,8 @@ export class ExpandingBuffer {
 
   /**
    * Concatenates a buffer to the end of the stored data.
-   * If the new data exceeds the size of the heap then the internal heap
-   * gets expanded by the integer multiples of 0x1000 bytes
+   * If the new data exceeds the size of the underlying Buffer (heap) then it
+   * gets expanded by the integer multiples of 0x10_00 bytes
    */
   append(newData: Buffer): void {
     if (this.endIndex + newData.byteLength < this.heapSize()) {
@@ -134,7 +134,7 @@ export class ExpandingBuffer {
   /**
    * Does hard delete
    *
-   * Removes data from the start of the internal buffer (heap)
+   * Removes data from the start of the underlying Buffer (heap)
    * by copying bytes to lower indices making sure the
    * startIndex goes back to 0 afterwards
    */
@@ -153,7 +153,7 @@ export class ExpandingBuffer {
   /**
    * Does hard delete
    *
-   * Removes data from the end of the internal buffer (heap)
+   * Removes data from the end of the underlying Buffer (heap)
    * by moving the endIndex back
    */
   flushEnd(numberOfBytes: number): void {
@@ -166,7 +166,7 @@ export class ExpandingBuffer {
   /**
    * Does soft delete
    *
-   * Removes data from the start of the internal buffer (heap)
+   * Removes data from the start of the underlying Buffer (heap)
    * by moving the startIndex forward
    * When the heap gets empty it also resets the indices as a cleanup
    */
@@ -184,7 +184,7 @@ export class ExpandingBuffer {
   /**
    * Does soft delete
    *
-   * removes data from the end of the internal buffer (heap)
+   * Removes data from the end of the underlying Buffer (heap)
    * by moving the endIndex back
    * When the heap gets empty it also resets the indices as a cleanup
    */
@@ -200,7 +200,7 @@ export class ExpandingBuffer {
   }
 
   /**
-   * Returns the internal buffer
+   * Returns the underlying Buffer (heap).
    */
   getHeap(): Buffer {
     return this.heap

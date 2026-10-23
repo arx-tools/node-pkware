@@ -32,10 +32,10 @@
     "build:watch": "nodemon --watch src --exec \"npm run build\" --ext ts",
     "lint": "rm -f xo.config.mjs && xo --ignore 'xo.config.mjs'",
     "lint:watch": "nodemon --watch src --exec \"npm run lint\" --ext ts",
-    "prepublishOnly": "npm run lint && npm run typecheck && rm -rf dist && npm run build && find dist -type f -name \"*.spec.*\" -delete",
-    "test": "node --test src/simple/*.spec.ts",
+    "prepublishOnly": "npm run lint && npm run typecheck && rm -rf dist && npm run build",
+    "test": "node scripts/run-tests.ts",
     "test:watch": "nodemon --watch src --exec \"npm run test\" --ext ts",
-    "typecheck": "tsc -p tsconfig.src.json --noEmit && tsc -p tsconfig.scripts.json"
+    "typecheck": "tsc -p tsconfig.src.json --noEmit && tsc -p tsconfig.scripts.json && tsc -p tsconfig.tests.json && tsc -p tsconfig.json"
   },
   "repository": {
     "type": "git",
@@ -56,7 +56,6 @@
     "minimist-lite": "^2.3.0"
   },
   "devDependencies": {
-    "@trivago/prettier-plugin-sort-imports": "^5.2.2",
     "@types/node": "^22.20.5",
     "eslint-plugin-unused-imports": "^4.4.1",
     "nodemon": "^3.1.14",

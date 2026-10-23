@@ -1,29 +1,15 @@
 import assert from 'node:assert/strict'
 import { Buffer } from 'node:buffer'
-import * as fs from 'node:fs/promises'
-import * as path from 'node:path'
 import { before, describe, it } from 'node:test'
-import { fileExists, pathToRepoRoot } from '../bin/helpers.ts'
-import { Explode } from './Explode.ts'
-import { Implode } from './Implode.ts'
-
-/**
- * Expecting the {@link https://github.com/arx-tools/pkware-test-files|pkware-test-files}
- * repo to be on the same level as the node-pkware folder
- */
-const pkwareTestFilesFolder = path.resolve(pathToRepoRoot(), '../pkware-test-files/')
+import { Explode } from '../../src/simple/Explode.ts'
+import { Implode } from '../../src/simple/Implode.ts'
+import { assertTestFilesFolderExists, readFixture } from '../helpers.ts'
 
 void describe('simple/Implode', () => {
   before(async () => {
-    if (!(await fileExists(pkwareTestFilesFolder))) {
-      throw new Error(
-        '"pkware-test-files" not found, download it from https://github.com/arx-tools/pkware-test-files and place it next to your "node-pkware" folder!',
-      )
-    }
+    await assertTestFilesFolderExists()
 
-    const unpackedFile = await fs.readFile(
-      path.resolve(pkwareTestFilesFolder, './arx-fatalis/level1/level1.llf.unpacked'),
-    )
+    const unpackedFile = await readFixture('level1.llf.unpacked')
 
     console.time('    ⏱ Implode compressed level1.llf.unpacked')
     const instance = new Implode(unpackedFile.buffer, 'binary', 'large')
@@ -32,9 +18,7 @@ void describe('simple/Implode', () => {
   })
 
   void it('can compress binary files', async () => {
-    const unpackedFile = await fs.readFile(
-      path.resolve(pkwareTestFilesFolder, './arx-fatalis/level1/level1.llf.unpacked'),
-    )
+    const unpackedFile = await readFixture('level1.llf.unpacked')
 
     const instance = new Implode(unpackedFile.buffer, 'binary', 'large')
     const packed = instance.getResult()
@@ -46,9 +30,7 @@ void describe('simple/Implode', () => {
   })
 
   void it('makes the file smaller and actually compress the data, not just encode it', async () => {
-    const unpackedFile = await fs.readFile(
-      path.resolve(pkwareTestFilesFolder, './arx-fatalis/level1/level1.llf.unpacked'),
-    )
+    const unpackedFile = await readFixture('level1.llf.unpacked')
 
     const instance = new Implode(unpackedFile.buffer, 'binary', 'large')
     const packed = instance.getResult()

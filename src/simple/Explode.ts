@@ -144,9 +144,6 @@ export class Explode {
     }
   }
 
-  /**
-   * Returns the decompressed data
-   */
   getResult(): ArrayBuffer {
     return this.outputBuffer.slice(0, this.outputBufferSize)
   }
