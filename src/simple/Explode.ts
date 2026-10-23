@@ -1,75 +1,64 @@
 import { generateAsciiTables, generateDecodeTables } from '../common/decodeTables.ts'
-import {
-  COMPRESSION_CODES,
-  DICTIONARY_CODES,
-  DistBits,
-  DistCode,
-  EMPTY_BUFFER,
-  ExLenBits,
-  LITERAL_END_STREAM,
-  LenBase,
-  LenBits,
-  LenCode,
-} from '../constants.ts'
+import { decodeDistance, decodeNextLiteral, parseHeader, wasteBits } from '../common/explode.ts'
+import { FixedInputBuffer } from '../common/inputBuffer.ts'
+import { DistBits, DistCode, EMPTY_BUFFER, LITERAL_END_STREAM, LenBits, LenCode } from '../constants.ts'
 import { AbortedError, InvalidCompressionTypeError, InvalidDictionarySizeError } from '../errors.ts'
-import {
-  concatArrayBuffersAndLengthedDatas,
-  getLowestNBitsOf,
-  nBitsOfOnes,
-  repeat,
-  sliceArrayBufferAt,
-  uint8ArrayToArray,
-} from '../functions.ts'
+import { concatArrayBuffersAndLengthedDatas, repeat, sliceArrayBufferAt, uint8ArrayToArray } from '../functions.ts'
 import type { CompressionType, DictionarySize } from '../types.ts'
 
 export class Explode {
-  private readonly inputBuffer: ArrayBufferLike
   /**
-   * Used for accessing the data within inputBuffer.
+   * The compressed data, the shared decoder reads it through the `InputBuffer` interface.
    */
-  private readonly inputBufferView: Uint8Array
+  inputBuffer: FixedInputBuffer
   /**
-   * Used for caching inputBuffer.byteLength as that getter is doing some uncached computation to measure the length of
-   * inputBuffer.
+   * The number of the bits that are buffered but not consumed yet.
    */
-  private readonly inputBufferSize: number
+  extraBits: number
   /**
-   * The explode algorithm works by trimming off the beginning of inputBuffer byte by byte. Instead of actually
-   * adjusting the inputBuffer every time a byte is handled we store the beginning of the unhandled section and use it
-   * when indexing data that is being read.
+   * The buffered bits, the shared decoder consumes them from the lower bits.
    */
-  private inputBufferStartIndex: number
+  bitBuffer: number
+  /**
+   * The compression type of the stream, it selects the literal decoder of the shared decoder.
+   */
+  compressionType: CompressionType | 'unknown'
+  /**
+   * The number of the bits that describe the distance of a repetition.
+   */
+  dictionarySizeBits: number
+  /**
+   * The mask of the bits that describe the distance of a repetition.
+   */
+  dictionarySizeMask: number
+  readonly lengthCodes: number[]
+  readonly distPosCodes: number[]
+  /**
+   * The dictionary size of the stream, it comes from the header.
+   */
+  dictionarySize: DictionarySize | 'unknown'
+  chBitsAsc: number[] = []
+  /**
+   * The naming comes from stormlib, the 2C34 refers to the table's position in memory.
+   */
+  asciiTable2C34: number[] = []
+  /**
+   * The naming comes from stormlib, the 2D34 refers to the table's position in memory.
+   */
+  asciiTable2D34: number[] = []
+  /**
+   * The naming comes from stormlib, the 2E34 refers to the table's position in memory.
+   */
+  asciiTable2E34: number[] = []
+  /**
+   * The naming comes from stormlib, the 2EB4 refers to the table's position in memory.
+   */
+  asciiTable2EB4: number[] = []
 
   private outputBuffer: ArrayBuffer
   private outputBufferView: Uint8Array
   private outputBufferSize: number
-
   private needMoreInput: boolean
-  private extraBits: number
-  private bitBuffer: number
-  private readonly lengthCodes: number[]
-  private readonly distPosCodes: number[]
-
-  private compressionType: CompressionType | 'unknown'
-  private dictionarySize: DictionarySize | 'unknown'
-  private dictionarySizeMask: number
-  private chBitsAsc: number[] = []
-  /**
-   * The naming comes from stormlib, the 2C34 refers to the table's position in memory.
-   */
-  private asciiTable2C34: number[] = []
-  /**
-   * The naming comes from stormlib, the 2D34 refers to the table's position in memory.
-   */
-  private asciiTable2D34: number[] = []
-  /**
-   * The naming comes from stormlib, the 2E34 refers to the table's position in memory.
-   */
-  private asciiTable2E34: number[] = []
-  /**
-   * The naming comes from stormlib, the 2EB4 refers to the table's position in memory.
-   */
-  private asciiTable2EB4: number[] = []
 
   constructor(input: ArrayBufferLike) {
     this.needMoreInput = true
@@ -78,10 +67,7 @@ export class Explode {
     this.lengthCodes = generateDecodeTables(LenCode, LenBits)
     this.distPosCodes = generateDecodeTables(DistCode, DistBits)
 
-    this.inputBuffer = input
-    this.inputBufferView = new Uint8Array(this.inputBuffer)
-    this.inputBufferSize = this.inputBuffer.byteLength
-    this.inputBufferStartIndex = 0
+    this.inputBuffer = new FixedInputBuffer(input)
 
     this.outputBuffer = EMPTY_BUFFER
     this.outputBufferView = new Uint8Array(this.outputBuffer)
@@ -90,6 +76,7 @@ export class Explode {
     this.compressionType = 'unknown'
     this.dictionarySize = 'unknown'
     this.dictionarySizeMask = 0
+    this.dictionarySizeBits = 0
     this.setupAsciiTables()
 
     this.processInput()
@@ -122,21 +109,7 @@ export class Explode {
    * @throws `AbortedError` when there isn't enough data to be wasted.
    */
   private wasteBits(numberOfBits: number): void {
-    if (numberOfBits > this.extraBits && this.inputBufferSize === this.inputBufferStartIndex) {
-      throw new AbortedError()
-    }
-
-    if (numberOfBits <= this.extraBits) {
-      this.bitBuffer = this.bitBuffer >> numberOfBits
-      this.extraBits = this.extraBits - numberOfBits
-      return
-    }
-
-    const nextByte = this.inputBufferView[this.inputBufferStartIndex]
-    this.inputBufferStartIndex = this.inputBufferStartIndex + 1
-
-    this.bitBuffer = ((this.bitBuffer >> this.extraBits) | (nextByte << 8)) >> (numberOfBits - this.extraBits)
-    this.extraBits = this.extraBits + 8 - numberOfBits
+    wasteBits(this, numberOfBits)
   }
 
   /**
@@ -145,62 +118,7 @@ export class Explode {
    * @throws `AbortedError`.
    */
   private decodeNextLiteral(): number {
-    const lastBit = getLowestNBitsOf(this.bitBuffer, 1)
-
-    this.wasteBits(1)
-
-    if (lastBit !== 0) {
-      let lengthCode = this.lengthCodes[getLowestNBitsOf(this.bitBuffer, 8)]
-
-      this.wasteBits(LenBits[lengthCode])
-
-      const extraLenghtBits = ExLenBits[lengthCode]
-      if (extraLenghtBits !== 0) {
-        const extraLength = getLowestNBitsOf(this.bitBuffer, extraLenghtBits)
-
-        try {
-          this.wasteBits(extraLenghtBits)
-        } catch {
-          if (lengthCode + extraLength !== 0x1_0e) {
-            throw new AbortedError()
-          }
-        }
-
-        lengthCode = LenBase[lengthCode] + extraLength
-      }
-
-      return lengthCode + 0x1_00
-    }
-
-    const lastByte = getLowestNBitsOf(this.bitBuffer, 8)
-
-    if (this.compressionType === 'binary') {
-      this.wasteBits(8)
-      return lastByte
-    }
-
-    let value: number
-
-    if (lastByte > 0) {
-      value = this.asciiTable2C34[lastByte]
-
-      if (value === 0xff) {
-        if (getLowestNBitsOf(this.bitBuffer, 6) === 0) {
-          this.wasteBits(6)
-          value = this.asciiTable2E34[getLowestNBitsOf(this.bitBuffer, 7)]
-        } else {
-          this.wasteBits(4)
-          value = this.asciiTable2D34[getLowestNBitsOf(this.bitBuffer, 8)]
-        }
-      }
-    } else {
-      this.wasteBits(8)
-      value = this.asciiTable2EB4[getLowestNBitsOf(this.bitBuffer, 8)]
-    }
-
-    this.wasteBits(this.chBitsAsc[value])
-
-    return value
+    return decodeNextLiteral(this)
   }
 
   /**
@@ -209,42 +127,7 @@ export class Explode {
    * @throws `AbortedError`.
    */
   private decodeDistance(repeatLength: number): number {
-    const distPosCode = this.distPosCodes[getLowestNBitsOf(this.bitBuffer, 8)]
-    const distPosBits = DistBits[distPosCode]
-
-    this.wasteBits(distPosBits)
-
-    let distance: number
-    let bitsToWaste: number
-
-    if (repeatLength === 2) {
-      distance = (distPosCode << 2) | getLowestNBitsOf(this.bitBuffer, 2)
-      bitsToWaste = 2
-    } else {
-      switch (this.dictionarySize as DictionarySize) {
-        case 'small': {
-          distance = (distPosCode << 4) | (this.bitBuffer & this.dictionarySizeMask)
-          bitsToWaste = 4
-          break
-        }
-
-        case 'medium': {
-          distance = (distPosCode << 5) | (this.bitBuffer & this.dictionarySizeMask)
-          bitsToWaste = 5
-          break
-        }
-
-        case 'large': {
-          distance = (distPosCode << 6) | (this.bitBuffer & this.dictionarySizeMask)
-          bitsToWaste = 6
-          break
-        }
-      }
-    }
-
-    this.wasteBits(bitsToWaste)
-
-    return distance + 1
+    return decodeDistance(this, repeatLength)
   }
 
   /**
@@ -256,7 +139,7 @@ export class Explode {
    */
   private processInput(): void {
     const headerParsedSuccessfully = this.parseInitialData()
-    if (!headerParsedSuccessfully || this.inputBufferSize === this.inputBufferStartIndex) {
+    if (!headerParsedSuccessfully || this.inputBuffer.isEmpty()) {
       return
     }
 
@@ -364,32 +247,8 @@ export class Explode {
    * @throws `InvalidDictionarySizeError` when the dictionary size is not a known value.
    */
   private parseInitialData(): boolean {
-    if (this.inputBufferSize < 4) {
+    if (!parseHeader(this)) {
       return false
-    }
-
-    const { compressionType, dictionarySize } = this.readHeader()
-
-    this.compressionType = compressionType
-    this.dictionarySize = dictionarySize
-    this.bitBuffer = this.inputBufferView[this.inputBufferStartIndex + 2]
-    this.inputBufferStartIndex = this.inputBufferStartIndex + 3
-
-    switch (dictionarySize) {
-      case 'small': {
-        this.dictionarySizeMask = nBitsOfOnes(4)
-        break
-      }
-
-      case 'medium': {
-        this.dictionarySizeMask = nBitsOfOnes(5)
-        break
-      }
-
-      case 'large': {
-        this.dictionarySizeMask = nBitsOfOnes(6)
-        break
-      }
     }
 
     if (this.compressionType === 'ascii') {
@@ -397,63 +256,5 @@ export class Explode {
     }
 
     return true
-  }
-
-  /**
-   * This function assumes there are at least 2 bytes of data in the buffer.
-   *
-   * @throws `InvalidCompressionTypeError`.
-   *
-   * @throws `InvalidDictionarySizeError`.
-   */
-  private readHeader(): {
-    compressionType: CompressionType
-    dictionarySize: DictionarySize
-  } {
-    let compressionType: CompressionType
-
-    switch (this.inputBufferView[0]) {
-      case COMPRESSION_CODES.binary: {
-        compressionType = 'binary'
-        break
-      }
-
-      case COMPRESSION_CODES.ascii: {
-        compressionType = 'ascii'
-        break
-      }
-
-      default: {
-        throw new InvalidCompressionTypeError()
-      }
-    }
-
-    let dictionarySize: DictionarySize
-
-    switch (this.inputBufferView[1]) {
-      case DICTIONARY_CODES.small: {
-        dictionarySize = 'small'
-        break
-      }
-
-      case DICTIONARY_CODES.medium: {
-        dictionarySize = 'medium'
-        break
-      }
-
-      case DICTIONARY_CODES.large: {
-        dictionarySize = 'large'
-        break
-      }
-
-      default: {
-        throw new InvalidDictionarySizeError()
-      }
-    }
-
-    return {
-      compressionType,
-      dictionarySize,
-    }
   }
 }
