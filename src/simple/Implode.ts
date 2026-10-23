@@ -6,11 +6,11 @@ import {
   DistBits,
   DistCode,
   ExLenBits,
-  LONGEST_ALLOWED_REPETITION,
   LenBits,
   LenCode,
 } from '../constants.ts'
-import { clamp, getLowestNBitsOf, repeat, nBitsOfOnes } from '../functions.ts'
+import { getLowestNBitsOf, nBitsOfOnes, repeat } from '../functions.ts'
+import { getSizeOfMatching, isRepetitionFlushable } from '../common/repetitions.ts'
 import type { CompressionType, DictionarySize } from '../types.ts'
 
 const HEADER_SIZE_IN_BYTES = 3
@@ -24,21 +24,6 @@ const TERMINATION_LITERAL_MAX_SIZE_IN_BYTES = 2
  * value = latest occurrance within the buffer.
  */
 let lastOccurrences: Record<number, number>
-
-/**
- * Function assumes a < b - 2.
- */
-function getSizeOfMatching(view: Uint8Array, a: number, b: number): number {
-  const maxLength = clamp(b - a, 2, LONGEST_ALLOWED_REPETITION)
-
-  for (let i = 2; i <= maxLength; i++) {
-    if (view[a + i] !== view[b + i]) {
-      return i
-    }
-  }
-
-  return maxLength
-}
 
 function readUint16(view: Uint8Array, at: number): number {
   const highByte = view[at]
@@ -314,22 +299,7 @@ export class Implode {
    * better repetition might be found.
    */
   private isRepetitionFlushable(size: number, distance: number): boolean | null {
-    if (size === 0) {
-      return false
-    }
-
-    // If we found repetition of 2 bytes, that is 0x1_00 or further back,
-    // don't bother. Storing the distance of 0x1_00 bytes would actually
-    // take more space than storing the 2 bytes as-is.
-    if (size === 2 && distance >= 0x1_00) {
-      return false
-    }
-
-    if (size >= 8 || this.inputBufferSize - this.inputBufferStartIndex < 2) {
-      return true
-    }
-
-    return null
+    return isRepetitionFlushable(size, distance, this.inputBufferSize - this.inputBufferStartIndex)
   }
 
   /**

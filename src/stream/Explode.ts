@@ -1,9 +1,8 @@
 import { Buffer } from 'node:buffer'
 import type { Transform, TransformCallback } from 'node:stream'
+import { generateAsciiTables, generateDecodeTables } from '../common/decodeTables.ts'
 import {
   COMPRESSION_CODES,
-  ChBitsAsc,
-  ChCodeAsc,
   DICTIONARY_CODES,
   DistBits,
   DistCode,
@@ -14,15 +13,7 @@ import {
   LenCode,
 } from '../constants.ts'
 import { AbortedError, InvalidCompressionTypeError, InvalidDictionarySizeError } from '../errors.ts'
-import {
-  quotientAndRemainder,
-  getLowestNBitsOf,
-  mergeSparseArrays,
-  nBitsOfOnes,
-  repeat,
-  toHex,
-  unfold,
-} from '../functions.ts'
+import { getLowestNBitsOf, nBitsOfOnes, quotientAndRemainder, repeat, toHex } from '../functions.ts'
 import type { CompressionType, DictionarySize } from '../types.ts'
 import { ExpandingBuffer } from './ExpandingBuffer.ts'
 import type { Config, Stats } from './types.ts'
@@ -90,44 +81,6 @@ function readHeader(buffer: Buffer): { compressionType: CompressionType; diction
   return { compressionType, dictionarySize }
 }
 
-function generateDecodeTables(startIndexes: number[], lengthBits: number[]): number[] {
-  const codes = repeat(0, 0x1_00)
-
-  for (const [i, lengthBit] of lengthBits.entries()) {
-    for (let index = startIndexes[i]; index < 0x1_00; index = index + (1 << lengthBit)) {
-      codes[index] = i
-    }
-  }
-
-  return codes
-}
-
-/**
- * PAT = populate ascii table.
- */
-function createPATIterator(limit: number, stepper: number): (n: number) => [result: number, nextSeed: number] | false {
-  return function (n: number): [result: number, nextSeed: number] | false {
-    if (n >= limit) {
-      return false
-    }
-
-    return [n, n + (1 << stepper)]
-  }
-}
-
-function populateAsciiTable(value: number, index: number, bits: number, limit: number): number[] {
-  const iterator = createPATIterator(limit, value - bits)
-  const seed = ChCodeAsc[index] >> bits
-  const indices = unfold(iterator, seed)
-
-  const table: number[] = []
-  for (const idx of indices) {
-    table[idx] = index
-  }
-
-  return table
-}
-
 export class Explode {
   private readonly verbose: boolean
   private needMoreInput: boolean
@@ -144,11 +97,11 @@ export class Explode {
   private dictionarySize: DictionarySize | 'unknown'
   private dictionarySizeMask: number
   private dictionarySizeBits: number
-  private chBitsAsc: number[]
-  private asciiTable2C34: number[]
-  private asciiTable2D34: number[]
-  private asciiTable2E34: number[]
-  private asciiTable2EB4: number[]
+  private chBitsAsc: number[] = []
+  private asciiTable2C34: number[] = []
+  private asciiTable2D34: number[] = []
+  private asciiTable2E34: number[] = []
+  private asciiTable2EB4: number[] = []
 
   constructor(config: Config = {}) {
     this.verbose = config?.verbose ?? false
@@ -166,11 +119,7 @@ export class Explode {
     this.dictionarySize = 'unknown'
     this.dictionarySizeMask = 0
     this.dictionarySizeBits = 0
-    this.chBitsAsc = repeat(0, 0x1_00)
-    this.asciiTable2C34 = repeat(0, 0x1_00)
-    this.asciiTable2D34 = repeat(0, 0x1_00)
-    this.asciiTable2E34 = repeat(0, 0x80)
-    this.asciiTable2EB4 = repeat(0, 0x1_00)
+    this.setupAsciiTables()
   }
 
   getHandler() {
@@ -222,45 +171,17 @@ export class Explode {
     }
   }
 
-  private generateAsciiTables(): void {
-    this.chBitsAsc = ChBitsAsc.map((value, index) => {
-      if (value <= 8) {
-        this.asciiTable2C34 = mergeSparseArrays(
-          populateAsciiTable(value, index, 0, 0x1_00),
-          this.asciiTable2C34,
-        ) as number[]
+  /**
+   * Generates the ascii tables from the constants.
+   */
+  private setupAsciiTables(): void {
+    const tables = generateAsciiTables()
 
-        return value
-      }
-
-      const acc = getLowestNBitsOf(ChCodeAsc[index], 8)
-      if (acc === 0) {
-        this.asciiTable2EB4 = mergeSparseArrays(
-          populateAsciiTable(value, index, 8, 0x1_00),
-          this.asciiTable2EB4,
-        ) as number[]
-
-        return value - 8
-      }
-
-      this.asciiTable2C34[acc] = 0xff
-
-      if (getLowestNBitsOf(acc, 6) === 0) {
-        this.asciiTable2E34 = mergeSparseArrays(
-          populateAsciiTable(value, index, 6, 0x80),
-          this.asciiTable2E34,
-        ) as number[]
-
-        return value - 6
-      }
-
-      this.asciiTable2D34 = mergeSparseArrays(
-        populateAsciiTable(value, index, 4, 0x1_00),
-        this.asciiTable2D34,
-      ) as number[]
-
-      return value - 4
-    })
+    this.chBitsAsc = tables.chBitsAsc
+    this.asciiTable2C34 = tables.asciiTable2C34
+    this.asciiTable2D34 = tables.asciiTable2D34
+    this.asciiTable2E34 = tables.asciiTable2E34
+    this.asciiTable2EB4 = tables.asciiTable2EB4
   }
 
   private onInputFinished(callback: TransformCallback): void {
@@ -475,7 +396,7 @@ export class Explode {
     this.dictionarySizeMask = nBitsOfOnes(this.dictionarySizeBits)
 
     if (this.compressionType === 'ascii') {
-      this.generateAsciiTables()
+      this.setupAsciiTables()
     }
 
     if (this.verbose) {

@@ -8,30 +8,18 @@ import {
   DistBits,
   DistCode,
   ExLenBits,
-  LONGEST_ALLOWED_REPETITION,
   LenBits,
   LenCode,
 } from '../constants.ts'
 import { InvalidCompressionTypeError, InvalidDictionarySizeError } from '../errors.ts'
-import { clamp, quotientAndRemainder, getLowestNBitsOf, nBitsOfOnes, repeat, toHex } from '../functions.ts'
+import { getSizeOfMatching, isRepetitionFlushable } from '../common/repetitions.ts'
+import { quotientAndRemainder, getLowestNBitsOf, nBitsOfOnes, repeat, toHex } from '../functions.ts'
 import type { CompressionType, DictionarySize } from '../types.ts'
 import { ExpandingBuffer } from './ExpandingBuffer.ts'
 import type { StreamHandler } from './stream.ts'
 import type { Config, Stats } from './types.ts'
 
 const BLOCK_SIZE_IN_BYTES = 0x8_00
-
-function getSizeOfMatching(inputBytes: Buffer, a: number, b: number): number {
-  const maxLength = clamp(b - a, 2, LONGEST_ALLOWED_REPETITION)
-
-  for (let i = 2; i <= maxLength; i++) {
-    if (inputBytes[a + i] !== inputBytes[b + i]) {
-      return i
-    }
-  }
-
-  return maxLength
-}
 
 /**
  * TODO: make sure that we find the most recent one,
@@ -293,22 +281,7 @@ export class Implode {
    * better repetition might be found.
    */
   private isRepetitionFlushable(size: number, distance: number): boolean | null {
-    if (size === 0) {
-      return false
-    }
-
-    // If we found repetition of 2 bytes, that is 0x1_00 or further back,
-    // don't bother. Storing the distance of 0x1_00 bytes would actually
-    // take more space than storing the 2 bytes as-is.
-    if (size === 2 && distance >= 0x1_00) {
-      return false
-    }
-
-    if (size >= 8 || this.startIndex + 1 >= this.inputBuffer.size()) {
-      return true
-    }
-
-    return null
+    return isRepetitionFlushable(size, distance, this.inputBuffer.size() - this.startIndex)
   }
 
   /**
