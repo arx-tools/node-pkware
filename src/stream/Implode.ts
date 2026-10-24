@@ -12,7 +12,9 @@ import {
   LenCode,
 } from '../constants.ts'
 import { InvalidCompressionTypeError, InvalidDictionarySizeError } from '../errors.ts'
-import { getSizeOfMatching, isRepetitionFlushable } from '../common/repetitions.ts'
+import { findRepetitions } from '../common/matchFinder.ts'
+import { outputBits } from '../common/outputBits.ts'
+import { isRepetitionFlushable } from '../common/repetitions.ts'
 import { quotientAndRemainder, getLowestNBitsOf, nBitsOfOnes, repeat, toHex } from '../functions.ts'
 import type { CompressionType, DictionarySize } from '../types.ts'
 import { ExpandingBuffer } from './ExpandingBuffer.ts'
@@ -26,40 +28,25 @@ const BLOCK_SIZE_IN_BYTES = 0x8_00
  * which in turn allows us to store backward length in less amount of bits
  * currently the code goes from the furthest point.
  */
-function findRepetitions(
-  inputBytes: Buffer,
-  endOfLastMatch: number,
-  cursor: number,
-): { size: number; distance: number } {
-  const notEnoughBytes = inputBytes.length - cursor < 2
-  const tooClose = cursor === endOfLastMatch || cursor - endOfLastMatch < 2
-  if (notEnoughBytes || tooClose) {
-    return { size: 0, distance: 0 }
-  }
-
-  const haystack = inputBytes.subarray(endOfLastMatch, cursor)
-  const needle = inputBytes.subarray(cursor, cursor + 2)
-
-  const matchIndex = haystack.indexOf(needle)
-  if (matchIndex !== -1) {
-    const distance = cursor - endOfLastMatch - matchIndex
-
-    let size = 2
-    if (distance > 2) {
-      size = getSizeOfMatching(inputBytes, endOfLastMatch + matchIndex, cursor)
-    }
-
-    return { distance: distance - 1, size }
-  }
-
-  return { size: 0, distance: 0 }
-}
-
 export class Implode {
+  /**
+   * The lookup table of the match finder: the key is the 16 bit combination of two bytes, the value is
+   * the latest occurrence of it within the buffer.
+   */
+  lastOccurrences: Record<number, number> = {}
+  /**
+   * The bytes of the compressed data, the shared encoder writes them through the `OutputBuffer`
+   * interface.
+   */
+  readonly outputBuffer: ExpandingBuffer
+  /**
+   * The number of the bits in the last, not yet complete byte of the output.
+   */
+  outBits: number
+
   private readonly verbose: boolean
   private isFirstChunk: boolean
   private readonly inputBuffer: ExpandingBuffer
-  private readonly outputBuffer: ExpandingBuffer
   private readonly stats: Stats
   private readonly compressionType: CompressionType
   private readonly dictionarySize: DictionarySize
@@ -69,7 +56,6 @@ export class Implode {
   private readonly distBits: number[]
   private startIndex: number
   private handledFirstTwoBytes: boolean
-  private outBits: number
   private nChBits: number[]
   private nChCodes: number[]
 
@@ -197,7 +183,7 @@ export class Implode {
 
       while (this.startIndex < this.inputBuffer.size()) {
         // eslint-disable-next-line prefer-const -- this might get overriden while searching for repetitions
-        let { size, distance } = findRepetitions(this.inputBuffer.read(endOfLastMatch), endOfLastMatch, this.startIndex)
+        let { size, distance } = findRepetitions(this, this.inputBuffer.read(0), this.startIndex)
 
         // eslint-disable-next-line prefer-const -- this might get overriden while searching for repetitions
         let isFlushable = this.isRepetitionFlushable(size, distance)
@@ -253,12 +239,15 @@ export class Implode {
         if (this.dictionarySize === 'small' && this.startIndex >= 0x4_00) {
           this.inputBuffer.dropStart(0x4_00)
           this.startIndex = this.startIndex - 0x4_00
+          this.lastOccurrences = {}
         } else if (this.dictionarySize === 'medium' && this.startIndex >= 0x8_00) {
           this.inputBuffer.dropStart(0x8_00)
           this.startIndex = this.startIndex - 0x8_00
+          this.lastOccurrences = {}
         } else if (this.dictionarySize === 'large' && this.startIndex >= 0x10_00) {
           this.inputBuffer.dropStart(0x10_00)
           this.startIndex = this.startIndex - 0x10_00
+          this.lastOccurrences = {}
         }
       }
 
@@ -266,6 +255,8 @@ export class Implode {
 
       // this.inputBuffer.dropStart(this.inputBuffer.size())
       this.inputBuffer.clear()
+      // the positions in the lookup table belong to the buffer that is dropped here
+      this.lastOccurrences = {}
     }
 
     if (this.streamEnded) {
@@ -356,29 +347,7 @@ export class Implode {
     this.outBits = 0
   }
 
-  private outputBits(nBits: number, bitBuffer: number): void {
-    if (nBits > 8) {
-      this.outputBits(8, bitBuffer)
-      bitBuffer = bitBuffer >> 8
-      nBits = nBits - 8
-    }
-
-    const { outBits } = this
-
-    const lastByte = this.outputBuffer.readByte(this.outputBuffer.size() - 1)
-    this.outputBuffer.setByte(-1, lastByte | getLowestNBitsOf(bitBuffer << outBits, 8))
-
-    this.outBits = this.outBits + nBits
-
-    if (this.outBits > 8) {
-      this.outBits = getLowestNBitsOf(this.outBits, 3)
-      bitBuffer = bitBuffer >> (8 - outBits)
-      this.outputBuffer.appendByte(getLowestNBitsOf(bitBuffer, 8))
-    } else {
-      this.outBits = getLowestNBitsOf(this.outBits, 3)
-      if (this.outBits === 0) {
-        this.outputBuffer.appendByte(0)
-      }
-    }
+  private outputBits(numberOfBits: number, bitBuffer: number): void {
+    outputBits(this, numberOfBits, bitBuffer)
   }
 }

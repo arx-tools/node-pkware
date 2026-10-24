@@ -10,56 +10,15 @@ import {
   LenCode,
 } from '../constants.ts'
 import { getLowestNBitsOf, nBitsOfOnes, repeat } from '../functions.ts'
-import { getSizeOfMatching, isRepetitionFlushable } from '../common/repetitions.ts'
+import { findRepetitions } from '../common/matchFinder.ts'
+import { GrowingOutputBuffer } from '../common/outputBuffer.ts'
+import { outputBits } from '../common/outputBits.ts'
+import { isRepetitionFlushable } from '../common/repetitions.ts'
 import type { CompressionType, DictionarySize } from '../types.ts'
 
 const HEADER_SIZE_IN_BYTES = 3
 
 const TERMINATION_LITERAL_MAX_SIZE_IN_BYTES = 2
-
-/**
- * Lookup table used for finding repetitions easier.
- *
- * Key = 16 bit combination of 2 uint8 bytes
- * value = latest occurrance within the buffer.
- */
-let lastOccurrences: Record<number, number>
-
-function readUint16(view: Uint8Array, at: number): number {
-  const highByte = view[at]
-  const lowByte = view[at + 1]
-  return (highByte << 8) | lowByte
-}
-
-function findRepetitions(
-  view: Uint8Array,
-  inputBytesLength: number,
-  cursor: number,
-): { size: number; distance: number } {
-  const notEnoughBytes = cursor + 2 > inputBytesLength
-  const tooClose = cursor < 2
-  if (notEnoughBytes || tooClose) {
-    return { size: 0, distance: 0 }
-  }
-
-  const needle = readUint16(view, cursor)
-  const matchedAt = lastOccurrences[needle] ?? -1
-
-  lastOccurrences[needle] = cursor
-
-  if (matchedAt === -1) {
-    return { size: 0, distance: 0 }
-  }
-
-  if (matchedAt === cursor - 2) {
-    return { distance: 1, size: 2 }
-  }
-
-  return {
-    distance: cursor - matchedAt - 1,
-    size: getSizeOfMatching(view, matchedAt, cursor),
-  }
-}
 
 /**
  * Returns a byte view over the input without copying it.
@@ -81,6 +40,21 @@ function asByteView(input: ArrayBufferLike | Uint8Array): Uint8Array {
 }
 
 export class Implode {
+  /**
+   * The lookup table of the match finder: the key is the 16 bit combination of two bytes, the value is
+   * the latest occurrence of it within the buffer.
+   */
+  lastOccurrences: Record<number, number> = {}
+  /**
+   * The bytes of the compressed data, the shared encoder writes them through the `OutputBuffer`
+   * interface.
+   */
+  outputBuffer: GrowingOutputBuffer
+  /**
+   * The number of the bits in the last, not yet complete byte of the output.
+   */
+  outBits: number
+
   private inputBuffer: ArrayBufferLike | Uint8Array
   /**
    * Used for accessing the data within inputBuffer.
@@ -98,14 +72,9 @@ export class Implode {
    */
   private inputBufferStartIndex: number
 
-  private outputBuffer: ArrayBuffer
-  private outputBufferView: Uint8Array
-  private outputBufferSize: number
-
   private dictionarySizeMask: number
   private readonly distCodes: number[]
   private readonly distBits: number[]
-  private outBits: number
   private readonly nChBits: number[]
   private readonly nChCodes: number[]
 
@@ -124,11 +93,9 @@ export class Implode {
     this.inputBufferSize = this.inputBuffer.byteLength
     this.inputBufferStartIndex = 0
 
-    this.outputBuffer = new ArrayBuffer(
+    this.outputBuffer = new GrowingOutputBuffer(
       this.inputBufferSize + HEADER_SIZE_IN_BYTES + TERMINATION_LITERAL_MAX_SIZE_IN_BYTES,
     )
-    this.outputBufferView = new Uint8Array(this.outputBuffer)
-    this.outputBufferSize = 0
 
     this.outputHeader(compressionType, dictionarySize)
     this.processInput(dictionarySize)
@@ -137,7 +104,7 @@ export class Implode {
   }
 
   public getResult(): ArrayBuffer {
-    return this.outputBuffer.slice(0, this.outputBufferSize)
+    return this.outputBuffer.getWrittenBytes().buffer as ArrayBuffer
   }
 
   private setupTables(compressionType: CompressionType, dictionarySize: DictionarySize): void {
@@ -192,15 +159,13 @@ export class Implode {
   }
 
   private outputHeader(compressionType: CompressionType, dictionarySize: DictionarySize): void {
-    this.outputBufferView[0] = COMPRESSION_CODES[compressionType]
-    this.outputBufferView[1] = DICTIONARY_CODES[dictionarySize]
-
-    this.outputBufferView[2] = 0
-    this.outputBufferSize = 3
+    this.outputBuffer.appendByte(COMPRESSION_CODES[compressionType])
+    this.outputBuffer.appendByte(DICTIONARY_CODES[dictionarySize])
+    this.outputBuffer.appendByte(0)
   }
 
   private processInput(dictionarySize: DictionarySize): void {
-    lastOccurrences = {}
+    this.lastOccurrences = {}
 
     if (this.inputBufferSize === 0) {
       return
@@ -214,7 +179,7 @@ export class Implode {
     this.skipFirstTwoBytes()
 
     while (this.inputBufferSize > this.inputBufferStartIndex) {
-      const { size, distance } = findRepetitions(this.inputBufferView, this.inputBufferSize, this.inputBufferStartIndex)
+      const { size, distance } = findRepetitions(this, this.inputBufferView, this.inputBufferStartIndex)
 
       const isFlushable = this.isRepetitionFlushable(size, distance)
 
@@ -283,7 +248,7 @@ export class Implode {
         this.inputBufferView = asByteView(this.inputBuffer)
         this.inputBufferSize = this.inputBufferSize - blockSizeInBytes
         this.inputBufferStartIndex = this.inputBufferStartIndex - blockSizeInBytes
-        lastOccurrences = {}
+        this.lastOccurrences = {}
       }
     }
   }
@@ -318,50 +283,7 @@ export class Implode {
     this.inputBufferStartIndex = this.inputBufferStartIndex + availableBytes
   }
 
-  /**
-   * Doubles the output buffer when the compressed data does not fit into it. A byte of the input can
-   * take more than a byte in the output (a literal is a marker bit plus eight data bits, so the
-   * incompressible input grows), which is why the initial size is not always enough.
-   */
-  private growOutputBuffer(): void {
-    const grownView = new Uint8Array(Math.max(this.outputBufferView.length * 2, 0x1_00))
-
-    grownView.set(this.outputBufferView)
-
-    this.outputBuffer = grownView.buffer
-    this.outputBufferView = grownView
-  }
-
   private outputBits(numberOfBits: number, bitBuffer: number): void {
-    if (numberOfBits > 8) {
-      this.outputBits(8, bitBuffer)
-      bitBuffer = bitBuffer >> 8
-      numberOfBits = numberOfBits - 8
-    }
-
-    if (this.outputBufferSize >= this.outputBufferView.length) {
-      this.growOutputBuffer()
-    }
-
-    const oldOutBits = this.outBits
-
-    this.outputBufferView[this.outputBufferSize - 1] =
-      this.outputBufferView[this.outputBufferSize - 1] | getLowestNBitsOf(bitBuffer << oldOutBits, 8)
-
-    this.outBits = this.outBits + numberOfBits
-
-    if (this.outBits > 8) {
-      this.outBits = getLowestNBitsOf(this.outBits, 3)
-      bitBuffer = bitBuffer >> (8 - oldOutBits)
-
-      this.outputBufferView[this.outputBufferSize] = getLowestNBitsOf(bitBuffer, 8)
-      this.outputBufferSize = this.outputBufferSize + 1
-    } else {
-      this.outBits = getLowestNBitsOf(this.outBits, 3)
-      if (this.outBits === 0) {
-        this.outputBufferView[this.outputBufferSize] = 0
-        this.outputBufferSize = this.outputBufferSize + 1
-      }
-    }
+    outputBits(this, numberOfBits, bitBuffer)
   }
 }

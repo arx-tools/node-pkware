@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { Buffer } from 'node:buffer'
 import { before, describe, it } from 'node:test'
 import { Explode as SimpleExplode } from '../../src/simple/Explode.ts'
+import { Implode as SimpleImplode } from '../../src/simple/Implode.ts'
 import { explode, implode } from '../../src/stream/index.ts'
 import { assertTestFilesFolderExists, measure, readFixture, runStream } from '../helpers.ts'
 
@@ -64,6 +65,36 @@ void describe('stream/Implode', () => {
     }
 
     assert.deepEqual(matches, [true, true, true, true], 'every short input should survive the round trip')
+  })
+
+  // the two apis are the same codec, so the compressed bytes have to match as well, otherwise a file
+  // compressed through one api could not be recognized as the same file by the other
+  void it('produces the same bytes as the simple implementation', async () => {
+    const unpackedFile = await readFixture('level1.llf.unpacked')
+
+    const streamCompressed = await runStream(implode('binary', 'large'), unpackedFile, unpackedFile.length)
+    const simpleCompressed = new SimpleImplode(unpackedFile, 'binary', 'large').getResult()
+
+    assert.ok(
+      Buffer.from(streamCompressed).equals(Buffer.from(simpleCompressed)),
+      'the stream encoder should produce the same bytes as the simple encoder',
+    )
+  })
+
+  // the encoder drops its input buffer at every chunk boundary, so the lookup table of the match finder
+  // must be reset with it, otherwise the stale positions point into the new chunk
+  void it('can compress the same data from small chunks and unpack it back', async () => {
+    const unpackedFile = await readFixture('level1.llf.unpacked')
+    const matches: boolean[] = []
+
+    for (const chunkSize of [0x1_00, 0x2_00, 0x10_00]) {
+      const compressed = await runStream(implode('binary', 'large'), unpackedFile, chunkSize)
+      const unpacked = await runStream(explode(), Buffer.from(compressed), 0x10_00)
+
+      matches.push(unpacked.equals(unpackedFile))
+    }
+
+    assert.deepEqual(matches, [true, true, true], 'every chunk size should be lossless')
   })
 
   void it('can compress the same data repeatedly', async () => {
