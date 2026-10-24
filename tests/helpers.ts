@@ -26,13 +26,24 @@ export async function assertTestFilesFolderExists(): Promise<void> {
 }
 
 /**
- * Reads a file from the level1 fixture folder.
+ * Reads a file from the arx-fatalis fixtures.
  *
- * @param name The file name inside the level1 folder.
+ * @param levelAndName The level and the file name, for example `level1/level1.llf`.
  * @returns The content of the fixture.
  */
-export async function readFixture(name: string): Promise<Buffer> {
-  return fs.readFile(path.resolve(pkwareTestFilesFolder, `./arx-fatalis/level1/${name}`))
+export async function readArxFixture(levelAndName: string): Promise<Buffer> {
+  return fs.readFile(path.resolve(pkwareTestFilesFolder, `./arx-fatalis/${levelAndName}`))
+}
+
+/**
+ * Reads a file from the `implode-decoder` fixture folder, which contains streams produced by other
+ * tools, including the ascii (text) compression that arx-fatalis does not use.
+ *
+ * @param name The file name inside the folder.
+ * @returns The content of the fixture.
+ */
+export async function readDecoderFixture(name: string): Promise<Buffer> {
+  return fs.readFile(path.resolve(pkwareTestFilesFolder, `./implode-decoder/${name}`))
 }
 
 /**

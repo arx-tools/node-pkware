@@ -3,7 +3,7 @@ import { Buffer } from 'node:buffer'
 import { before, describe, it } from 'node:test'
 import { Explode } from '../../src/simple/Explode.ts'
 import { Implode } from '../../src/simple/Implode.ts'
-import { assertTestFilesFolderExists, measure, readFixture } from '../helpers.ts'
+import { assertTestFilesFolderExists, measure, readArxFixture, readDecoderFixture } from '../helpers.ts'
 
 /**
  * Creates bytes that the compressor can not find repetitions in, so every byte becomes a literal.
@@ -29,7 +29,7 @@ void describe('simple/Implode', () => {
   before(async () => {
     await assertTestFilesFolderExists()
 
-    const unpackedFile = await readFixture('level1.llf.unpacked')
+    const unpackedFile = await readArxFixture('level1/level1.llf.unpacked')
 
     await measure('⏱ simple/Implode compressed level1.llf.unpacked', () => {
       const instance = new Implode(unpackedFile.buffer, 'binary', 'large')
@@ -38,7 +38,7 @@ void describe('simple/Implode', () => {
   })
 
   void it('can compress binary files', async () => {
-    const unpackedFile = await readFixture('level1.llf.unpacked')
+    const unpackedFile = await readArxFixture('level1/level1.llf.unpacked')
 
     const instance = new Implode(unpackedFile.buffer, 'binary', 'large')
     const packed = instance.getResult()
@@ -50,7 +50,7 @@ void describe('simple/Implode', () => {
   })
 
   void it('makes the file smaller and actually compress the data, not just encode it', async () => {
-    const unpackedFile = await readFixture('level1.llf.unpacked')
+    const unpackedFile = await readArxFixture('level1/level1.llf.unpacked')
 
     const instance = new Implode(unpackedFile.buffer, 'binary', 'large')
     const packed = instance.getResult()
@@ -90,6 +90,19 @@ void describe('simple/Implode', () => {
     }
 
     assert.deepEqual(matches, [true, true, true, true], 'every short input should survive the round trip')
+  })
+
+  // the ascii (text) compression is not used by arx-fatalis, so the fixture comes from another tool
+  void it('can compress text in ascii mode and unpack it back', async () => {
+    const text = await readDecoderFixture('large.unpacked')
+
+    const instance = new Implode(text, 'ascii', 'large')
+    const compressed = instance.getResult()
+
+    const explode = new Explode(compressed)
+    const unpacked = explode.getResult()
+
+    assert.ok(Buffer.from(unpacked).equals(text), 'the ascii round trip should be lossless')
   })
 
   void it('can compress the same data consistently over and over again when called repeatedly', () => {
