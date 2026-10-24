@@ -60,7 +60,7 @@ export class Explode {
   private outputBufferSize: number
   private needMoreInput: boolean
 
-  constructor(input: ArrayBufferLike) {
+  constructor(input: ArrayBufferLike | Uint8Array) {
     this.needMoreInput = true
     this.extraBits = 0
     this.bitBuffer = 0

@@ -3,7 +3,15 @@ import { Buffer } from 'node:buffer'
 import { before, describe, it } from 'node:test'
 import { Implode as SimpleImplode } from '../../src/simple/Implode.ts'
 import { explode } from '../../src/stream/index.ts'
-import { assertTestFilesFolderExists, measure, readDecoderFixture, readArxFixture, runStream } from '../helpers.ts'
+import { splitAt, transformEmpty, transformSplitBy } from '../../src/stream/stream.ts'
+import {
+  assertTestFilesFolderExists,
+  getHeaderSizeOf,
+  measure,
+  readArxFixture,
+  readDecoderFixture,
+  runStream,
+} from '../helpers.ts'
 
 void describe('stream/Explode', () => {
   before(async () => {
@@ -55,6 +63,36 @@ void describe('stream/Explode', () => {
     const unpacked = await runStream(explode(), packedFile, 0x10_00)
 
     assert.ok(unpacked.equals(reference), 'the stream decoder should read the ascii compressed file')
+  })
+
+  // the partially compressed files carry the header before the pkware data, which the cli drops with
+  // `transformSplitBy` and `splitAt`
+  void it('can unpack a partially compressed dlf file', async () => {
+    const packedFile = await readArxFixture('level1/level1.dlf')
+    const reference = await readArxFixture('level1/level1.dlf.unpacked')
+    const headerSize = getHeaderSizeOf(packedFile, 'dlf')
+
+    const handler = transformSplitBy(splitAt(headerSize), transformEmpty(), explode())
+    const unpacked = await runStream(handler, packedFile, 0x1_00_00)
+
+    assert.ok(
+      unpacked.equals(reference.subarray(headerSize)),
+      'the decompressed data should match the reference after the header',
+    )
+  })
+
+  void it('can unpack a partially compressed fts file', async () => {
+    const packedFile = await readArxFixture('level1/fast.fts')
+    const reference = await readArxFixture('level1/fast.fts.unpacked')
+    const headerSize = getHeaderSizeOf(packedFile, 'fts')
+
+    const handler = transformSplitBy(splitAt(headerSize), transformEmpty(), explode())
+    const unpacked = await runStream(handler, packedFile, 0x1_00_00)
+
+    assert.ok(
+      unpacked.equals(reference.subarray(headerSize)),
+      'the decompressed data should match the reference after the header',
+    )
   })
 
   void it('can unpack what the simple implementation compressed', async () => {

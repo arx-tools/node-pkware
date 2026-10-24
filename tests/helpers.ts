@@ -3,6 +3,7 @@ import * as fs from 'node:fs/promises'
 import * as path from 'node:path'
 import { Readable, Writable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
+import { getHeaderSize } from 'arx-header-size'
 import { durationFormatFromEnvironment, formatDuration } from '../scripts/formatDuration.ts'
 import { fileExists, pathToRepoRoot } from '../src/bin/helpers.ts'
 import { through, type StreamHandler } from '../src/stream/stream.ts'
@@ -110,4 +111,18 @@ export async function measure<T>(label: string, block: () => T | Promise<T>): Pr
   console.log(`${label}: ${duration}`)
 
   return result
+}
+
+/**
+ * Returns the size of the uncompressed header of a partially compressed fixture, the compressed data
+ * starts after it.
+ *
+ * @param buffer The whole file.
+ * @param format The format of the file.
+ * @returns The number of the uncompressed bytes at the start of the file.
+ */
+export function getHeaderSizeOf(buffer: Buffer, format: 'dlf' | 'fts'): number {
+  const exactBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer
+
+  return getHeaderSize(exactBuffer, format).total
 }

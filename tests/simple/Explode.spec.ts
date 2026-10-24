@@ -2,7 +2,13 @@ import assert from 'node:assert/strict'
 import { Buffer } from 'node:buffer'
 import { before, describe, it } from 'node:test'
 import { Explode } from '../../src/simple/Explode.ts'
-import { assertTestFilesFolderExists, measure, readArxFixture, readDecoderFixture } from '../helpers.ts'
+import {
+  assertTestFilesFolderExists,
+  getHeaderSizeOf,
+  measure,
+  readArxFixture,
+  readDecoderFixture,
+} from '../helpers.ts'
 
 void describe('simple/Explode', () => {
   before(async () => {
@@ -50,6 +56,35 @@ void describe('simple/Explode', () => {
     const unpacked = explode.getResult()
 
     assert.ok(Buffer.from(unpacked).equals(reference), 'the ascii compressed data should match the reference')
+  })
+
+  // the dlf and fts files are partially compressed: the pkware data starts after an uncompressed header
+  void it('can unpack a partially compressed dlf file', async () => {
+    const packedFile = await readArxFixture('level1/level1.dlf')
+    const reference = await readArxFixture('level1/level1.dlf.unpacked')
+    const headerSize = getHeaderSizeOf(packedFile, 'dlf')
+
+    const explode = new Explode(packedFile.subarray(headerSize))
+    const unpacked = explode.getResult()
+
+    assert.ok(
+      Buffer.from(unpacked).equals(reference.subarray(headerSize)),
+      'the decompressed data should match the reference after the header',
+    )
+  })
+
+  void it('can unpack a partially compressed fts file', async () => {
+    const packedFile = await readArxFixture('level1/fast.fts')
+    const reference = await readArxFixture('level1/fast.fts.unpacked')
+    const headerSize = getHeaderSizeOf(packedFile, 'fts')
+
+    const explode = new Explode(packedFile.subarray(headerSize))
+    const unpacked = explode.getResult()
+
+    assert.ok(
+      Buffer.from(unpacked).equals(reference.subarray(headerSize)),
+      'the decompressed data should match the reference after the header',
+    )
   })
 
   // TODO: can unpack partially compressed binary files

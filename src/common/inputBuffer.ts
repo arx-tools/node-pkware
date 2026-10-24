@@ -1,3 +1,5 @@
+import { asByteView } from './byteView.ts'
+
 /**
  * The bytes of the compressed data, the decoder reaches them through this interface. The
  * implementations differ: the simple api has the whole input in memory while the stream api receives
@@ -31,12 +33,7 @@ export class FixedInputBuffer implements InputBuffer {
   private startIndex: number = 0
 
   constructor(input: ArrayBufferLike | Uint8Array) {
-    if (input instanceof Uint8Array) {
-      this.view = input
-    } else {
-      this.view = new Uint8Array(input)
-    }
-
+    this.view = asByteView(input)
     this.startIndex = 0
   }
 
