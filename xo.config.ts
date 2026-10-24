@@ -8,7 +8,6 @@ const rules = {
   '@typescript-eslint/no-extraneous-class': 'off',
   'unicorn/filename-case': 'off',
   'unicorn/no-array-callback-reference': 'off',
-  'unicorn/no-array-for-each': 'off',
   'unicorn/no-static-only-class': 'off',
   'unicorn/prefer-math-trunc': 'off',
   'unicorn/prefer-module': 'off',
@@ -38,6 +37,12 @@ const rules = {
   'logical-assignment-operators': ['error', 'never'],
   '@typescript-eslint/no-inferrable-types': ['error', { ignoreParameters: true, ignoreProperties: true }],
   '@typescript-eslint/no-unnecessary-boolean-literal-compare': 'off',
+  // the codebase works with a lot of fractional numbers (the float32 values of the formats), so the
+  // fractions are grouped in threes as well, and every number is grouped from one digit on
+  'unicorn/numeric-separators-style': [
+    'error',
+    { number: { fractionGroupLength: 3, groupLength: 3, minimumDigits: 0 } },
+  ],
   'unicorn/prefer-ternary': 'off',
   'no-ternary': 'error',
   'no-await-in-loop': 'off',
@@ -95,8 +100,8 @@ const rules = {
       ],
     },
   ],
-  // the project convention is `operator-assignment: never` (see the .infos rules), the unicorn
-  // variant wants the same rule with the opposite setting
+  // `operator-assignment: never` is the convention here (the long form shows what changes), and the
+  // unicorn variant wants the same rule with the opposite setting
   'unicorn/operator-assignment': 'off',
   // the public boolean names (verbose, isFirstChunk, ...) are part of the published API
   'unicorn/consistent-boolean-name': 'off',
@@ -140,7 +145,7 @@ const rules = {
 
 const xoConfig: FlatXoConfig = [
   {
-    // the shared style of the arx-tools repositories, these options are only allowed on a global item
+    // the base style, these options are only allowed on a global item
     space: true,
     semicolon: false,
     prettier: true,
