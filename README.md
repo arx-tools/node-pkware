@@ -11,8 +11,8 @@ It was the de-facto compression for games from around Y2K, like [Arx Fatalis](ht
 
 `npm i -g node-pkware`
 
-- minimum required node version: 18.0.0
-- recommended node version (to be able to run the tests): 20.6.0
+- minimum required node version: 18.0.0 (the published package)
+- the version needed for development is in the [Development](#development) section
 
 ### browser
 
@@ -253,6 +253,31 @@ fs.createReadStream(`path-to-compressed-file`)
     }),
   )
 ```
+
+## Development
+
+The sources and the tests run **directly with Node.js** — there is no build step for them. The `.ts`
+files are loaded through Node's type stripping, which is **on by default since Node.js 22.18**, and
+the tests use the built-in `node:test` runner. The development environment therefore needs:
+
+- **Node.js >= 22.18** — stricter than the `engines` field, which only describes what the published
+  package needs at runtime
+- npm >= 8
+
+The features behind the version: type stripping (22.18), the ES2025 iterator helpers such as
+`Iterator.prototype.toArray()` (22.0), `Array.prototype.toSorted()` and `.toReversed()` (20.0),
+`import.meta.dirname` (20.11) and the custom `node:test` reporter (20.1).
+
+| command | what it does |
+|---|---|
+| `npm install` | installs the dependencies |
+| `npm run lint` | check code against the pre-defined coding guidelines |
+| `npm run typecheck` | type checks the sources, the scripts and the tests |
+| `npm test` | runs `scripts/run-tests.ts`: the tests with a custom reporter, plus a count guard which fails when no test ran |
+| `npm run build` | compiles the published `dist` and rewrites the `.ts` extensions of the declaration imports |
+
+The test files live in `pkware-test-files` next to this repository (see
+[Test files](#test-files)), the tests skip themselves when it is missing.
 
 ## Other infos
 

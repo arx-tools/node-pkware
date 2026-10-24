@@ -57,11 +57,12 @@
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "arx-header-size": "^3.2.1",
     "eslint-plugin-unused-imports": "^4.4.1",
     "nodemon": "^3.1.14",
     "pre-commit": "^2.0.0",
-    "typescript": "^7.0.2",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
     "xo": "^5.0.1"
   },
   "keywords": [

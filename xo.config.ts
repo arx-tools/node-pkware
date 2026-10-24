@@ -1,15 +1,6 @@
 import unusedImports from 'eslint-plugin-unused-imports'
 import type { FlatXoConfig, XoConfigItem } from 'xo'
 
-/**
- * `eslint-plugin-unused-imports` types itself against `@types/eslint`, while the flat config of xo 5
- * expects the `@eslint/core` plugin type. The runtime object is the same, only the two declaration
- * sets disagree about the shape of `configs`, so the plugin is cast once here.
- */
-const plugins = {
-  'unused-imports': unusedImports,
-} as unknown as NonNullable<XoConfigItem['plugins']>
-
 const rules = {
   'capitalized-comments': 'off',
   'no-bitwise': 'off',
@@ -52,6 +43,9 @@ const rules = {
   'no-await-in-loop': 'off',
   '@typescript-eslint/consistent-type-definitions': 'off',
   '@typescript-eslint/non-nullable-type-assertion-style': 'off',
+  // the opposite of `prefer-number-properties`: that one is the chosen direction (the global
+  // `Infinity` and `NaN` are not available in every context), so this rule can not stay on
+  'unicorn/prefer-global-number-constants': 'off',
   'unicorn/prefer-number-properties': ['error', { checkInfinity: true, checkNaN: true }],
   'unused-imports/no-unused-imports': 'error',
   'guard-for-in': 'off',
@@ -167,7 +161,9 @@ const xoConfig: FlatXoConfig = [
     ignores: ['tsconfig*.json'],
   },
   {
-    plugins,
+    plugins: {
+      'unused-imports': unusedImports,
+    },
     files: ['src/**/*.ts'],
     // there is no `tsconfig.json` in the repository, so the project has to be wired explicitly
     languageOptions: {
@@ -180,7 +176,9 @@ const xoConfig: FlatXoConfig = [
     rules,
   },
   {
-    plugins,
+    plugins: {
+      'unused-imports': unusedImports,
+    },
     files: ['tests/**/*.ts'],
     // the tests have their own (noEmit) project which includes the sources they import
     languageOptions: {
@@ -193,7 +191,9 @@ const xoConfig: FlatXoConfig = [
     rules,
   },
   {
-    plugins,
+    plugins: {
+      'unused-imports': unusedImports,
+    },
     files: ['scripts/**/*.ts', 'xo.config.ts'],
     // the tooling files (the build script and this config) live outside of the src tsconfig,
     // they have their own (noEmit) project
