@@ -10,6 +10,7 @@ import {
   ExLenBits,
   LenBits,
   LenCode,
+  LONGEST_ALLOWED_REPETITION,
 } from '../constants.ts'
 import { InvalidCompressionTypeError, InvalidDictionarySizeError } from '../errors.ts'
 import { findRepetitions } from '../common/matchFinder.ts'
@@ -163,8 +164,6 @@ export class Implode {
     }
 
     if (!this.inputBuffer.isEmpty()) {
-      this.startIndex = 0
-
       if (!this.handledFirstTwoBytes) {
         if (this.inputBuffer.isEmpty()) {
           return
@@ -182,6 +181,13 @@ export class Implode {
       let endOfLastMatch = 0 // used when searching for longer repetitions later
 
       while (this.startIndex < this.inputBuffer.size()) {
+        // a repetition may reach into the data that has not arrived yet, and the size of the match would
+        // be cut short at the end of the buffer, which would make the output depend on the chunk
+        // boundaries. the encoder waits for the next chunk instead, unless the stream has ended.
+        if (!this.streamEnded && this.inputBuffer.size() - this.startIndex <= LONGEST_ALLOWED_REPETITION) {
+          break
+        }
+
         // eslint-disable-next-line prefer-const -- this might get overriden while searching for repetitions
         let { size, distance } = findRepetitions(this, this.inputBuffer.read(0), this.startIndex)
 
@@ -252,11 +258,6 @@ export class Implode {
       }
 
       // -------------------------------
-
-      // this.inputBuffer.dropStart(this.inputBuffer.size())
-      this.inputBuffer.clear()
-      // the positions in the lookup table belong to the buffer that is dropped here
-      this.lastOccurrences = {}
     }
 
     if (this.streamEnded) {

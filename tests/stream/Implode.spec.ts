@@ -37,8 +37,17 @@ void describe('stream/Implode', () => {
     assert.ok(unpackedFile.equals(new Uint8Array(unpacked)), 'the simple decoder should read the stream encoder output')
   })
 
-  // the compressed bytes do depend on how the input is split into chunks (the encoder flushes the
-  // already used part of its buffer at the chunk boundaries), so only the round trip is guaranteed
+  // the cli pipes the file through the stream api, while a caller of the simple api passes the whole
+  // buffer at once, so the chunk boundaries must not change the compressed bytes (issue #6)
+  void it('produces the same bytes regardless of how the input is split into chunks', async () => {
+    const unpackedFile = await readArxFixture('level1/level1.llf.unpacked')
+
+    const singleChunk = await runStream(implode('binary', 'large'), unpackedFile, unpackedFile.length)
+    const smallChunks = await runStream(implode('binary', 'large'), unpackedFile, 0x10_00)
+
+    assert.ok(singleChunk.equals(smallChunks), 'the chunk boundaries should not change the compressed output')
+  })
+
   void it('produces a valid stream regardless of how the input is split into chunks', async () => {
     const unpackedFile = await readArxFixture('level1/level1.llf.unpacked')
 
