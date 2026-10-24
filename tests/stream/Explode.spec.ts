@@ -65,6 +65,18 @@ void describe('stream/Explode', () => {
     assert.ok(unpacked.equals(reference), 'the stream decoder should read the ascii compressed file')
   })
 
+  // the smallest level is a single chunk for the decoder, which is a different edge than the big ones
+  void it('can unpack the level8 file, which is the smallest one', async () => {
+    const packedFile = await readArxFixture('level8/level8.llf')
+    const reference = await readArxFixture('level8/level8.llf.unpacked')
+
+    const unpacked = await measure('⏱ stream/Explode decompressed level8/level8.llf', async () => {
+      return await runStream(explode(), packedFile, 0x10_00)
+    })
+
+    assert.ok(unpacked.equals(reference), 'the level8 data should match the reference')
+  })
+
   // the partially compressed files carry the header before the pkware data, which the cli drops with
   // `transformSplitBy` and `splitAt`
   void it('can unpack a partially compressed dlf file', async () => {
