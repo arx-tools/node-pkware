@@ -32,7 +32,7 @@ export async function assertTestFilesFolderExists(): Promise<void> {
  * @returns The content of the fixture.
  */
 export async function readArxFixture(levelAndName: string): Promise<Buffer> {
-  return fs.readFile(path.resolve(pkwareTestFilesFolder, `./arx-fatalis/${levelAndName}`))
+  return await fs.readFile(path.resolve(pkwareTestFilesFolder, `./arx-fatalis/${levelAndName}`))
 }
 
 /**
@@ -43,7 +43,7 @@ export async function readArxFixture(levelAndName: string): Promise<Buffer> {
  * @returns The content of the fixture.
  */
 export async function readDecoderFixture(name: string): Promise<Buffer> {
-  return fs.readFile(path.resolve(pkwareTestFilesFolder, `./implode-decoder/${name}`))
+  return await fs.readFile(path.resolve(pkwareTestFilesFolder, `./implode-decoder/${name}`))
 }
 
 /**

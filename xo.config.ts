@@ -69,6 +69,10 @@ const rules = {
   // the node stream callbacks are `void | Promise<void>` by contract (promisify, the Transform
   // options, the _flush assignment), so a value-returning function is not a bug here
   '@typescript-eslint/strict-void-return': 'off',
+  // a promise is always awaited: a rejection is handled where it happens, the stack trace stays
+  // useful, and an async function does not quietly return a floating promise
+  '@typescript-eslint/return-await': ['error', 'always'],
+  '@typescript-eslint/require-await': 'error',
   // every description is a complete sentence: a capital first letter and a period at the end, so it
   // does not have to be checked by hand
   'jsdoc/require-description-complete-sentence': 'error',

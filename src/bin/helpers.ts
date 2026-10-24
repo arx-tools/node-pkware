@@ -70,7 +70,7 @@ export async function getInputStream(filename?: string): Promise<NodeJS.Readable
   throw new Error('input file does not exist')
 }
 
-export async function getOutputStream(filename?: string): Promise<NodeJS.WritableStream> {
+export function getOutputStream(filename?: string): NodeJS.WritableStream {
   if (filename === undefined) {
     return process.stdout
   }

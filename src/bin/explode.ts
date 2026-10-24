@@ -51,7 +51,7 @@ async function decompress(
 
   const handler = transformSplitBy(splitAt(offset), leftHandler, rightHandler)
 
-  return new Promise<void>((resolve, reject) => {
+  await new Promise<void>((resolve, reject) => {
     input.pipe(through(handler).on('error', reject)).pipe(output).on('finish', resolve).on('error', reject)
   })
 }
@@ -66,7 +66,7 @@ let input: NodeJS.ReadableStream
 let output: NodeJS.WritableStream
 try {
   input = await getInputStream(args._[0])
-  output = await getOutputStream(args.output)
+  output = getOutputStream(args.output)
 } catch (error: unknown) {
   console.error('error:', (error as Error).message)
   process.exit(1)
