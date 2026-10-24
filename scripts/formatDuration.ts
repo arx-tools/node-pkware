@@ -49,11 +49,11 @@ export function formatDuration(milliseconds: number, format: DurationFormat = 'a
     return ''
   }
 
-  if (format === 'ms' || milliseconds < 1_000) {
+  if (format === 'ms' || milliseconds < 1000) {
     return `${roundToFourDigits(milliseconds)}ms`
   }
 
-  return `${roundToFourDigits(milliseconds / 1_000)}s`
+  return `${roundToFourDigits(milliseconds / 1000)}s`
 }
 
 /**

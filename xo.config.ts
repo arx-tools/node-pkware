@@ -38,10 +38,11 @@ const rules = {
   '@typescript-eslint/no-inferrable-types': ['error', { ignoreParameters: true, ignoreProperties: true }],
   '@typescript-eslint/no-unnecessary-boolean-literal-compare': 'off',
   // the codebase works with a lot of fractional numbers (the float32 values of the formats), so the
-  // fractions are grouped in threes as well, and every number is grouped from one digit on
+  // fractions are grouped in threes as well. the integers are left alone below five digits (2800
+  // stays 2800), so the coordinate tables of the formats keep their alignment
   'unicorn/numeric-separators-style': [
     'error',
-    { number: { fractionGroupLength: 3, groupLength: 3, minimumDigits: 0 } },
+    { number: { fractionGroupLength: 3, groupLength: 3, minimumDigits: 5 } },
   ],
   'unicorn/prefer-ternary': 'off',
   'no-ternary': 'error',
