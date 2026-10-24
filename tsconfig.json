@@ -11,5 +11,5 @@
     "incremental": false,
     "rootDir": "."
   },
-  "include": ["src/**/*", "tests/**/*", "scripts/**/*", "xo.config.ts"]
+  "include": ["src/**/*", "tests/**/*", "xo.config.ts"]
 }

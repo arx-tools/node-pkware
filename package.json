@@ -28,12 +28,12 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.src.json && node scripts/rewrite-declaration-imports.ts",
+    "build": "tsc -p tsconfig.src.json && arx-lib-rewrite-declaration-imports",
     "build:watch": "nodemon --watch src --exec \"npm run build\" --ext ts",
     "lint": "rm -f xo.config.mjs && xo --ignore 'xo.config.mjs'",
     "lint:watch": "nodemon --watch src --exec \"npm run lint\" --ext ts",
     "prepublishOnly": "npm run lint && npm run typecheck && rm -rf dist && npm run build",
-    "test": "node scripts/run-tests.ts",
+    "test": "arx-lib-test",
     "test:watch": "nodemon --watch src --exec \"npm run test\" --ext ts",
     "typecheck": "tsc -p tsconfig.src.json --noEmit && tsc -p tsconfig.scripts.json && tsc -p tsconfig.tests.json && tsc -p tsconfig.json"
   },
@@ -56,6 +56,7 @@
     "minimist-lite": "^2.3.0"
   },
   "devDependencies": {
+    "@arx-tools/config": "file:../arx-tools-config",
     "@types/node": "^22.20.5",
     "@typescript/native": "npm:typescript@^7.0.2",
     "arx-header-size": "^3.2.1",
@@ -81,5 +82,6 @@
       "typecheck",
       "test"
     ]
-  }
+  },
+  "prettier": "@arx-tools/config/prettier"
 }

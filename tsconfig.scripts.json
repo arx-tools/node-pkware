@@ -5,5 +5,5 @@
     "incremental": false,
     "rootDir": "."
   },
-  "include": ["scripts/**/*", "xo.config.ts"]
+  "include": ["xo.config.ts"]
 }
